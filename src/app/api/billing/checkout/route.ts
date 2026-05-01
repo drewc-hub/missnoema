@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-03-31.basil",
-});
+import { getStripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +27,7 @@ export async function POST(req: NextRequest) {
     let stripeCustomerId = appUser.stripeCustomerId;
 
     if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: appUser.email ?? undefined,
         metadata: {
           userId: appUser.id,
@@ -50,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") ?? "http://localhost:3000";
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       customer: stripeCustomerId,
       line_items: [
