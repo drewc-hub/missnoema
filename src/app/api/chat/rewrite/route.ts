@@ -1,16 +1,12 @@
 // file: src/app/api/chat/rewrite/route.ts
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { getOpenAI } from "@/lib/openai";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 
 export const runtime = "nodejs";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 function getString(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -316,7 +312,7 @@ export async function POST(req: Request) {
       mode,
     });
 
-    const response = await openai.responses.create({
+    const response = await getOpenAI().responses.create({
       model: "gpt-4o-mini",
       input: [
         { role: "system", content: systemPrompt },
