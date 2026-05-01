@@ -3,23 +3,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { requireAdultAllowed } from "@/lib/ratings";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ContentRating } from "@prisma/client";
 
 export const runtime = "nodejs";
-
-function env(name: string, fallback?: string) {
-  const v = process.env[name];
-  if (v && v.trim()) return v.trim();
-  if (fallback != null) return fallback;
-  throw new Error(`Missing env var: ${name}`);
-}
-
-const supabaseAdmin = createClient(
-  env("NEXT_PUBLIC_SUPABASE_URL"),
-  env("SUPABASE_SERVICE_ROLE_KEY"),
-  { auth: { persistSession: false } },
-);
 
 export async function GET(
   _: Request,
@@ -56,7 +43,7 @@ export async function GET(
     });
   }
 
-  const { data, error } = await supabaseAdmin.storage
+  const { data, error } = await createSupabaseAdminClient().storage
     .from(asset.storageBucket)
     .createSignedUrl(asset.storagePath, 60);
 
