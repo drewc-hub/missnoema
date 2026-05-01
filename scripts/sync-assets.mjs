@@ -126,8 +126,13 @@ async function safeUnlink(p) {
 
 async function main() {
   if (!(await exists(SRC_DIR))) {
-    console.error(`sync-assets: source directory not found: ${SRC_DIR}`);
-    process.exit(1);
+    // The asset source directory only exists on a developer's machine; CI/
+    // production builders don't ship the raw asset source. Skip silently so
+    // the (pre)build hook doesn't fail the deploy.
+    console.warn(
+      `sync-assets: source directory not found at ${SRC_DIR} — skipping (this is expected on a build server).`,
+    );
+    return;
   }
 
   await ensureDir(DEST_DIR);
