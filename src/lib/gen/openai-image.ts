@@ -1,11 +1,7 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getOpenAI } from "@/lib/openai";
 
 export async function generateSafeImage(prompt: string) {
-  const result = await client.images.generate({
+  const result = await getOpenAI().images.generate({
     model: "gpt-image-1",
     prompt,
     size: "1024x1024",

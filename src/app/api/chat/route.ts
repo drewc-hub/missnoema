@@ -1,15 +1,11 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { getOpenAI } from "@/lib/openai";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 export const runtime = "nodejs";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -302,7 +298,7 @@ async function maybeRefreshConversationSummary(args: {
     },
   ];
 
-  const summaryResponse = await openai.responses.create({
+  const summaryResponse = await getOpenAI().responses.create({
     model: "gpt-4o-mini",
     input: summaryInput,
   });
@@ -426,7 +422,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const response = await openai.responses.create({
+    const response = await getOpenAI().responses.create({
       model: "gpt-4o-mini",
       input: [
         {
