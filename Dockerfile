@@ -15,7 +15,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate Prisma client before building
-RUN pnpm prisma generate --schema prisma/schema.prisma 2>/dev/null || true
+RUN pnpm prisma generate --schema prisma/schema.prisma
 RUN pnpm build
 
 # ── runner ──────────────────────────────────────────────────────────────────
