@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+backup.sql
+usb.ids
+pre_prisma_history_fix.dump
+tsconfig.tsbuildinfo

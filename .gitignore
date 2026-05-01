@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts.bak
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database dumps / backups
+*.sql
+*.dump
+backup.sql
+pre_prisma_history_fix.dump
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Misc local artifacts
+usb.ids
+grep-replace
+
+# Vercel / Next caches
+.vercel
+.turbo
+
+# Coverage
+coverage/
+*.lcov
+
+# Embedded repo (handle separately)
+Heimdall/
