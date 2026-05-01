@@ -2,6 +2,18 @@
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
 
+/**
+ * Validates a password against the app's password policy.
+ * Returns an array of human-readable error strings (empty = valid).
+ */
+export function validatePassword(password: string): string[] {
+  const errors: string[] = [];
+  if (password.length < 8) errors.push("Must be at least 8 characters.");
+  if (!/[A-Z]/.test(password)) errors.push("Must contain at least one uppercase letter.");
+  if (!/[0-9]/.test(password)) errors.push("Must contain at least one number.");
+  return errors;
+}
+
 export type AuthedUser = {
   id: string;
   supabaseUserId: string;
