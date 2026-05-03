@@ -1,3 +1,4 @@
+// src/app/api/media/[assetId]/delete/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -18,6 +19,7 @@ export async function POST(
   { params }: { params: Promise<{ assetId: string }> },
 ) {
   const user = await getAuthedUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -27,7 +29,7 @@ export async function POST(
   const asset = await prisma.companionAsset.findFirst({
     where: {
       id: assetId,
-      userId: user.id,
+      ownerId: user.id,
     },
     select: {
       id: true,
@@ -40,13 +42,11 @@ export async function POST(
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 
-  if (asset.storageBucket && asset.storagePath) {
-    const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAdmin();
 
-    await supabase.storage
-      .from(asset.storageBucket)
-      .remove([asset.storagePath]);
-  }
+  await supabase.storage
+    .from(asset.storageBucket)
+    .remove([asset.storagePath]);
 
   await prisma.companionAsset.delete({
     where: { id: asset.id },
