@@ -1,45 +1,50 @@
-// file: src/app/auth/magic-link/route.ts
 import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
+import { type EmailOtpType } from "@supabase/supabase-js";
 import {
-  createSupabaseServerClientRoute,
-  applySupabaseCookies,
+    createSupabaseServerClientRoute,
+    applySupabaseCookies,
 } from "@/lib/supabase/server";
-
-const BodySchema = z.object({
-  email: z.string().email(),
-  next: z.string().optional(),
-});
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  const form = await req.formData();
-  const parsed = BodySchema.safeParse({
-    email: form.get("email"),
-    next: form.get("next") ?? undefined,
-  });
+export async function GET(req: NextRequest) {
+    const url = new URL(req.url);
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
+    const rawNext = url.searchParams.get("next") ?? "/companions";
+    const next = rawNext.startsWith("/") ? rawNext : "/companions"; // prevent open redirect
 
-  const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
+    const code = url.searchParams.get("code");
+    const token_hash = url.searchParams.get("token_hash");
+    const type = url.searchParams.get("type") as EmailOtpType | null;
 
-  const redirectTo = new URL(
-    "/auth/callback",
-    process.env.BASE_URL ?? "http://localhost:3000",
-  );
-  if (parsed.data.next) redirectTo.searchParams.set("next", parsed.data.next);
+    const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email: parsed.data.email,
-    options: { emailRedirectTo: redirectTo.toString() },
-  });
+    let authError: string | null = null;
 
-  let res: Response;
-  if (error) res = NextResponse.json({ error: error.message }, { status: 400 });
-  else res = NextResponse.json({ ok: true });
+    if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) authError = "oauth_callback_failed";
+    } else if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+        if (error) authError = "otp_verify_failed";
+    }
 
-  return applySupabaseCookies(res, cookiesToSet);
+    if (authError) {
+        const to = new URL("/login", url.origin);
+        to.searchParams.set("next", next);
+        to.searchParams.set("error", authError);
+        const res = NextResponse.redirect(to, 303);
+        return applySupabaseCookies(res, cookiesToSet);
+    }
+
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+        const to = new URL("/login", url.origin);
+        to.searchParams.set("next", next);
+        const res = NextResponse.redirect(to, 303);
+        return applySupabaseCookies(res, cookiesToSet);
+    }
+
+    const res = NextResponse.redirect(new URL(next, url.origin), 303);
+    return applySupabaseCookies(res, cookiesToSet);
 }
