@@ -40,6 +40,10 @@ export function LoginForm({ next }: { next: string }) {
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwValidationErrors, setPwValidationErrors] = useState<string[]>([]);
 
+  // Password recovery state
+  const [recoverStatus, setRecoverStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [recoverError, setRecoverError] = useState<string | null>(null);
+
   // ── Magic link submit ──────────────────────────────────────────────────────
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +74,8 @@ export function LoginForm({ next }: { next: string }) {
     e.preventDefault();
     setPwError(null);
     setPwValidationErrors([]);
+    setRecoverStatus("idle");
+    setRecoverError(null);
 
     // Client-side validation
     if (pwMode === "signup") {
@@ -104,6 +110,39 @@ export function LoginForm({ next }: { next: string }) {
     } catch {
       setPwError("Network error. Please try again.");
       setPwStatus("error");
+    }
+  }
+
+  // ── Password recovery submit ───────────────────────────────────────────────
+  async function handleRecoverPassword() {
+    setRecoverError(null);
+    setRecoverStatus("idle");
+
+    if (!pwEmail) {
+      setRecoverError("Enter your email first, then click Forgot password.");
+      setRecoverStatus("error");
+      return;
+    }
+
+    setRecoverStatus("loading");
+
+    try {
+      const res = await fetch("/auth/recover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: pwEmail }),
+      });
+      const json = await res.json();
+
+      if (!res.ok || json.error) {
+        setRecoverError(json.error ?? "Could not send recovery email.");
+        setRecoverStatus("error");
+      } else {
+        setRecoverStatus("sent");
+      }
+    } catch {
+      setRecoverError("Network error. Please try again.");
+      setRecoverStatus("error");
     }
   }
 
@@ -209,6 +248,8 @@ export function LoginForm({ next }: { next: string }) {
                     setPwMode("signin");
                     setPwError(null);
                     setPwValidationErrors([]);
+                    setRecoverStatus("idle");
+                    setRecoverError(null);
                   }}
                   className={cn(
                     "text-sm font-medium transition",
@@ -225,6 +266,8 @@ export function LoginForm({ next }: { next: string }) {
                     setPwMode("signup");
                     setPwError(null);
                     setPwValidationErrors([]);
+                    setRecoverStatus("idle");
+                    setRecoverError(null);
                   }}
                   className={cn(
                     "text-sm font-medium transition",
@@ -260,9 +303,7 @@ export function LoginForm({ next }: { next: string }) {
                     value={pwPassword}
                     onChange={(e) => {
                       setPwPassword(e.target.value);
-                      // Clear validation errors as user types
-                      if (pwValidationErrors.length > 0)
-                        setPwValidationErrors([]);
+                      if (pwValidationErrors.length > 0) setPwValidationErrors([]);
                     }}
                   />
                   {pwMode === "signup" && (
@@ -283,8 +324,7 @@ export function LoginForm({ next }: { next: string }) {
                       value={pwConfirm}
                       onChange={(e) => {
                         setPwConfirm(e.target.value);
-                        if (pwValidationErrors.length > 0)
-                          setPwValidationErrors([]);
+                        if (pwValidationErrors.length > 0) setPwValidationErrors([]);
                       }}
                     />
                   </div>
@@ -301,6 +341,31 @@ export function LoginForm({ next }: { next: string }) {
                 {pwError && (
                   <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-3 py-2 text-xs text-rose-300">
                     {pwError}
+                  </div>
+                )}
+
+                {pwMode === "signin" && (
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={handleRecoverPassword}
+                      disabled={recoverStatus === "loading"}
+                      className="text-xs text-zinc-400 hover:text-zinc-200 underline underline-offset-4 disabled:opacity-50"
+                    >
+                      {recoverStatus === "loading" ? "Sending reset link…" : "Forgot password?"}
+                    </button>
+                  </div>
+                )}
+
+                {recoverStatus === "sent" && (
+                  <div className="rounded-xl border border-emerald-800 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-300">
+                    Password reset link sent. Check your email.
+                  </div>
+                )}
+
+                {recoverError && (
+                  <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-3 py-2 text-xs text-rose-300">
+                    {recoverError}
                   </div>
                 )}
 
@@ -321,8 +386,7 @@ export function LoginForm({ next }: { next: string }) {
 
           <div className="text-xs text-zinc-500">
             By continuing you confirm you&apos;re an adult where required and
-            agree to the platform rules (no minors, no coercion, no
-            exploitation).
+            agree to the platform rules (no minors, no coercion, no exploitation).
           </div>
         </CardBody>
       </Card>
