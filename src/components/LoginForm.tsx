@@ -50,9 +50,15 @@ export function LoginForm({ next }: { next: string }) {
     setMlStatus("loading");
     setMlError(null);
 
+     
+console.log("Sending magic link with next:", safeNext);
+
+const safeNext = next && next.startsWith("/") ? next : "/companions";
+
+
     const form = new FormData();
     form.set("email", mlEmail);
-    form.set("next", next);
+    form.set("next", safeNext);
 
     try {
       const res = await fetch("/auth/magic-link", { method: "POST", body: form });
@@ -216,8 +222,7 @@ export function LoginForm({ next }: { next: string }) {
                       required
                       value={mlEmail}
                       onChange={(e) => setMlEmail(e.target.value)}
-                    />
-                  </div>
+                    />                  </div>
 
                   {mlError && (
                     <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-3 py-2 text-xs text-rose-300">
