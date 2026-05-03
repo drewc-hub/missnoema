@@ -472,6 +472,19 @@ export function CompanionChatWorkspace({
     }
   }
 
+     async function deleteAsset(assetId: string) {
+  const res = await fetch(`/api/media/${assetId}/delete`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    alert("Failed to delete media");
+    return;
+  }
+
+  window.location.reload();
+}
+
   async function saveEdit() {
     if (editingIndex === null) return;
 
@@ -545,7 +558,7 @@ export function CompanionChatWorkspace({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-medium text-zinc-100">{c.name}</div>
+                      <div className="font-small text-zinc-100">{c.name}</div>
                       <Badge
                         tone={c.contentRating === "ADULT" ? "adult" : "safe"}
                       >
@@ -562,7 +575,10 @@ export function CompanionChatWorkspace({
                   <div className="mt-4 border-t border-zinc-800 pt-4">
                     <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
                       Companion actions
-                    </div>
+                      </div>
+                          <button onClick={() => deleteAsset(asset.id)}>
+                    Delete
+                    </button>
 
                     <Button
                       type="button"

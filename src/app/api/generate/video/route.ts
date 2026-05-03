@@ -133,7 +133,7 @@ export async function POST(req: Request) {
     return NextResponse.redirect(
         new URL(
             `/companions/${companion.slug}`,
-            process.env.BASE_URL ?? "http://localhost:3000",
+            process.env.BASE_URL ?? "https://missnoema.com",
         ),
     );
 }
