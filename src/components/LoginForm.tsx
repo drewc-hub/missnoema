@@ -50,11 +50,11 @@ export function LoginForm({ next }: { next: string }) {
     setMlStatus("loading");
     setMlError(null);
 
-     
-console.log("Sending magic link with next:", safeNext);
+
 
 const safeNext = next && next.startsWith("/") ? next : "/companions";
 
+console.log("Sending magic link with next:", safeNext);
 
     const form = new FormData();
     form.set("email", mlEmail);
