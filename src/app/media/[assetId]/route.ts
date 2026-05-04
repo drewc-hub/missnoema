@@ -25,6 +25,11 @@ export async function GET(
     },
   });
 
+  console.log("MEDIA ASSET DEBUG", {
+  assetId,
+  asset,
+});
+
   if (!asset) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
@@ -42,6 +47,29 @@ export async function GET(
       status: 403,
     });
   }
+
+    if (asset.contentRating === ContentRating.ADULT) {
+  const user = await getAuthedUser();
+
+  console.log("MEDIA ADULT CHECK", {
+    userId: user.id,
+    supabaseUserId: user.supabaseUserId,
+    contentRating: asset.contentRating,
+  });
+
+  await requireAdultAllowed(user.id);
+}
+
+    if (asset.contentRating === ContentRating.ADULT) {
+  const user = await getAuthedUser();
+
+  console.log("MEDIA ADULT CHECK", {
+    userId: user.id,
+    supabaseUserId: user.supabaseUserId,
+  });
+
+ requireAdultAllowed(user);
+}
 
   const { data, error } = await createSupabaseAdminClient().storage
     .from(asset.storageBucket)

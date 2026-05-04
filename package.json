@@ -32,6 +32,7 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^3.0.3",
+    "companion-platform": "link:",
     "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
     "next": "^15.1.0",

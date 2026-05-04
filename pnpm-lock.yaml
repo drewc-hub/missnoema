@@ -29,6 +29,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
+      companion-platform:
+        specifier: 'link:'
+        version: 'link:'
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
