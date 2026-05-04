@@ -60,19 +60,58 @@ export async function GET(req: NextRequest) {
     const token_hash = url.searchParams.get("token_hash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
 
+    console.log("[magic-link] GET callback received", {
+        hasCode: !!code,
+        hasTokenHash: !!token_hash,
+        type,
+        next,
+    });
+
     const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
     let authError: string | null = null;
 
     if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) authError = "oauth_callback_failed";
+        console.log("[magic-link] Attempting exchangeCodeForSession");
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+            console.error("[magic-link] exchangeCodeForSession failed", {
+                message: error.message,
+                status: error.status,
+            });
+            authError = "oauth_callback_failed";
+        } else {
+            console.log("[magic-link] exchangeCodeForSession succeeded", {
+                userId: data.user?.id,
+                email: data.user?.email,
+            });
+        }
     } else if (token_hash && type) {
-        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-        if (error) authError = "otp_verify_failed";
+        console.log("[magic-link] Attempting verifyOtp", { type });
+        const { data, error } = await supabase.auth.verifyOtp({ token_hash, type });
+        if (error) {
+            console.error("[magic-link] verifyOtp failed", {
+                message: error.message,
+                status: error.status,
+            });
+            authError = "otp_verify_failed";
+        } else {
+            console.log("[magic-link] verifyOtp succeeded", {
+                userId: data.user?.id,
+                email: data.user?.email,
+            });
+        }
+    } else {
+        console.warn("[magic-link] No code or token_hash+type received — cannot authenticate", {
+            hasCode: !!code,
+            hasTokenHash: !!token_hash,
+            type,
+        });
+        authError = "missing_auth_params";
     }
 
     if (authError) {
+        console.error("[magic-link] Redirecting to /login due to auth error", { authError });
         const to = new URL("/login", url.origin);
         to.searchParams.set("next", next);
         to.searchParams.set("error", authError);
@@ -80,14 +119,24 @@ export async function GET(req: NextRequest) {
         return applySupabaseCookies(res, cookiesToSet);
     }
 
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
+    const { data: userData, error: getUserError } = await supabase.auth.getUser();
+    console.log("[magic-link] getUser() after verification", {
+        userId: userData.user?.id ?? null,
+        email: userData.user?.email ?? null,
+        getUserError: getUserError?.message ?? null,
+        cookiesQueued: cookiesToSet.length,
+    });
+
+    if (!userData.user) {
+        console.error("[magic-link] Session not established after successful verification — cookie issue likely");
         const to = new URL("/login", url.origin);
         to.searchParams.set("next", next);
+        to.searchParams.set("error", "session_not_established");
         const res = NextResponse.redirect(to, 303);
         return applySupabaseCookies(res, cookiesToSet);
     }
 
+    console.log("[magic-link] Authentication successful, redirecting", { next });
     const res = NextResponse.redirect(new URL(next, url.origin), 303);
     return applySupabaseCookies(res, cookiesToSet);
 }
