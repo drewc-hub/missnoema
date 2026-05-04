@@ -11,20 +11,20 @@ const PUBLIC_PATHS = new Set([
   "/adult/verify",
 ]);
 
-function envAny(...names: string[]) {
-  for (const n of names) {
-    const v = process.env[n];
-    if (v && v.trim()) return v.trim();
-  }
-  throw new Error(`Missing env var: one of [${names.join(", ")}]`);
-}
+// API routes that do not require an authenticated session
+const PUBLIC_API_PATHS = new Set([
+  "/api/auth/callback",
+  "/api/auth/logout",
+  "/api/auth/adult-status",
+  "/api/stripe/webhook",
+]);
 
 function createSupabaseMiddlewareClient(req: NextRequest) {
   const res = NextResponse.next();
 
   const supabase = createServerClient(
-    envAny("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"),
-    envAny("NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"),
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -32,6 +32,7 @@ function createSupabaseMiddlewareClient(req: NextRequest) {
         },
         setAll(cookiesToSet) {
           for (const { name, value, options } of cookiesToSet) {
+            req.cookies.set(name, value);
             res.cookies.set(name, value, options);
           }
         },
@@ -45,20 +46,31 @@ function createSupabaseMiddlewareClient(req: NextRequest) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Never block static/assets/api
+  // Never block Next.js internals or static assets
   if (pathname.startsWith("/_next")) return NextResponse.next();
   if (pathname === "/favicon.ico") return NextResponse.next();
-  if (pathname.startsWith("/api/")) return NextResponse.next();
 
-  // Public paths
+  // Allow public API routes through without session validation
+  if (PUBLIC_API_PATHS.has(pathname)) return NextResponse.next();
+
+  // Public page paths — no auth needed
   if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/auth/")) {
     return NextResponse.next();
   }
 
   const { supabase, res } = createSupabaseMiddlewareClient(req);
 
+  // Refresh the session and propagate updated auth cookies to the response
   const { data } = await supabase.auth.getUser();
   const user = data.user;
+
+  // Protected API routes: return 401 JSON instead of redirecting
+  if (pathname.startsWith("/api/")) {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return res;
+  }
 
   const protectedPrefixes = [
     "/me",
