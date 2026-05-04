@@ -21,7 +21,8 @@
     "smoke:replicate": "node --env-file=.env scripts/replicate-smoke.mjs",
     "check:tree": "bash scripts/check-tree.sh",
     "sync:assets": "dotenv -e .env -- node scripts/sync-assets.mjs",
-    "nsfw:worker": "dotenv -e .env -- node scripts/nsfw-worker.mjs"
+    "nsfw:worker": "dotenv -e .env -- node scripts/nsfw-worker.mjs",
+    "gen:thumbnails": "dotenv -e .env -- tsx scripts/generate-companion-thumbnails.ts"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
