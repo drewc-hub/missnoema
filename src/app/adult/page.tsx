@@ -1,3 +1,5 @@
+import React from "react";
+import { Card, CardBody, CardHeader, Button, Badge } from "@/components/ui";
 import { getAuthedUser } from "@/lib/auth";
 import { requireAdultAllowed } from "@/lib/ratings";
 
