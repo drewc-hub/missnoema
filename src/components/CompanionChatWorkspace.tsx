@@ -68,7 +68,7 @@ export function CompanionChatWorkspace({
   initialCompanionId?: string;
 }) {
   const [companions, setCompanions] = useState<Companion[]>([]);
-  const [activeId, setActiveId] = useState<string>("");
+  const [activeId, setActiveId] = useState<string>(initialCompanionId ?? "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [memory, setMemory] = useState<ConversationMemory | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -235,6 +235,12 @@ export function CompanionChatWorkspace({
 
     loadCompanions();
   }, []);
+
+    useEffect(() => {
+  if (initialCompanionId && !activeId) {
+    setActiveId(initialCompanionId);
+  }
+}, [initialCompanionId, activeId]);
 
   useEffect(() => {
     async function loadConversation() {
