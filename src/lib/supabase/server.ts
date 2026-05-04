@@ -17,7 +17,7 @@ function supabaseUrl() {
 }
 
 function supabaseAnonKey() {
-  return envAny("NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY");
+  return envAny("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
 /**
