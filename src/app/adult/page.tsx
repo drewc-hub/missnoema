@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, Button, Badge } from "@/components/ui";
 import { getAuthedUser } from "@/lib/auth";
 import { requireAdultAllowed } from "@/lib/ratings";
 
+export const runtime = "nodejs";
+
 export default async function AdultPage() {
   const user = await getAuthedUser();
   requireAdultAllowed(user);
