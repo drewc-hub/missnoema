@@ -30,7 +30,7 @@ export async function getAuthedUser(): Promise<AuthedUser | null> {
 
   const dbUser = await prisma.user.upsert({
     where: { supabaseUserId: su.id },
-    update: { email: su.email ?? undefined },
+    update: su.email ? { email: su.email } : {},
     create: { supabaseUserId: su.id, email: su.email ?? undefined },
     select: {
       id: true,
