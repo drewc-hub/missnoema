@@ -5,9 +5,9 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  schemas   = ["mynoema", "next_auth", "public"]
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["mynoema", "next_auth", "public"]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -120,12 +120,12 @@ model CompanionAsset {
   companionId   String
   ownerId       String?
   type          GenerationType
-  isFavorite    Boolean        @default(false)
   contentRating ContentRating  @default(SAFE)
   storageBucket String
   storagePath   String
   publicUrl     String?
   createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  isFavorite    Boolean        @default(false)
   companion     Companion      @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   User          User?          @relation(fields: [ownerId], references: [id], onUpdate: NoAction)
 
@@ -137,24 +137,19 @@ model Conversation {
   id            String        @id @default(cuid())
   userId        String
   companionId   String
-  familiarity   Int           @default(0)
-  trust         Int           @default(0)
-  intimacy      Int           @default(0)
-  summary       String?
   contentRating ContentRating @default(SAFE)
   createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  familiarity   Int           @default(0)
+  intimacy      Int           @default(0)
+  summary       String?
+  trust         Int           @default(0)
   updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  isPermanent   Boolean       @default(false)
+  memorySummary String?
+  messages      ChatMessage[]
   companion     Companion     @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  messages      ChatMessage[]
-
-    // Status tracking
-  isPermanent  Boolean   @default(false)
-  deletedAt    DateTime? // Set this when user hits "Reset"
-  
-  // Optional: Store a "vibe" or "summary" for the AI to remember 
-  // even after a soft reset
-  memorySummary String?   @db.Text
 
   @@unique([userId, companionId])
   @@index([userId, companionId, contentRating, updatedAt], map: "Conversation_combo_idx")
@@ -229,50 +224,44 @@ model GenerationJob {
 }
 
 model User {
-  id             String           @id @default(cuid())
-  supabaseUserId String           @unique
-  email          String?          @unique
-  dob            DateTime?        @db.Timestamptz(6)
-  region         String?
-  displayName    String?
-  ageVerifiedAt  DateTime?        @db.Timestamptz(6)
-  role           UserRole         @default(USER)
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
-  AuditLog       AuditLog[]
-  Companion      Companion[]
-  CompanionAsset CompanionAsset[]
-  Content        Content[]
-  conversations  Conversation[]
-  generationJobs GenerationJob[]
-  
-  plan           SubscriptionPlan  @default(BASIC)
-  stripeCustomerId String?         @unique
-  stripeSubscriptionId String?     @unique
-  subscriptionStatus String?
-  subscriptionPriceId String?      @unique
-  subscriptionTier    String?
+  id                   String            @id @default(cuid())
+  supabaseUserId       String            @unique
+  email                String?           @unique
+  dob                  DateTime?         @db.Timestamptz(6)
+  region               String?
+  displayName          String?
+  ageVerifiedAt        DateTime?         @db.Timestamptz(6)
+  role                 UserRole          @default(USER)
+  createdAt            DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  coinBalance          Int               @default(100)
+  plan                 SubscriptionPlan  @default(BASIC)
+  stripeCustomerId     String?           @unique
+  stripeSubscriptionId String?           @unique
+  subscriptionStatus   String?
+  subscriptionPriceId  String?           @unique
+  subscriptionTier     String?
+  AuditLog             AuditLog[]
+  coinTransactions     CoinTransaction[]
+  Companion            Companion[]
+  CompanionAsset       CompanionAsset[]
+  Content              Content[]
+  conversations        Conversation[]
+  generationJobs       GenerationJob[]
 
-  coinBalance      Int             @default(100)
-  coinTransactions  CoinTransaction[]
-
- @@schema("public")
-
+  @@schema("public")
 }
+
 model CoinTransaction {
-  id          String   @id @default(cuid())
-  userId      String
-
-  amount      Int
-  kind        String   // "purchase" | "spend" | "refund" | "admin_grant"
-  description String?
-
-  stripeSessionId        String?
-  stripePaymentIntentId  String?
-
-  createdAt   DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  userId                String
+  amount                Int
+  kind                  String
+  description           String?
+  stripeSessionId       String?
+  stripePaymentIntentId String?
+  createdAt             DateTime @default(now())
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@schema("public")

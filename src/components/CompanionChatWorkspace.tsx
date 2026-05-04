@@ -1,3 +1,4 @@
+// file: src/components/CompanionChatWorkspace.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -42,33 +43,19 @@ type MediaHistoryItem = {
   id: string;
   type: "IMAGE" | "VIDEO";
   contentRating: "SAFE" | "ADULT";
+  prompt: string;
   createdAt: string;
   url: string;
   isFavorite: boolean;
 };
 
-function isImageRequest(message: string) {
-  const text = message.toLowerCase();
-
-  return (
-    text.includes("show me") ||
-    text.includes("what do you look like") ||
-    text.includes("picture") ||
-    text.includes("photo") ||
-    text.includes("image") ||
-    text.includes("wearing") ||
-    text.includes("in a")
-  );
-}
 export function CompanionChatWorkspace({
   allowAdult,
-  initialCompanionId,
 }: {
   allowAdult: boolean;
-  initialCompanionId?: string;
 }) {
   const [companions, setCompanions] = useState<Companion[]>([]);
-  const [activeId, setActiveId] = useState<string>(initialCompanionId ?? "");
+  const [activeId, setActiveId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [memory, setMemory] = useState<ConversationMemory | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -89,20 +76,6 @@ export function CompanionChatWorkspace({
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
   );
-
-  const [showDeleteCompanionModal, setShowDeleteCompanionModal] =
-    useState(false);
-
-  const [showNewChapterModal, setShowNewChapterModal] = useState(false);
-
-  async function handleReset(keepMemories: boolean) {
-    setMessages([]);
-
-    if (!keepMemories) {
-      setMemory(null);
-      setSuggestions([]);
-    }
-  }
 
   async function loadMediaHistory(companionId: string) {
     try {
@@ -210,20 +183,9 @@ export function CompanionChatWorkspace({
         const items = Array.isArray(data?.items) ? data.items : [];
         setCompanions(items);
 
-        setActiveId((prev) => {
-          if (prev && items.some((c: Companion) => c.id === prev)) {
-            return prev;
-          }
-
-          if (
-            initialCompanionId &&
-            items.some((c: Companion) => c.id === initialCompanionId)
-          ) {
-            return initialCompanionId;
-          }
-
-          return items[0]?.id ?? "";
-        });
+        if (items.length > 0) {
+          setActiveId(items[0].id);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load companions.",
@@ -235,12 +197,6 @@ export function CompanionChatWorkspace({
 
     loadCompanions();
   }, []);
-
-    useEffect(() => {
-  if (initialCompanionId && !activeId) {
-    setActiveId(initialCompanionId);
-  }
-}, [initialCompanionId, activeId]);
 
   useEffect(() => {
     async function loadConversation() {
@@ -324,29 +280,6 @@ export function CompanionChatWorkspace({
     setError(null);
 
     try {
-      if (isImageRequest(userText) && activeCompanion) {
-        try {
-          const enhancedPrompt = `${userText}, ${activeCompanion.name}, ${activeCompanion.description}, cinematic lighting, high quality`;
-
-          await fetch("/api/media/generate", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-            },
-            body: JSON.stringify({
-              companionId: activeCompanion.id,
-              prompt: enhancedPrompt,
-              type: "image",
-              contentRating: activeCompanion.contentRating,
-            }),
-          });
-
-          await loadMediaHistory(activeCompanion.id);
-        } catch (err) {
-          console.error("Auto image generation failed", err);
-        }
-      }
-
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -388,9 +321,7 @@ export function CompanionChatWorkspace({
     }
   }
 
-  async function rerunLastAssistantReply(
-    mode: "rerun" | "variation" = "rerun",
-  ) {
+  async function rerunLastAssistantReply() {
     if (sending) return;
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     if (!lastUser?.id) return;
@@ -404,7 +335,6 @@ export function CompanionChatWorkspace({
           messageId: lastUser.id,
           content: lastUser.content,
           rerun: true,
-          mode,
         }),
       });
 
@@ -420,76 +350,16 @@ export function CompanionChatWorkspace({
       setSending(false);
     }
   }
+
   function startEditMessage(index: number) {
     setEditingIndex(index);
     setEditingText(messages[index].content);
-  }
-
-  function handleNewChapterClick() {
-    setShowNewChapterModal(true);
-  }
-
-  function closeNewChapterModal() {
-    setShowNewChapterModal(false);
-  }
-
-  function handleNewChapterReset(totalReset: boolean) {
-    setMessages([]);
-
-    if (totalReset) {
-      setMemory(null);
-      setSuggestions([]);
-    }
-
-    setShowNewChapterModal(false);
   }
 
   function cancelEdit() {
     setEditingIndex(null);
     setEditingText("");
   }
-
-  async function handleDeleteCompanion() {
-    if (!activeCompanion) return;
-
-    try {
-      const res = await fetch(`/api/companions/${activeCompanion.id}`, {
-        method: "DELETE",
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to delete companion.");
-      }
-
-      // remove from local list
-      setCompanions((prev) => prev.filter((c) => c.id !== activeCompanion.id));
-
-      // reset UI safely
-      setActiveId("");
-      setMessages([]);
-      setMemory(null);
-      setSuggestions([]);
-
-      setShowDeleteCompanionModal(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed.");
-    }
-  }
-
-     async function deleteAsset(assetId: string) {
-  const res = await fetch(`/api/media/${assetId}/delete`, {
-    method: "POST",
-  });
-
-  if (!res.ok) {
-    alert("Failed to delete media");
-    return;
-  }
-
-  window.location.reload();
-}
 
   async function saveEdit() {
     if (editingIndex === null) return;
@@ -564,7 +434,7 @@ export function CompanionChatWorkspace({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-small text-zinc-100">{c.name}</div>
+                      <div className="font-medium text-zinc-100">{c.name}</div>
                       <Badge
                         tone={c.contentRating === "ADULT" ? "adult" : "safe"}
                       >
@@ -577,26 +447,6 @@ export function CompanionChatWorkspace({
                     </div>
                   </button>
                 ))}
-                {activeCompanion ? (
-                  <div className="mt-4 border-t border-zinc-800 pt-4">
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      Companion actions
-                      </div>
-                          <button onClick={() => deleteAsset(asset.id)}>
-                    Delete
-                    </button>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setShowDeleteCompanionModal(true)}
-                      disabled={sending}
-                      className="w-full"
-                    >
-                      Delete {activeCompanion.name}
-                    </Button>
-                  </div>
-                ) : null}
               </div>
             </CardBody>
           </Card>
@@ -662,156 +512,23 @@ export function CompanionChatWorkspace({
 
           <Card>
             <CardHeader
-              title={
-                <div className="text-center">
-                  <div className="text-xl font-semibold text-zinc-100">
-                    Chat
-                  </div>
-
-                  <div className="mt-3 flex justify-center gap-2 flex-wrap">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleNewChapterClick}
-                      disabled={messages.length === 0 || sending}
-                    >
-                      New Chapter
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => rerunLastAssistantReply("rerun")}
-                      disabled={
-                        !messages.some((m) => m.role === "assistant") || sending
-                      }
-                    >
-                      Rerun
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => rerunLastAssistantReply("variation")}
-                      disabled={
-                        !messages.some((m) => m.role === "assistant") || sending
-                      }
-                    >
-                      Variation
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 text-sm text-zinc-400">
-                    Edit messages, rerun the latest reply, and use tailored
-                    suggestions.
-                  </div>
-                </div>
+              title="Chat"
+              subtitle="Edit messages, rerun the latest reply, and use tailored suggestions."
+              right={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={rerunLastAssistantReply}
+                  disabled={
+                    !messages.some((m) => m.role === "assistant") || sending
+                  }
+                >
+                  Rerun reply
+                </Button>
               }
             />
 
             <CardBody>
-              {showNewChapterModal ? (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 animate-in fade-in duration-200"
-                  onClick={() => setShowNewChapterModal(false)}
-                >
-                  <div
-                    className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="space-y-2">
-                      <h2 className="text-xl font-semibold text-zinc-100">
-                        Start a New Chapter
-                      </h2>
-                      <p className="text-sm text-zinc-400">
-                        Choose how you want to continue with this companion.
-                      </p>
-                    </div>
-
-                    <div className="mt-5 space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => handleNewChapterReset(false)}
-                        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-left transition hover:bg-zinc-800"
-                      >
-                        <div className="font-medium text-zinc-100">
-                          Keep Memories
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-400">
-                          Clear the visible chat and keep relationship context.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleNewChapterReset(true)}
-                        className="w-full rounded-xl border border-red-800/60 bg-red-950/20 px-4 py-3 text-left transition hover:bg-red-950/30"
-                      >
-                        <div className="font-medium text-red-200">
-                          Total Reset
-                        </div>
-                        <div className="mt-1 text-sm text-red-400">
-                          Clear the chat, memory, and suggestions for a fresh
-                          start.
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="mt-5 flex justify-end">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => setShowNewChapterModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {showDeleteCompanionModal ? (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 animate-in fade-in duration-200"
-                  onClick={() => setShowDeleteCompanionModal(false)}
-                >
-                  <div
-                    className="w-full max-w-md rounded-2xl border border-red-900/40 bg-zinc-950 p-6 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="space-y-2">
-                      <h2 className="text-xl font-semibold text-red-200">
-                        Delete {activeCompanion?.name}?
-                      </h2>
-
-                      <p className="text-sm text-zinc-400">
-                        This will permanently remove {activeCompanion?.name} and
-                        all related chat history and media. This action cannot
-                        be undone.
-                      </p>
-                    </div>
-
-                    <div className="mt-5 flex gap-2 justify-end">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => setShowDeleteCompanionModal(false)}
-                      >
-                        Cancel
-                      </Button>
-
-                      <Button
-                        type="button"
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                        onClick={handleDeleteCompanion}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
               <div className="space-y-4">
                 {memory ? (
                   <>
@@ -1071,6 +788,10 @@ export function CompanionChatWorkspace({
                                   >
                                     {item.contentRating}
                                   </Badge>
+                                </div>
+
+                                <div className="line-clamp-2 text-[11px] text-zinc-500">
+                                  {item.prompt || "No prompt saved"}
                                 </div>
 
                                 <div className="flex gap-2">

@@ -9,51 +9,51 @@ import { CompanionChatWorkspace } from "@/components/CompanionChatWorkspace";
 import { Visibility, ContentRating } from "@prisma/client";
 
 type SearchParams = {
-  companion?: string;
+    companion?: string;
 };
 
 export default async function AdultChatPage({
-  searchParams,
+    searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+    searchParams: Promise<SearchParams>;
 }) {
-  const sp = await searchParams;
+    const sp = await searchParams;
 
-  const user = await getAuthedUser();
-  if (!user) {
-    redirect("/login?next=/adult/chat");
-  }
+    const user = await getAuthedUser();
+    if (!user) {
+        redirect("/login?next=/adult/chat");
+    }
 
-  const allowAdult = isAdultAllowed(user);
-  if (!allowAdult) {
-    redirect(`/adult/verify?next=${encodeURIComponent("/adult/chat")}`);
-  }
+    const allowAdult = isAdultAllowed(user);
+    if (!allowAdult) {
+        redirect(`/adult/verify?next=${encodeURIComponent("/adult/chat")}`);
+    }
 
-  const requestedSlug = (sp.companion ?? "").trim();
+    const requestedSlug = (sp.companion ?? "").trim();
 
-  let initialCompanionId: string | undefined;
+    let initialCompanionId: string | undefined;
 
-  if (requestedSlug) {
-    const companion = await prisma.companion.findFirst({
-      where: {
-        slug: requestedSlug,
-        visibility: Visibility.PUBLIC,
-        contentRating: { in: [ContentRating.SAFE, ContentRating.ADULT] },
-      },
-      select: {
-        id: true,
-      },
-    });
+    if (requestedSlug) {
+        const companion = await prisma.companion.findFirst({
+            where: {
+                slug: requestedSlug,
+                visibility: Visibility.PUBLIC,
+                contentRating: { in: [ContentRating.SAFE, ContentRating.ADULT] },
+            },
+            select: {
+                id: true,
+            },
+        });
 
-    initialCompanionId = companion?.id;
-  }
+        initialCompanionId = companion?.id;
+    }
 
-  return (
-    <AdultChatGate storageKey={`adult_chat_gate_accepted_${user.id}`}>
-      <CompanionChatWorkspace
-        allowAdult={allowAdult}
-        initialCompanionId={initialCompanionId}
-      />
-    </AdultChatGate>
-  );
+    return (
+        <AdultChatGate storageKey={`adult_chat_gate_accepted_${user.id}`}>
+            <CompanionChatWorkspace
+                allowAdult={allowAdult}
+                initialCompanionId={initialCompanionId}
+            />
+        </AdultChatGate>
+    );
 }
