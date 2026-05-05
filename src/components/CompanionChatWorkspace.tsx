@@ -77,6 +77,10 @@ export function CompanionChatWorkspace({
     [companions, activeId],
   );
 
+  useEffect(() => {
+    console.log("[CompanionChatWorkspace] activeId changed:", activeId);
+  }, [activeId]);
+
   async function loadMediaHistory(companionId: string) {
     try {
       setLoadingHistory(true);
@@ -181,11 +185,23 @@ export function CompanionChatWorkspace({
         }
 
         const items = Array.isArray(data?.items) ? data.items : [];
+
+        if (process.env.NODE_ENV !== "production") {
+          console.log(
+            "[CompanionChatWorkspace] companions loaded:",
+            items.map((c: Companion) => ({ id: c.id, name: c.name }))
+          );
+        }
+
         setCompanions(items);
 
-        if (items.length > 0) {
-          setActiveId(items[0].id);
-        }
+        setActiveId((current) => {
+          if (!current && items.length > 0) {
+            console.log("[CompanionChatWorkspace] setting initial activeId:", items[0].id);
+            return items[0].id;
+          }
+          return current;
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load companions.",
