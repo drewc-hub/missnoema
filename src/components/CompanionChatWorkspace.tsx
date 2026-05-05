@@ -185,7 +185,14 @@ export function CompanionChatWorkspace({
         }
 
         const items = Array.isArray(data?.items) ? data.items : [];
-        console.log("[CompanionChatWorkspace] companions loaded:", items.map((c: Companion) => ({ id: c.id, name: c.name })));
+
+        if (process.env.NODE_ENV !== "production") {
+          console.log(
+            "[CompanionChatWorkspace] companions loaded:",
+            items.map((c: Companion) => ({ id: c.id, name: c.name }))
+          );
+        }
+
         setCompanions(items);
 
         setActiveId((current) => {
