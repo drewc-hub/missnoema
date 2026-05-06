@@ -17,12 +17,15 @@ export async function POST(req: NextRequest) {
 
     const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
-    const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-            emailRedirectTo: `https://missnoema.com/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
-        },
-    });
+    const redirectTo =
+  `https://missnoema.com/auth/magic-link?next=${encodeURIComponent(safeNext)}`;
+
+const { error } = await supabase.auth.signInWithOtp({
+  email,
+  options: {
+    emailRedirectTo: redirectTo,
+  },
+});   
 
     if (error) {
         const res = NextResponse.json({ error: error.message }, { status: 400 });
