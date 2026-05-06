@@ -6,6 +6,8 @@
     "dev": "dotenv -e .env -- next dev",
     "build": "dotenv -e .env -- next build",
     "start": "dotenv -e .env -- next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "next lint",
     "prisma:seed:all": "pnpm prisma:migrate && pnpm prisma:seed && pnpm prisma:seed:assets",
     "prisma:generate": "dotenv -e .env -- prisma generate --schema prisma/schema.prisma",
@@ -25,6 +27,8 @@
     "gen:thumbnails": "dotenv -e .env -- tsx scripts/generate-companion-thumbnails.ts"
   },
   "dependencies": {
+    "@descope/nextjs-sdk": "^0.15.27",
+    "@descope/node-sdk": "^2.5.0",
     "@dotenvx/dotenvx": "^1.52.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^6.19.2",
@@ -74,6 +78,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.0",
+    "vitest": "^4.1.5",
     "zod": "^4.3.6"
   },
   "prisma": {
