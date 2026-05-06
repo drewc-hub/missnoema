@@ -1,0 +1,130 @@
+// file: src/app/page.tsx
+import React from "react";
+import { Card, CardBody, CardHeader, Button, Badge } from "@/components/ui";
+import { getAuthedUser } from "@/lib/auth";
+import { isAdultAllowed } from "@/lib/ratings";
+
+export const runtime = "nodejs";
+
+export default async function HomePage() {
+    const user = await getAuthedUser();
+    const adultOk = isAdultAllowed(user);
+
+    return (
+        <main className="space-y-8">
+            {/* Hero */}
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge tone="safe">SAFE by default</Badge>
+                        <Badge>Web-first creator tools</Badge>
+                        <Badge>18+ gated (web-only)</Badge>
+                    </div>
+
+                    <h1 className="text-4xl font-semibold tracking-tight text-zinc-100">
+                        Your companion universe, designed your way.
+                    </h1>
+
+                    <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
+                        Explore a curated library, create your own companions, and generate media on the web. SAFE content is the
+                        default experience. Adult content is opt-in, clearly labeled, and age-gated.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        <a href="/companions">
+                            <Button>Browse companions</Button>
+                        </a>
+                        <a href="/companions/new">
+                            <Button variant="secondary">Create your own</Button>
+                        </a>
+                        <a href={adultOk ? "/adult/companions" : "/adult/verify?next=/adult/companions"}>
+                            <Button variant="ghost" className="border border-zinc-800">
+                                {adultOk ? "Adult library" : "Verify for 18+"}
+                            </Button>
+                        </a>
+                    </div>
+
+                    {user ? (
+                        <div className="pt-2 text-xs text-zinc-500">
+                            Signed in as <span className="text-zinc-300">{user.email ?? "user"}</span>
+                            {adultOk ? " • Verified 18+" : " • 18+ not verified"}
+                        </div>
+                    ) : (
+                        <div className="pt-2 text-xs text-zinc-500">
+                            You’re browsing as a guest. <a className="text-zinc-200 underline" href="/login">Login</a> to generate media.
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* Feature cards */}
+            <section className="grid gap-4 lg:grid-cols-3">
+                <Card>
+                    <CardHeader title="Library" subtitle="Search, filter, and discover." />
+                    <CardBody className="space-y-3">
+                        <p className="text-sm text-zinc-300">
+                            Public SAFE templates show by default. Verified users can opt into 18+ browsing on web.
+                        </p>
+                        <a href="/companions">
+                            <Button variant="secondary" className="w-full">
+                                Open library
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+
+                <Card>
+                    <CardHeader title="Creator" subtitle="Design personality + boundaries." />
+                    <CardBody className="space-y-3">
+                        <p className="text-sm text-zinc-300">
+                            Start with structured profiles (scene, backstory, sliders), then upgrade to richer forms later.
+                        </p>
+                        <a href="/companions/new">
+                            <Button variant="secondary" className="w-full">
+                                Create a companion
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+
+                <Card>
+                    <CardHeader title="Generation" subtitle="Queue jobs, worker produces media." />
+                    <CardBody className="space-y-3">
+                        <p className="text-sm text-zinc-300">
+                            Jobs run server-side and assets are stored in Supabase Storage. Adult assets stay private + signed.
+                        </p>
+                        <a href="/companions">
+                            <Button variant="secondary" className="w-full">
+                                Generate from a companion
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+            </section>
+
+            {/* Pricing / positioning */}
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+                <h2 className="text-base font-semibold text-zinc-100">Fair pricing. No hard paywall.</h2>
+
+                <div className="mt-2 space-y-3 text-sm text-zinc-300">
+                    <p>
+                        NOMEA is built to be genuinely usable for free. You can explore companions, chat, and create your own
+                        without paying an arm and a leg.
+                    </p>
+
+                    <p>
+                        Optional paid tiers and coin packs unlock higher limits and power features (like more generation), but core
+                        features stay accessible.
+                    </p>
+
+                    <p>
+                        Adult content exists, but it’s <span className="font-medium">never pushed in your face</span>. It’s web-only,
+                        clearly labeled, and gated behind age verification. SAFE content is the default experience.
+                    </p>
+
+                    <p className="text-xs text-zinc-500">Prices and limits may change as infrastructure improves.</p>
+                </div>
+            </section>
+        </main>
+    );
+}
