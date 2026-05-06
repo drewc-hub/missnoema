@@ -7,7 +7,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="en">
             <body className="bg-slate-950 text-zinc-100 antialiased">
                 <AuthProvider
-                    projectId="gdmewvhmpxounbzjckeo"
+                    projectId={process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID!}
                     oidcConfig={true}
                 >
                     {children}
