@@ -1,4 +1,3 @@
-// file: src/app/media/[assetId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -9,75 +8,47 @@ import { ContentRating } from "@prisma/client";
 export const runtime = "nodejs";
 
 export async function GET(
-  _: Request,
-  { params }: { params: Promise<{ assetId: string }> },
+    _: Request,
+    { params }: { params: Promise<{ assetId: string }> },
 ) {
-  const { assetId } = await params;
+    const { assetId } = await params;
 
-  const asset = await prisma.companionAsset.findUnique({
-    where: { id: assetId },
-    select: {
-      id: true,
-      contentRating: true,
-      storageBucket: true,
-      storagePath: true,
-      publicUrl: true,
-    },
-  });
-
-  console.log("MEDIA ASSET DEBUG", {
-  assetId,
-  asset,
-});
-
-  if (!asset) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
-
-  if (asset.contentRating === ContentRating.SAFE && asset.publicUrl) {
-    return NextResponse.redirect(asset.publicUrl);
-  }
-
-  const user = await getAuthedUser();
-
-  try {
-    requireAdultAllowed(user);
-  } catch {
-    return new NextResponse("Age verification required for adult content.", {
-      status: 403,
+    const asset = await prisma.companionAsset.findUnique({
+        where: { id: assetId },
+        select: {
+            id: true,
+            contentRating: true,
+            storageBucket: true,
+            storagePath: true,
+            publicUrl: true,
+        },
     });
-  }
 
-    if (asset.contentRating === ContentRating.ADULT) {
-  const user = await getAuthedUser();
+    if (!asset) {
+        return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
 
-  console.log("MEDIA ADULT CHECK", {
-    userId: user.id,
-    supabaseUserId: user.supabaseUserId,
-    contentRating: asset.contentRating,
-  });
+    if (asset.contentRating === ContentRating.SAFE && asset.publicUrl) {
+        return NextResponse.redirect(asset.publicUrl);
+    }
 
-  await requireAdultAllowed(user.id);
-}
+    const user = await getAuthedUser();
 
-    if (asset.contentRating === ContentRating.ADULT) {
-  const user = await getAuthedUser();
+    try {
+        requireAdultAllowed(user);
+    } catch {
+        return new NextResponse("Age verification required for adult content.", {
+            status: 403,
+        });
+    }
 
-  console.log("MEDIA ADULT CHECK", {
-    userId: user.id,
-    supabaseUserId: user.supabaseUserId,
-  });
+    const { data, error } = await createSupabaseAdminClient().storage
+        .from(asset.storageBucket)
+        .createSignedUrl(asset.storagePath, 60);
 
- requireAdultAllowed(user);
-}
+    if (error || !data?.signedUrl) {
+        return NextResponse.json({ error: "sign_failed" }, { status: 500 });
+    }
 
-  const { data, error } = await createSupabaseAdminClient().storage
-    .from(asset.storageBucket)
-    .createSignedUrl(asset.storagePath, 60);
-
-  if (error || !data?.signedUrl) {
-    return NextResponse.json({ error: "sign_failed" }, { status: 500 });
-  }
-
-  return NextResponse.redirect(data.signedUrl);
+    return NextResponse.redirect(data.signedUrl);
 }
