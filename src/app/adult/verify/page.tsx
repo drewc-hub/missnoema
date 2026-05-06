@@ -1,99 +1,49 @@
-// file: src/app/adult/verify/page.tsx
-import React from "react";
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
-import { Card, CardBody, CardHeader, Button, Badge } from "@/components/ui";
 
 export const runtime = "nodejs";
 
 export default async function AdultVerifyPage({
-  searchParams,
+    searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+    searchParams: Promise<{ next?: string }>;
 }) {
-  const sp = await searchParams;
-  const next = sp.next ?? "/adult/companions";
+    const sp = await searchParams;
+    const next = sp.next?.startsWith("/") ? sp.next : "/adult/companions";
 
-  const user = await getAuthedUser();
-  if (!user) {
-    redirect(
-      `/login?next=${encodeURIComponent(`/adult/verify?next=${encodeURIComponent(next)}`)}`,
-    );
-  }
+    const user = await getAuthedUser();
 
-  const verified = isAdultAllowed(user);
+    if (!user) {
+        redirect(`/login?next=${encodeURIComponent("/adult/verify")}`);
+    }
 
-  if (verified) {
+    if (isAdultAllowed(user)) {
+        redirect(next);
+    }
+
     return (
-      <main className="mx-auto max-w-2xl space-y-4">
-        <Card>
-          <CardHeader
-            title="Age verification"
-            subtitle="You’re verified for web-only 18+ content."
-            right={<Badge tone="safe">Verified ✅</Badge>}
-          />
-          <CardBody className="space-y-4 text-sm text-zinc-300">
-            <p>
-              Adult content is still opt-in and clearly labeled. SAFE is the
-              default experience.
+        <main className="mx-auto max-w-2xl p-8">
+            <h1 className="text-2xl font-bold">Age verification</h1>
+
+            <p className="mt-3 text-sm text-zinc-500">
+                Confirm you are 18+ to access web-only adult content.
             </p>
 
-            <div className="flex flex-wrap gap-2">
-              <a href={next}>
-                <Button>Continue</Button>
-              </a>
-              <a href="/companions">
-                <Button variant="secondary">Back to SAFE library</Button>
-              </a>
-            </div>
-          </CardBody>
-        </Card>
-      </main>
+            <form
+                action={`/api/age/verify?next=${encodeURIComponent(next)}`}
+                method="post"
+                className="mt-6 space-y-4"
+            >
+                <label className="flex gap-3">
+                    <input required name="confirm" value="1" type="checkbox" />
+                    <span>I confirm I am 18 years of age or older.</span>
+                </label>
+
+                <button className="rounded bg-black px-4 py-2 text-white">
+                    Verify & Continue
+                </button>
+            </form>
+        </main>
     );
-  }
-
-  return (
-    <main className="mx-auto max-w-2xl space-y-4">
-      <Card>
-        <CardHeader
-          title="Age verification"
-          subtitle="18+ content is web-only and gated. SAFE is the default experience."
-          right={<Badge>Web-only</Badge>}
-        />
-        <CardBody className="space-y-4 text-sm text-zinc-300">
-          <p>
-            By continuing, you confirm you are 18+ and agree not to use NOMEA
-            for anything involving minors or non-consensual content.
-          </p>
-
-          <form
-            action={`/api/age/verify?next=${encodeURIComponent(next)}`}
-            method="post"
-            className="space-y-3"
-          >
-            <label className="flex items-start gap-3 text-sm">
-              <input
-                required
-                name="confirm"
-                value="1"
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950"
-              />
-              <span>I confirm I am 18 years of age or older.</span>
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit">Verify & Continue</Button>
-              <a href="/companions">
-                <Button type="button" variant="secondary">
-                  Back to SAFE library
-                </Button>
-              </a>
-            </div>
-          </form>
-        </CardBody>
-      </Card>
-    </main>
-  );
 }
