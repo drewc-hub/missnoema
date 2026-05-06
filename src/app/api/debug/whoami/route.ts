@@ -1,26 +1,22 @@
 // file: src/app/api/debug/whoami/route.ts
-import { NextResponse, type NextRequest } from "next/server";
-import {
-  createSupabaseServerClientRoute,
-  applySupabaseCookies,
-} from "@/lib/supabase/server";
+import { NextResponse } from 'next/server';
+import { session } from '@descope/nextjs-sdk/server';
+import { prisma } from '@/lib/prisma';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
-export async function GET(req: NextRequest) {
-  const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
-  const { data, error } = await supabase.auth.getUser();
+export async function GET() {
+    const descopeSession = await session();
+    if (!descopeSession) {
+        return NextResponse.json({ ok: false, error: 'Not authenticated', user: null }, { status: 401 });
+    }
 
-  const res = NextResponse.json({
-    ok: !error,
-    error: error?.message ?? null,
-    user: data.user
-      ? {
-          id: data.user.id,
-          email: data.user.email,
-        }
-      : null,
-  });
+    const descopeUserId = descopeSession.token.sub as string;
 
-  return applySupabaseCookies(res, cookiesToSet);
+    const user = await prisma.user.findUnique({
+        where: { supabaseUserId: descopeUserId },
+        select: { id: true, email: true },
+    });
+
+    return NextResponse.json({ ok: true, error: null, user });
 }

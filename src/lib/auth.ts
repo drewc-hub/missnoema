@@ -1,7 +1,7 @@
 // src/lib/auth.ts
 
-import { prisma } from "@/lib/prisma";
-import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { prisma } from '@/lib/prisma';
+import { session } from '@descope/nextjs-sdk/server';
 
 export type AuthedUser = {
     id: string;
@@ -11,26 +11,16 @@ export type AuthedUser = {
 };
 
 export async function getAuthedUser(): Promise<AuthedUser | null> {
-    const supabase = await createSupabaseServerClientReadOnly();
+    const descopeSession = await session();
 
-    const {
-        data: { user: supabaseUser },
-        error,
-    } = await supabase.auth.getUser();
-
-    if (error || !supabaseUser) {
-        console.log("AUTH DEBUG: no supabase user", {
-            error: error?.message,
-            hasUser: !!supabaseUser,
-        });
-
+    if (!descopeSession) {
         return null;
     }
 
+    const descopeUserId = descopeSession.token.sub as string;
+
     const dbUser = await prisma.user.findUnique({
-        where: {
-            supabaseUserId: supabaseUser.id,
-        },
+        where: { supabaseUserId: descopeUserId },
         select: {
             id: true,
             supabaseUserId: true,
@@ -39,19 +29,12 @@ export async function getAuthedUser(): Promise<AuthedUser | null> {
         },
     });
 
-    if (!dbUser) {
-        console.log("AUTH DEBUG: no prisma user for supabase user", {
-            supabaseUserId: supabaseUser.id,
-            email: supabaseUser.email,
-        });
-
-        return null;
-    }
-
-    return {
-        id: dbUser.id,
-        supabaseUserId: dbUser.supabaseUserId,
-        email: dbUser.email ?? null,
-        ageVerifiedAt: dbUser.ageVerifiedAt ?? null,
-    };
+    return dbUser
+        ? {
+              id: dbUser.id,
+              supabaseUserId: dbUser.supabaseUserId,
+              email: dbUser.email ?? null,
+              ageVerifiedAt: dbUser.ageVerifiedAt ?? null,
+          }
+        : null;
 }
