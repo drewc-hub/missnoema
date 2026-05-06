@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed, requireAdultAllowed } from "@/lib/ratings";
-import { listCompanions } from "@/CompanionDetailView";
+import { Companion } from "@/CompanionDetailView";
 import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
 import { ContentRating } from "@prisma/client";
 
