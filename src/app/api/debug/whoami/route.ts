@@ -1,15 +1,27 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
+import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { getAuthedUser } from "@/lib/auth";
 
-// Debug route to get current user
+export const runtime = "nodejs";
+
 export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
-  
-  if (!session) {
-    return Response.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-  
-  return Response.json({ user: session.user })
+  const supabase = await createSupabaseServerClientReadOnly();
+
+  const {
+    data: { user: supabaseUser },
+    error,
+  } = await supabase.auth.getUser();
+
+  const dbUser = await getAuthedUser();
+
+  return NextResponse.json({
+    supabaseUser: supabaseUser
+      ? {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+        }
+      : null,
+    supabaseError: error?.message ?? null,
+    dbUser,
+  });
 }
