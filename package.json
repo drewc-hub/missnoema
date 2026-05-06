@@ -27,10 +27,7 @@
     "gen:thumbnails": "dotenv -e .env -- tsx scripts/generate-companion-thumbnails.ts"
   },
   "dependencies": {
-    "@descope/nextjs-sdk": "^0.15.27",
-    "@descope/node-sdk": "^2.5.0",
     "@dotenvx/dotenvx": "^1.52.0",
-    "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^6.19.2",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.5.2",

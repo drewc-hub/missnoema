@@ -1,18 +1,10 @@
-import "./globals.css";
-import React from "react";
-import { AuthProvider } from '@descope/nextjs-sdk';
+import './globals.css'
+import type { ReactNode } from 'react'
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <html lang="en">
-            <body className="bg-slate-950 text-zinc-100 antialiased">
-                <AuthProvider
-                    projectId={process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID!}
-                    oidcConfig={true}
-                >
-                    {children}
-                </AuthProvider>
-            </body>
-        </html>
-    );
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="bg-slate-950 text-zinc-100 antialiased">{children}</body>
+    </html>
+  )
 }
