@@ -1,26 +1,7 @@
-// file: src/app/(safe)/login/page.tsx
-'use client';
-import React from "react";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
-import { LoginForm } from "@/components/LoginForm";
+import dynamic from 'next/dynamic';
 
-
-import { useDescope } from '@descope/nextjs-sdk/client';
+const LoginClient = dynamic(() => import('./_login-client'), { ssr: false });
 
 export default function Page() {
-    const sdk = useDescope();
-
-    return (
-        <button
-            onClick={() => {
-                sdk.oidc.loginWithRedirect({
-                    redirect_uri: window.location.origin, // Optional: defaults to current URL
-                    login_hint: 'user@example.com', // Optional: pre-fill the form.externalId context key
-                });
-            }}
-        >
-            Login with OIDC
-        </button>
-    );
+    return <LoginClient />;
 }
