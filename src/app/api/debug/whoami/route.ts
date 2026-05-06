@@ -8,15 +8,12 @@ export const runtime = 'nodejs';
 export async function GET() {
     const descopeSession = await session();
     if (!descopeSession) {
-        return NextResponse.json({ ok: false, error: 'Not authenticated', user: null }, { status: 401 });
+        return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
     }
-
-    const descopeUserId = descopeSession.token.sub as string;
-
-    const user = await prisma.user.findUnique({
+    const descopeUserId = descopeSession.userId;
+    const user = await prisma.user.findFirst({
         where: { supabaseUserId: descopeUserId },
-        select: { id: true, email: true },
+        select: { id: true, email: true }
     });
-
-    return NextResponse.json({ ok: true, error: null, user });
+    return NextResponse.json({ ok: true, user });
 }

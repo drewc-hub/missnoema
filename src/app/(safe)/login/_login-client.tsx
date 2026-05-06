@@ -9,7 +9,7 @@ export default function LoginClient() {
         const next = new URLSearchParams(window.location.search).get('next') || '/companions';
         sessionStorage.setItem('loginNext', next);
         sdk.oidc.loginWithRedirect({
-            redirect_uri: `${window.location.origin}/auth/descope-callback`,
+                redirect_uri: 'https://missnoema.com/auth/descope-callback',
         });
     };
 
