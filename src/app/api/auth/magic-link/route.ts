@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-            emailRedirectTo: `https://noema-ai.net/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
+            emailRedirectTo: `https://missnoema.com/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
         },
     });
 
