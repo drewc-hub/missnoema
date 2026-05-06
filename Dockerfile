@@ -18,6 +18,8 @@ COPY . .
 RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" \
     DIRECT_URL="postgresql://dummy:dummy@localhost:5432/dummy" \
     pnpm prisma generate --schema prisma/schema.prisma
+# Make NEXT_PUBLIC_* vars available at build time so Next.js can inline them into the Edge Runtime bundle
+ARG NEXT_PUBLIC_DESCOPE_PROJECT_ID
 RUN pnpm build
 
 # ── runner ──────────────────────────────────────────────────────────────────
