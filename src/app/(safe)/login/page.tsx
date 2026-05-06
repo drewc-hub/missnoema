@@ -1,25 +1,26 @@
 // file: src/app/(safe)/login/page.tsx
+'use client';
 import React from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/LoginForm";
 
-export const runtime = "nodejs";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ next?: string }>;
-}) {
-  const sp = await searchParams;
-  const next = sp.next ?? "/companions";
+import { useDescope } from '@descope/nextjs-sdk/client';
 
-  const supabase = await createSupabaseServerClientReadOnly();
-  const { data } = await supabase.auth.getUser();
+export default function Page() {
+    const sdk = useDescope();
 
-  if (data.user) {
-    redirect(next);
-  }
-
-  return <LoginForm next={next} />;
+    return (
+        <button
+            onClick={() => {
+                sdk.oidc.loginWithRedirect({
+                    redirect_uri: window.location.origin, // Optional: defaults to current URL
+                    login_hint: 'user@example.com', // Optional: pre-fill the form.externalId context key
+                });
+            }}
+        >
+            Login with OIDC
+        </button>
+    );
 }

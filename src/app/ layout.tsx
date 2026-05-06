@@ -4,26 +4,17 @@ import React from "react";
 import { Footer } from "@/components/Footer";
 import { TopNav } from "@/components/nav";
 import { OneTap } from "@/components/OneTap";
-export const metadata: Metadata = {
-    title: "NOMEA",
-    description: "Companion library + custom companions",
-};
+import { AuthProvider } from '@descope/nextjs-sdk';
 
-export default function RootLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en">
-            <body className="bg-slate-950 text-zinc-100 antialiased">
-                <TopNav />
-                <div className="mx-auto w-full max-w-6xl px-4">
-                    <div className="py-8 rounded-lg-:em"> {children}
-                        <Onetap /></div>
-                    <Footer className="rounded-[24px]" />
-                </div>
-            </body>
-        </html>
+        <AuthProvider
+            projectId="gdmewvhmpxounbzjckeo" // Replace with your Project ID
+            oidcConfig={true}         // Enables OIDC redirect behavior
+        >
+            <html lang="en">
+                <body>{children}</body>
+            </html>
+        </AuthProvider>
     );
 }
