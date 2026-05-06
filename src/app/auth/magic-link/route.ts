@@ -4,6 +4,7 @@ import {
     createSupabaseServerClientRoute,
     applySupabaseCookies,
 } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma"; // adjust if different
 
 export const runtime = "nodejs";
 
@@ -20,25 +21,23 @@ export async function POST(req: NextRequest) {
         next = typeof body.next === "string" ? body.next : null;
     } else {
         const form = await req.formData();
-        email = form.get("email") as string | null;
-        next = form.get("next") as string | null;
+        email = (form.get("email") as string | null) ?? null;
+        next = (form.get("next") as string | null) ?? null;
     }
 
     if (!email) {
         return NextResponse.json({ error: "Email is required." }, { status: 400 });
     }
 
-    // Prevent open redirect — only allow relative paths
-    const safeNext =
-        next && next.startsWith("/") ? next : "/companions";
-
-    const redirectTo = `${url.origin}/auth/magic-link?next=${encodeURIComponent(safeNext)}`;
+    // Prevent open redirect
+    const safeNext = next && next.startsWith("/") ? next : "/companions";
+    const emailRedirectTo = `${url.origin}/auth/magic-link?next=${encodeURIComponent(safeNext)}`;
 
     const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
     const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo },
     });
 
     if (error) {
@@ -54,64 +53,27 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
 
     const rawNext = url.searchParams.get("next") ?? "/companions";
-    const next = rawNext.startsWith("/") ? rawNext : "/companions"; // prevent open redirect
+    const next = rawNext.startsWith("/") ? rawNext : "/companions";
 
     const code = url.searchParams.get("code");
     const token_hash = url.searchParams.get("token_hash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
-
-    console.log("[magic-link] GET callback received", {
-        hasCode: !!code,
-        hasTokenHash: !!token_hash,
-        type,
-        next,
-    });
 
     const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
     let authError: string | null = null;
 
     if (code) {
-        console.log("[magic-link] Attempting exchangeCodeForSession");
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-            console.error("[magic-link] exchangeCodeForSession failed", {
-                message: error.message,
-                status: error.status,
-            });
-            authError = "oauth_callback_failed";
-        } else {
-            console.log("[magic-link] exchangeCodeForSession succeeded", {
-                userId: data.user?.id,
-                email: data.user?.email,
-            });
-        }
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) authError = "oauth_callback_failed";
     } else if (token_hash && type) {
-        console.log("[magic-link] Attempting verifyOtp", { type });
-        const { data, error } = await supabase.auth.verifyOtp({ token_hash, type });
-        if (error) {
-            console.error("[magic-link] verifyOtp failed", {
-                message: error.message,
-                status: error.status,
-            });
-            authError = "otp_verify_failed";
-        } else {
-            console.log("[magic-link] verifyOtp succeeded", {
-                userId: data.user?.id,
-                email: data.user?.email,
-            });
-        }
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+        if (error) authError = "otp_verify_failed";
     } else {
-        console.warn("[magic-link] No code or token_hash+type received — cannot authenticate", {
-            hasCode: !!code,
-            hasTokenHash: !!token_hash,
-            type,
-        });
         authError = "missing_auth_params";
     }
 
     if (authError) {
-        console.error("[magic-link] Redirecting to /login due to auth error", { authError });
         const to = new URL("/login", url.origin);
         to.searchParams.set("next", next);
         to.searchParams.set("error", authError);
@@ -120,15 +82,8 @@ export async function GET(req: NextRequest) {
     }
 
     const { data: userData, error: getUserError } = await supabase.auth.getUser();
-    console.log("[magic-link] getUser() after verification", {
-        userId: userData.user?.id ?? null,
-        email: userData.user?.email ?? null,
-        getUserError: getUserError?.message ?? null,
-        cookiesQueued: cookiesToSet.length,
-    });
 
-    if (!userData.user) {
-        console.error("[magic-link] Session not established after successful verification — cookie issue likely");
+    if (getUserError || !userData.user) {
         const to = new URL("/login", url.origin);
         to.searchParams.set("next", next);
         to.searchParams.set("error", "session_not_established");
@@ -136,7 +91,17 @@ export async function GET(req: NextRequest) {
         return applySupabaseCookies(res, cookiesToSet);
     }
 
-    console.log("[magic-link] Authentication successful, redirecting", { next });
+    // Ensure app user exists
+    await prisma.user.upsert({
+        where: { supabaseUserId: userData.user.id },
+        update: { email: userData.user.email ?? null },
+        create: {
+            supabaseUserId: userData.user.id,
+            email: userData.user.email ?? null,
+            ageVerifiedAt: null,
+        },
+    });
+
     const res = NextResponse.redirect(new URL(next, url.origin), 303);
     return applySupabaseCookies(res, cookiesToSet);
 }
