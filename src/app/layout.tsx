@@ -9,7 +9,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             oidcConfig={true}         // Enables OIDC redirect behavior
         >
             <html lang="en">
-                <body>{children}</body>
+                <body className="bg-slate-950 text-zinc-100 antialiased">{children}</body>
             </html>
         </AuthProvider>
     );

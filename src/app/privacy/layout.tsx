@@ -14,14 +14,12 @@ export default function PrivacyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-950 text-zinc-100 antialiased">
-        <AdultTopNav />
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <div className="py-8 rounded-lg-:em"> {children}</div>
-          <Footer className="rounded-[24px]" />
-        </div>
-      </body>
-    </html>
+    <>
+      <AdultTopNav />
+      <div className="mx-auto w-full max-w-6xl px-4">
+        <div className="py-8 rounded-lg-:em">{children}</div>
+        <Footer className="rounded-[24px]" />
+      </div>
+    </>
   );
 }
