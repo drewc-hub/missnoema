@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClientRoute } from "@/lib/supabase/server";
+import { getOrigin } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
@@ -10,11 +11,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email is required." }, { status: 400 });
   }
 
-  const url = new URL(req.url);
   const { supabase } = createSupabaseServerClientRoute(req);
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${url.origin}/auth/reset-password`,
+    redirectTo: `${getOrigin(req)}/auth/reset-password`,
   });
 
   if (error) {

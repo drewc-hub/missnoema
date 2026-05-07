@@ -4,6 +4,7 @@ import {
   createSupabaseServerClientRoute,
   applySupabaseCookies,
 } from "@/lib/supabase/server";
+import { getOrigin } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
@@ -17,13 +18,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email is required." }, { status: 400 });
   }
 
-  const url = new URL(req.url);
   const { supabase } = createSupabaseServerClientRoute(req);
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${url.origin}/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
+      emailRedirectTo: `${getOrigin(req)}/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
     },
   });
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/login?error=no-code", url.origin),
+      new URL("/login?error=no-code", getOrigin(req)),
       303,
     );
   }
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     );
 
     const res = NextResponse.redirect(
-      new URL("/login?error=exchange-failed", url.origin),
+      new URL("/login?error=exchange-failed", getOrigin(req)),
       303,
     );
 
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
     );
 
     const res = NextResponse.redirect(
-      new URL("/login?error=no-user", url.origin),
+      new URL("/login?error=no-user", getOrigin(req)),
       303,
     );
 
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
   });
 
   const res = NextResponse.redirect(
-    new URL(next, url.origin),
+    new URL(next, getOrigin(req)),
     303,
   );
 

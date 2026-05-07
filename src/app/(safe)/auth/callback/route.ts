@@ -1,17 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClientRoute, applySupabaseCookies } from "@/lib/supabase/server";
+import { getOrigin } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-    const url = new URL(req.url);
-    const next = url.searchParams.get("next") ?? "/companions";
+    const { searchParams } = new URL(req.url);
+    const next = searchParams.get("next") ?? "/companions";
     const safeNext = next.startsWith("/") ? next : "/companions";
-    const code = url.searchParams.get("code");
+    const code = searchParams.get("code");
 
     if (!code) {
-        return NextResponse.redirect(new URL("/login?error=no-code", url.origin));
+        return NextResponse.redirect(new URL("/login?error=no-code", getOrigin(req)));
     }
 
     const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (exchangeError) {
         console.error("AUTH CALLBACK exchange failed:", exchangeError.message);
         const res = NextResponse.redirect(
-            new URL(`/login?error=exchange-failed`, url.origin),
+            new URL(`/login?error=exchange-failed`, getOrigin(req)),
             303,
         );
         return applySupabaseCookies(res, cookiesToSet);
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     if (userError || !user) {
         console.error("AUTH CALLBACK no user:", userError?.message);
         const res = NextResponse.redirect(
-            new URL(`/login?error=no-user`, url.origin),
+            new URL(`/login?error=no-user`, getOrigin(req)),
             303,
         );
         return applySupabaseCookies(res, cookiesToSet);
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
     });
 
     const res = NextResponse.redirect(
-        new URL(next, "https://missnoema.com"),
+        new URL(safeNext, getOrigin(req)),
         303,
     );
 

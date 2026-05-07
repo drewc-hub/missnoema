@@ -1,16 +1,16 @@
-// file: src/app/api/age/verify/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   createSupabaseServerClientRoute,
   applySupabaseCookies,
 } from "@/lib/supabase/server";
+import { getOrigin } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const url = new URL(req.url);
-  const next = url.searchParams.get("next") ?? "/adult/companions";
+  const { searchParams } = new URL(req.url);
+  const next = searchParams.get("next") ?? "/adult/companions";
 
   const form = await req.formData();
   const confirmed = form.get("confirm") === "1";
@@ -45,6 +45,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const res = NextResponse.redirect(new URL(next, url.origin), 303);
+  const res = NextResponse.redirect(new URL(next, getOrigin(req)), 303);
   return applySupabaseCookies(res, cookiesToSet);
 }
