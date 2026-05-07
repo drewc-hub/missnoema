@@ -110,7 +110,12 @@ export async function listCompanions({
                         type: "IMAGE",
                         contentRating: { in: allowedRatings },
                     },
-                    orderBy: { createdAt: "desc" },
+                    // ADULT sorts before SAFE alphabetically ("A" < "S"), so asc
+                    // puts the adult cover first when includeAdult is true.
+                    orderBy: [
+                        { contentRating: "asc" },
+                        { createdAt: "desc" },
+                    ],
                     take: 1,
                     select: { id: true, publicUrl: true },
                 },
