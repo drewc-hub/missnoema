@@ -1,0 +1,25 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createSupabaseServerClientRoute } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+export async function POST(req: NextRequest) {
+  const { email } = await req.json();
+
+  if (!email || typeof email !== "string") {
+    return NextResponse.json({ error: "Email is required." }, { status: 400 });
+  }
+
+  const url = new URL(req.url);
+  const { supabase } = createSupabaseServerClientRoute(req);
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${url.origin}/auth/reset-password`,
+  });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

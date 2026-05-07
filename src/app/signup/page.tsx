@@ -22,7 +22,7 @@ export default function SignupPage() {
       return;
     }
 
-    await fetch("/api/auth/provision", { method: "POST" });
+    await fetch("/api/auth/provisions", { method: "POST" });
     window.location.href = "/companions";
   }
 

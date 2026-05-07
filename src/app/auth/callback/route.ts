@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     });
 
     const res = NextResponse.redirect(
-        new URL(next, "https://missnoema.com"),
+        new URL(safeNext, url.origin),
         303,
     );
 

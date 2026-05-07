@@ -7,6 +7,33 @@ import {
 
 export const runtime = "nodejs";
 
+// Initiates the magic link — called by LoginForm with {email, next}
+export async function POST(req: NextRequest) {
+  const { email, next } = await req.json();
+  const safeNext =
+    typeof next === "string" && next.startsWith("/") ? next : "/companions";
+
+  if (!email) {
+    return NextResponse.json({ error: "Email is required." }, { status: 400 });
+  }
+
+  const url = new URL(req.url);
+  const { supabase } = createSupabaseServerClientRoute(req);
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${url.origin}/auth/magic-link?next=${encodeURIComponent(safeNext)}`,
+    },
+  });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 

@@ -1,59 +1,11 @@
-"use client";
+import { LoginForm } from "@/components/LoginForm";
 
-import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  async function login(e: React.FormEvent) {
-    e.preventDefault();
-
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    await fetch("/api/auth/provision", { method: "POST" });
-    window.location.href = "/companions";
-  }
-
-  return (
-    <form onSubmit={login} className="mx-auto max-w-md p-8 space-y-4">
-      <h1 className="text-2xl font-bold">Login</h1>
-
-      <input
-        className="w-full rounded border p-3"
-        type="email"
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      <input
-        className="w-full rounded border p-3"
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <button className="rounded bg-black px-4 py-2 text-white">
-        Login
-      </button>
-
-      <a href="/signup" className="block text-sm underline">
-        Create account
-      </a>
-    </form>
-  );
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next: rawNext } = await searchParams;
+  const next = rawNext?.startsWith("/") ? rawNext : "/companions";
+  return <LoginForm next={next} />;
 }

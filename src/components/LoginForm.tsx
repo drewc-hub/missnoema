@@ -56,12 +56,12 @@ const safeNext = next && next.startsWith("/") ? next : "/companions";
 
 console.log("Sending magic link with next:", safeNext);
 
-    const form = new FormData();
-    form.set("email", mlEmail);
-    form.set("next", safeNext);
-
     try {
-      const res = await fetch("/auth/magic-link", { method: "POST", body: form });
+      const res = await fetch("/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: mlEmail, next: safeNext }),
+      });
       const json = await res.json();
       if (!res.ok || json.error) {
         setMlError(json.error ?? "Something went wrong. Please try again.");
