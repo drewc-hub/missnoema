@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  async function login(e: React.FormEvent) {
+  async function signup(e: React.FormEvent) {
     e.preventDefault();
 
     const supabase = createBrowserClient(
@@ -15,10 +15,7 @@ export default function LoginPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
       alert(error.message);
@@ -30,8 +27,8 @@ export default function LoginPage() {
   }
 
   return (
-    <form onSubmit={login} className="mx-auto max-w-md p-8 space-y-4">
-      <h1 className="text-2xl font-bold">Login</h1>
+    <form onSubmit={signup} className="mx-auto max-w-md p-8 space-y-4">
+      <h1 className="text-2xl font-bold">Create account</h1>
 
       <input
         className="w-full rounded border p-3"
@@ -48,12 +45,8 @@ export default function LoginPage() {
       />
 
       <button className="rounded bg-black px-4 py-2 text-white">
-        Login
+        Sign up
       </button>
-
-      <a href="/signup" className="block text-sm underline">
-        Create account
-      </a>
     </form>
   );
 }
