@@ -12,28 +12,6 @@ function NavLink({ href, label }: { href: string; label: string }) {
     );
 }
 
-function NavButtonLink({
-    href,
-    label,
-    variant,
-}: {
-    href: string;
-    label: string;
-    variant: "ghost" | "primary";
-}) {
-    const base =
-        "inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition-colors";
-    const cls =
-        variant === "primary"
-            ? `${base} bg-white text-zinc-950 hover:bg-zinc-200`
-            : `${base} border border-zinc-700 text-zinc-200 hover:bg-zinc-900 hover:text-white`;
-
-    return (
-        <a href={href} className={cls}>
-            {label}
-        </a>
-    );
-}
 
 export function SafeTopNav() {
     return (
@@ -74,20 +52,7 @@ export function SafeTopNav() {
                 </ul>
 
                 <div className="ml-auto flex items-center gap-2">
-                    {/* @ts-expect-error Server Component */}
                     <UserBadge />
-
-                    <form action="/api/auth/logout" method="POST">
-                        <button
-                            type="submit"
-                            className="inline-flex items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900 hover:text-white"
-                        >
-                            Logout
-                        </button>
-                    </form>
-
-                    <NavButtonLink href="/login" label="Log in" variant="ghost" />
-                    <NavButtonLink href="/signup" label="Sign up" variant="primary" />
                 </div>
             </div>
         </header>

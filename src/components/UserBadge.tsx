@@ -1,12 +1,6 @@
-// FILE: src/components/UserBadge.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-
-type WhoAmIResponse =
-  | { user?: { email?: string | null } }
-  | { email?: string | null }
-  | null;
 
 async function fetchEmail(signal: AbortSignal): Promise<string | null> {
   const res = await fetch("/api/debug/whoami", {
@@ -15,12 +9,8 @@ async function fetchEmail(signal: AbortSignal): Promise<string | null> {
     cache: "no-store",
     signal,
   });
-
   if (!res.ok) return null;
-
-  const data = (await res.json().catch(() => null)) as WhoAmIResponse;
-  // Support either { user: { email } } or { email }
-  // @ts-ignore
+  const data = await res.json().catch(() => null);
   return (data?.user?.email ?? data?.email ?? null) as string | null;
 }
 
@@ -30,20 +20,46 @@ export default function UserBadge() {
 
   useEffect(() => {
     const ac = new AbortController();
-
-    (async () => {
-      try {
-        setEmail(await fetchEmail(ac.signal));
-      } finally {
-        setLoading(false);
-      }
-    })();
-
+    fetchEmail(ac.signal)
+      .then(setEmail)
+      .finally(() => setLoading(false));
     return () => ac.abort();
   }, []);
 
-  if (loading) return <div className="text-xs text-zinc-400">…</div>;
-  if (!email) return <div className="text-xs text-zinc-400">Not signed in</div>;
+  if (loading) return <span className="text-xs text-zinc-500">…</span>;
 
-  return <div className="text-xs text-zinc-300">{email}</div>;
+  if (!email) {
+    return (
+      <div className="flex items-center gap-2">
+        <a
+          href="/login"
+          className="inline-flex items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900 hover:text-white"
+        >
+          Log in
+        </a>
+        <a
+          href="/signup"
+          className="inline-flex items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
+        >
+          Sign up
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-zinc-400">
+        Signed in as <span className="text-zinc-200">{email}</span>
+      </span>
+      <form action="/api/auth/logout" method="POST">
+        <button
+          type="submit"
+          className="inline-flex items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900 hover:text-white"
+        >
+          Logout
+        </button>
+      </form>
+    </div>
+  );
 }
