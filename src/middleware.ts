@@ -1,39 +1,52 @@
-
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request,
-    });
+  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll();
-                },
-
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => {
-                        request.cookies.set(name, value);
-                        response.cookies.set(name, value, options);
-                    });
-                },
-            },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
         },
-    );
+        setAll(incoming) {
+          incoming.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.push(...incoming);
+        },
+      },
+    },
+  );
 
-    // Refresh auth session
-    await supabase.auth.getUser();
+  const code = request.nextUrl.searchParams.get("code");
 
-    return response;
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      const next = request.nextUrl.searchParams.get("next") ?? "/companions";
+      const safeNext = next.startsWith("/") ? next : "/companions";
+      const res = NextResponse.redirect(new URL(safeNext, request.url));
+      cookiesToSet.forEach(({ name, value, options }) => {
+        res.cookies.set(name, value, options as Parameters<typeof res.cookies.set>[2]);
+      });
+      return res;
+    }
+  }
+
+  // Refresh auth session on every other request
+  await supabase.auth.getUser();
+
+  const response = NextResponse.next({ request });
+  cookiesToSet.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
+  });
+  return response;
 }
 
 export const config = {
-    matcher: [
-        "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-    ],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
