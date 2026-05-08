@@ -57,6 +57,7 @@ export function CompanionChatWorkspace({
   initialCompanionId?: string;
 }) {
   const [companions, setCompanions] = useState<Companion[]>([]);
+  const [companionSearch, setCompanionSearch] = useState("");
   const [activeId, setActiveId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [memory, setMemory] = useState<ConversationMemory | null>(null);
@@ -78,6 +79,17 @@ export function CompanionChatWorkspace({
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
   );
+
+  const filteredCompanions = useMemo(() => {
+    const q = companionSearch.trim().toLowerCase();
+    if (!q) return companions;
+    return companions.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.tags.some((t) => t.toLowerCase().includes(q)),
+    );
+  }, [companions, companionSearch]);
 
   useEffect(() => {
     console.log("[CompanionChatWorkspace] activeId changed:", activeId);
@@ -425,24 +437,30 @@ export function CompanionChatWorkspace({
         <aside className="space-y-4 lg:col-span-3">
           <Card>
             <CardHeader
-              title="Your companions"
-              subtitle="Choose who you want to chat with."
+              title="Companions"
+              subtitle={loadingList ? "Loading…" : `${filteredCompanions.length} of ${companions.length}`}
             />
             <CardBody>
               <div className="space-y-2">
+                <Input
+                  placeholder="Search companions…"
+                  value={companionSearch}
+                  onChange={(e) => setCompanionSearch(e.target.value)}
+                />
+
                 {loadingList ? (
                   <div className="text-sm text-zinc-400">
                     Loading companions...
                   </div>
                 ) : null}
 
-                {!loadingList && companions.length === 0 ? (
+                {!loadingList && filteredCompanions.length === 0 ? (
                   <div className="text-sm text-zinc-400">
-                    No companions yet.
+                    {companionSearch ? "No matches." : "No companions yet."}
                   </div>
                 ) : null}
 
-                {companions.map((c) => (
+                {filteredCompanions.map((c) => (
                   <button
                     key={c.id}
                     type="button"
