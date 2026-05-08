@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ assetId: string }> },
 ) {
-  const { id } = await params;
+  const { assetId: id } = await params;
 
   const user = await getAuthedUser();
   if (!user) {
