@@ -312,7 +312,8 @@ export function CompanionChatWorkspace({
           );
         }
 
-        setMessages(conversationData?.conversation?.messages ?? []);
+        const loadedMessages = conversationData?.conversation?.messages ?? [];
+        setMessages(loadedMessages);
         setMemory({
           id: conversationData.conversation.id,
           familiarity: conversationData.conversation.familiarity,
@@ -320,6 +321,10 @@ export function CompanionChatWorkspace({
           intimacy: conversationData.conversation.intimacy,
           summary: conversationData.conversation.summary ?? null,
         });
+
+        if (loadedMessages.length === 0) {
+          requestIntro(activeId);
+        }
 
         if (suggestionRes.ok) {
           setSuggestions(
@@ -435,6 +440,51 @@ export function CompanionChatWorkspace({
     const el = messagesContainerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  async function requestIntro(companionId: string) {
+    setMessages([{ role: "assistant", content: "" }]);
+
+    try {
+      const res = await fetch("/api/chat/intro", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ companionId }),
+      });
+
+      if (!res.ok || !res.body) { setMessages([]); return; }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "skip") { setMessages([]); return; }
+            if (event.type === "chunk") {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") {
+                  next[next.length - 1] = { ...last, content: last.content + event.text };
+                }
+                return next;
+              });
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch {
+      setMessages([]);
+    }
+  }
 
   async function refreshSuggestions() {
     if (!activeCompanion || loadingSuggestion) return;
