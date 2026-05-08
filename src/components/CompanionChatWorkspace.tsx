@@ -1,7 +1,7 @@
 // file: src/components/CompanionChatWorkspace.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Card,
   CardBody,
@@ -67,6 +67,9 @@ export function CompanionChatWorkspace({
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -351,6 +354,33 @@ export function CompanionChatWorkspace({
       setError(err instanceof Error ? err.message : "Chat failed.");
     } finally {
       setSending(false);
+    }
+  }
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function refreshSuggestions() {
+    if (!activeCompanion || loadingSuggestion) return;
+    setLoadingSuggestion(true);
+    try {
+      const res = await fetch("/api/chat/suggestions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          companionId: activeCompanion.id,
+          messages: messages.slice(-8),
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && Array.isArray(data?.suggestions)) {
+        setSuggestions(data.suggestions);
+      }
+    } catch {
+      // silently fail — suggestions are non-critical
+    } finally {
+      setLoadingSuggestion(false);
     }
   }
 
@@ -708,11 +738,20 @@ export function CompanionChatWorkspace({
                       </div>
                     ))
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-xs text-zinc-400">
-                    Suggested responses
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-zinc-400">Suggested responses</div>
+                    <button
+                      type="button"
+                      onClick={refreshSuggestions}
+                      disabled={loadingSuggestion || !activeCompanion || messages.length === 0}
+                      className="rounded-lg border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-300 hover:bg-blue-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      {loadingSuggestion ? "Thinking…" : "✦ Suggest a reply"}
+                    </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {suggestions.map((s) => (

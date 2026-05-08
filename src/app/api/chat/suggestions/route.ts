@@ -4,6 +4,7 @@ import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
+import { getOpenAI } from "@/lib/openai";
 
 export const runtime = "nodejs";
 
@@ -173,4 +174,95 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json({ suggestions });
+}
+
+export async function POST(req: Request) {
+  const user = await getAuthedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Login required." }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const companionId: string = body?.companionId ?? "";
+  const recentMessages: { role: string; content: string }[] = Array.isArray(body?.messages)
+    ? body.messages
+    : [];
+
+  if (!companionId) {
+    return NextResponse.json({ error: "Missing companionId." }, { status: 400 });
+  }
+
+  const companion = await prisma.companion.findFirst({
+    where: {
+      id: companionId,
+      OR: [{ ownerId: user.id }, { visibility: Visibility.PUBLIC }],
+    },
+    select: {
+      name: true,
+      contentRating: true,
+      profile: true,
+    },
+  });
+
+  if (!companion) {
+    return NextResponse.json({ error: "Companion not found." }, { status: 404 });
+  }
+
+  if (companion.contentRating === ContentRating.ADULT && !isAdultAllowed(user)) {
+    return NextResponse.json({ error: "Age verification required." }, { status: 403 });
+  }
+
+  const profile =
+    companion.profile && typeof companion.profile === "object"
+      ? (companion.profile as Record<string, unknown>)
+      : {};
+  const personality = typeof profile.personality === "string" ? profile.personality : "";
+  const scene = typeof profile.scene === "string" ? profile.scene : "";
+
+  const last = recentMessages.slice(-8);
+  const isAdult = companion.contentRating === ContentRating.ADULT;
+
+  const systemPrompt = [
+    `You are helping a user compose a reply to ${companion.name}, an AI companion.`,
+    personality ? `${companion.name}'s personality: ${personality}` : "",
+    scene ? `Setting: ${scene}` : "",
+    isAdult
+      ? "Adult themes are permitted. Suggestions can be flirtatious or intimate if the conversation warrants it."
+      : "Keep suggestions appropriate for a general audience.",
+    "Generate exactly 4 short, natural things the USER could say next. Each suggestion must be under 15 words.",
+    'Respond with valid JSON: { "suggestions": ["...", "...", "...", "..."] }',
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  try {
+    const openai = getOpenAI();
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...last.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+        {
+          role: "user",
+          content: "Give me 4 suggested replies I could send right now.",
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 250,
+      temperature: 0.9,
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const parsed = JSON.parse(raw);
+    const suggestions: string[] = Array.isArray(parsed.suggestions)
+      ? parsed.suggestions.filter((s: unknown) => typeof s === "string").slice(0, 4)
+      : [];
+
+    return NextResponse.json({ suggestions });
+  } catch {
+    return NextResponse.json({ error: "Failed to generate suggestions." }, { status: 500 });
+  }
 }
