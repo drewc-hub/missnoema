@@ -86,6 +86,7 @@ function buildCompanionSystemPrompt(args: {
     trust: number;
     intimacy: number;
     summary: string | null;
+    memorySummary: string | null;
   };
   mode?: "rerun" | "variation";
 }) {
@@ -158,7 +159,8 @@ function buildCompanionSystemPrompt(args: {
   Familiarity: ${memory.familiarity}/100
   Trust: ${memory.trust}/100
   Intimacy: ${memory.intimacy}/100
-  Summary: ${memory.summary || "No long-term summary yet."}
+  Conversation arc: ${memory.summary || "No summary yet."}
+  What I know about the user: ${memory.memorySummary || "Nothing noted yet — learn from what they share."}
 
   SAFETY STYLE
   Respect boundaries, consent, and legality at all times.
@@ -316,6 +318,66 @@ async function maybeRefreshConversationSummary(args: {
   return nextSummary;
 }
 
+async function maybeExtractUserMemory(args: {
+  conversationId: string;
+  currentMemory: string | null;
+}) {
+  const { conversationId, currentMemory } = args;
+
+  const messageCount = await prisma.chatMessage.count({
+    where: { conversationId },
+  });
+
+  // Run at message 6, then every 6 messages (12, 18, 24...)
+  if (messageCount < 6 || messageCount % 6 !== 0) return;
+
+  const messages = await prisma.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+    take: 60,
+    select: { role: true, content: true },
+  });
+
+  const userMessages = messages.filter((m) => m.role === "user");
+  if (userMessages.length === 0) return;
+
+  try {
+    const response = await getOpenAI().responses.create({
+      model: "gpt-4o-mini",
+      input: [
+        {
+          role: "system" as const,
+          content:
+            "Extract key facts the user has shared about themselves from their messages. " +
+            "Include: preferred name, stated likes and dislikes, personal details, emotional context, " +
+            "recurring themes, things they want the companion to remember, desires or goals they've expressed. " +
+            "Merge with the existing memory — keep prior facts, update anything the user has corrected. " +
+            "Be concise. Use short bullet points. Output only the updated fact list, no preamble.",
+        },
+        {
+          role: "user" as const,
+          content: [
+            currentMemory
+              ? `Existing memory:\n${currentMemory}`
+              : "Existing memory: (none)",
+            "User messages:\n" + userMessages.map((m) => `- ${m.content}`).join("\n"),
+          ].join("\n\n"),
+        },
+      ],
+    });
+
+    const extracted = response.output_text?.trim();
+    if (extracted) {
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { memorySummary: extracted },
+      });
+    }
+  } catch {
+    // non-critical — don't fail the chat request
+  }
+}
+
 export async function POST(req: Request) {
   const user = await getAuthedUser();
   if (!user) {
@@ -388,6 +450,7 @@ export async function POST(req: Request) {
       trust: true,
       intimacy: true,
       summary: true,
+      memorySummary: true,
     },
   });
 
@@ -418,6 +481,7 @@ export async function POST(req: Request) {
       trust: conversation.trust,
       intimacy: conversation.intimacy,
       summary: conversation.summary,
+      memorySummary: conversation.memorySummary,
     },
   });
 
@@ -430,7 +494,7 @@ export async function POST(req: Request) {
           content: systemPrompt,
         },
         ...recentMessages.map((m) => ({
-          role: m.role,
+          role: m.role as "user" | "assistant",
           content: m.content,
         })),
       ],
@@ -462,13 +526,20 @@ export async function POST(req: Request) {
         trust: true,
         intimacy: true,
         summary: true,
+        memorySummary: true,
       },
     });
 
-    const refreshedSummary = await maybeRefreshConversationSummary({
-      conversationId: conversation.id,
-      currentSummary: updatedConversation.summary,
-    });
+    const [refreshedSummary] = await Promise.all([
+      maybeRefreshConversationSummary({
+        conversationId: conversation.id,
+        currentSummary: updatedConversation.summary,
+      }),
+      maybeExtractUserMemory({
+        conversationId: conversation.id,
+        currentMemory: updatedConversation.memorySummary,
+      }),
+    ]);
 
     return NextResponse.json({
       reply,
