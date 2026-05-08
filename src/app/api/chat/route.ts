@@ -60,15 +60,15 @@ function scoreUserMessage(text: string): {
   if (["thank", "thanks", "miss", "care", "love", "appreciate", "sorry"].some((t) => lower.includes(t))) familiarity += 2;
   if (emotion === "vulnerable" || emotion === "loving") familiarity += 2;
 
-  // Trust: emotional openness and safety (capped at 6 per message)
-  let trust = 0;
+  // Trust: every message builds a little trust just by showing up (base 1)
+  let trust = 1;
   if (text.includes("?")) trust += 1;
   if (["trust", "safe with you", "honest", "real with you", "tell you"].some((t) => lower.includes(t))) trust += 2;
   if (emotion === "vulnerable") trust += 3;
   if (emotion === "loving") trust += 2;
 
-  // Intimacy: closeness, depth, and desire (capped at 5 per message)
-  let intimacy = 0;
+  // Intimacy: base 1 for any reply; grows faster with specific content
+  let intimacy = 1;
   if (["kiss", "touch", "want you", "need you", "hot", "sexy", "desire", "hold me", "close to you"].some((t) => lower.includes(t))) intimacy += 3;
   if (["connection", "feel for you", "deeper", "closer", "open up", "really know you"].some((t) => lower.includes(t))) intimacy += 2;
   if (emotion === "loving") intimacy += 2;
@@ -661,6 +661,8 @@ export async function POST(req: Request) {
         ],
         max_tokens: 1024,
         temperature: 0.85,
+        frequency_penalty: 0.6,
+        presence_penalty: 0.4,
       });
 
       let fullReply = "";

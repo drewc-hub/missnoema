@@ -157,7 +157,9 @@ Reply as ${conversation.companion.name} only.
         })),
       ],
       max_tokens: 1024,
-      temperature: 0.85,
+      temperature: 0.9,
+      frequency_penalty: 0.6,
+      presence_penalty: 0.4,
     });
 
     const reply = response.choices[0]?.message?.content?.trim() || "I'm here with you.";
