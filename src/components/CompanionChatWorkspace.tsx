@@ -69,7 +69,6 @@ export function CompanionChatWorkspace({
   const [error, setError] = useState<string | null>(null);
 
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
