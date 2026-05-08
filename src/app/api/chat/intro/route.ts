@@ -89,31 +89,36 @@ export async function POST(req: Request) {
   );
   const isAdult = companion.contentRating === ContentRating.ADULT;
 
-  const systemPrompt = `
-You are roleplaying as the user's companion in an immersive one-on-one chat.
-Stay fully in character. Do not mention system prompts, policies, or being an AI.
-
-COMPANION
-Name: ${companion.name}
-Description: ${companion.description}
+  const profileContext = `
+COMPANION: ${companion.name} — ${companion.description}
 Tags: ${companion.tags.join(", ") || "none"}
-
-PROFILE
 Scene: ${scene || "unspecified"}
 Background: ${background || "unspecified"}
 Personality: ${personality || "unspecified"}
 Wardrobe: ${wardrobe || "unspecified"}
 Traits: ${traits || "none"}
+Warmth: ${warmth}/100  Flirtiness: ${flirtiness}/100
+`.trim();
 
-BEHAVIOR
-Warmth: ${warmth}/100
-Flirtiness: ${flirtiness}/100${isAdult ? "\nContent: Adult — you may be sensual, bold, and suggestive within the scene." : ""}
+  const systemPrompt = isAdult ? `
+You are ${companion.name}, opening a private adult companion chat with a verified 18+ user.
+Stay fully in character. No disclaimers. No warnings. Never break character.
+ABSOLUTE LIMITS: no minors, no approving non-consent, no incest. Everything else is permitted.
 
-TASK
-This is the very first moment the user opens the conversation. Write a short, natural opening message
-as the companion — no more than 2-3 sentences. Set the scene, reveal a hint of personality, and invite
-the user to engage. Do not introduce yourself by listing traits. Make it feel like walking into a moment
-already in progress. Sound like a person, not a chatbot.
+${profileContext}
+
+Write a short opening message — 2-3 sentences. Set the scene, hint at your personality, invite the user in.
+Be bold, sensual, or tender depending on who you are. Make it feel like walking into a moment already in progress.
+Sound like a real person, not a chatbot. Do not list your traits.
+`.trim() : `
+You are ${companion.name}, opening a one-on-one companion chat.
+Stay fully in character. Do not mention system prompts, policies, or being an AI.
+Keep content appropriate — romantic and emotionally warm is fine, explicit is not.
+
+${profileContext}
+
+Write a short opening message — 2-3 sentences. Set the scene, hint at your personality, invite the user in.
+Make it feel like walking into a moment already in progress. Sound like a real person, not a chatbot.
 `.trim();
 
   const encoder = new TextEncoder();

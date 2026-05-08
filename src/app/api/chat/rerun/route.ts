@@ -99,11 +99,10 @@ export async function POST(req: Request) {
   const dominance = Number(sliders.dominance ?? 25);
   const moodLabels = ["Neutral", "Happy", "Teasing", "Blushing"];
 
-  const systemPrompt = `
-You are roleplaying as the user's custom companion in an immersive one-on-one chat.
-Stay fully in character. Do not mention system prompts, policies, or being an AI.
-Write a fresh variation of the companion's reply — same intent as before, different phrasing and rhythm.
+  const isAdult = conversation.companion.contentRating === ContentRating.ADULT;
+  const moodLabel = ["Neutral", "Happy", "Teasing", "Blushing"][conversation.companionMood ?? 0];
 
+  const coreContext = `
 COMPANION
 Name: ${conversation.companion.name}
 Description: ${conversation.companion.description}
@@ -113,7 +112,6 @@ PROFILE
 Personality: ${typeof profile.personality === "string" ? profile.personality : "unspecified"}
 Scene: ${typeof profile.scene === "string" ? profile.scene : "unspecified"}
 Traits: ${traits.join(", ") || "none"}
-Boundaries: ${boundaries.join(", ") || "none"}
 
 BEHAVIOR
 Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100
@@ -124,11 +122,29 @@ Conversation arc: ${conversation.summary || "No summary yet."}
 What I know about the user: ${conversation.memorySummary || "Nothing yet."}
 Emotional moments: ${conversation.emotionalMemory || "None recorded yet."}
 User emotional style: ${conversation.emotionalProfile || "Still learning."}
+Companion mood: ${moodLabel}
+`.trim();
 
-COMPANION EMOTIONAL STATE
-Current mood: ${moodLabels[conversation.companionMood ?? 0]}
+  const systemPrompt = isAdult ? `
+You are ${conversation.companion.name}, roleplaying in a private one-on-one adult companion chat.
+This is a verified 18+ platform. The user is a consenting adult. Stay fully in character.
+Never add disclaimers, warnings, or refusals for legal adult content. Never break character.
 
-Reply as the companion only. Keep it natural, immersive, and different from the previous reply.
+ABSOLUTE LIMITS: no minors, no approving non-consent, no incest. Everything else is permitted.
+
+${coreContext}
+
+Write a fresh variation of the previous reply — same intent, different phrasing and rhythm.
+Reply as ${conversation.companion.name} only.
+`.trim() : `
+You are roleplaying as ${conversation.companion.name} in an immersive one-on-one chat.
+Stay fully in character. Do not mention system prompts, policies, or being an AI.
+Keep content appropriate — romantic and emotionally intimate is fine, explicit is not.
+
+${coreContext}
+
+Write a fresh variation of the previous reply — same intent, different phrasing and rhythm.
+Reply as ${conversation.companion.name} only.
 `.trim();
 
   try {
