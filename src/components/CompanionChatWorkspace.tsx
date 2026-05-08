@@ -743,7 +743,7 @@ export function CompanionChatWorkspace({
                 />
                 <CardBody>
                   {previewUrl ? (
-                    /\.(mp4|webm|mov)(\?|$)/i.test(previewUrl) ? (
+                    mediaHistory.find((m) => m.url === previewUrl)?.type === "VIDEO" ? (
                       <video
                         controls
                         className="w-full rounded-2xl border border-zinc-800"
@@ -784,9 +784,7 @@ export function CompanionChatWorkspace({
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
                         {mediaHistory.map((item) => {
-                          const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(
-                            item.url,
-                          );
+                          const isVideo = item.type === "VIDEO";
 
                           return (
                             <div

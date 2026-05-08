@@ -1,6 +1,5 @@
-// file: src/app/api/media/history/route.ts
 import { NextResponse } from "next/server";
-import { ContentRating } from "@prisma/client";
+import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
@@ -26,7 +25,7 @@ export async function GET(req: Request) {
   const companion = await prisma.companion.findFirst({
     where: {
       id: companionId,
-      ownerId: user.id,
+      OR: [{ ownerId: user.id }, { visibility: Visibility.PUBLIC }],
     },
     select: {
       id: true,
@@ -51,11 +50,13 @@ export async function GET(req: Request) {
     );
   }
 
+  const allowAdult = isAdultAllowed(user);
+
   const items = await prisma.companionAsset.findMany({
     where: {
       companionId: companion.id,
       contentRating:
-        companion.contentRating === ContentRating.ADULT && isAdultAllowed(user)
+        companion.contentRating === ContentRating.ADULT && allowAdult
           ? { in: [ContentRating.SAFE, ContentRating.ADULT] }
           : ContentRating.SAFE,
     },
@@ -66,6 +67,7 @@ export async function GET(req: Request) {
       type: true,
       contentRating: true,
       publicUrl: true,
+      storagePath: true,
       createdAt: true,
       isFavorite: true,
     },
@@ -78,7 +80,11 @@ export async function GET(req: Request) {
       contentRating: item.contentRating,
       createdAt: item.createdAt,
       isFavorite: item.isFavorite,
-      url: item.publicUrl ?? `/media/${item.id}`,
+      // Adult assets live in a private bucket — always route through /media/<id>
+      // so the server can issue a signed URL. Safe assets use publicUrl directly.
+      url: item.contentRating === ContentRating.ADULT
+        ? `/media/${item.id}`
+        : (item.publicUrl ?? `/media/${item.id}`),
     })),
   });
 }

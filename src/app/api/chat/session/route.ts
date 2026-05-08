@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
-import { ContentRating } from "@prisma/client";
+import { ContentRating, Visibility } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   const companion = await prisma.companion.findFirst({
     where: {
       id: companionId,
-      ownerId: user.id,
+      OR: [{ ownerId: user.id }, { visibility: Visibility.PUBLIC }],
     },
     select: {
       id: true,

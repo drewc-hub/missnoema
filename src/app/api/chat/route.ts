@@ -1,7 +1,7 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { getOpenAI } from "@/lib/openai";
-import { ContentRating } from "@prisma/client";
+import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
@@ -341,7 +341,7 @@ export async function POST(req: Request) {
   const companion = await prisma.companion.findFirst({
     where: {
       id: companionId,
-      ownerId: user.id,
+      OR: [{ ownerId: user.id }, { visibility: Visibility.PUBLIC }],
     },
     select: {
       id: true,
