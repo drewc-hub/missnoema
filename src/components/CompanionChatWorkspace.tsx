@@ -191,7 +191,10 @@ export function CompanionChatWorkspace({
         setLoadingList(true);
         setError(null);
 
-        const res = await fetch("/api/me/companions");
+        const endpoint = initialCompanionId
+          ? `/api/me/companions?include=${encodeURIComponent(initialCompanionId)}`
+          : "/api/me/companions";
+        const res = await fetch(endpoint);
         const data = await res.json().catch(() => null);
 
         if (!res.ok) {
@@ -438,7 +441,7 @@ export function CompanionChatWorkspace({
           <Card>
             <CardHeader
               title="Companions"
-              subtitle={loadingList ? "Loading…" : `${filteredCompanions.length} of ${companions.length}`}
+              subtitle={loadingList ? "Loading…" : `${filteredCompanions.length} shown`}
             />
             <CardBody>
               <div className="space-y-2">
@@ -456,7 +459,9 @@ export function CompanionChatWorkspace({
 
                 {!loadingList && filteredCompanions.length === 0 ? (
                   <div className="text-sm text-zinc-400">
-                    {companionSearch ? "No matches." : "No companions yet."}
+                    {companionSearch
+                      ? "No matches."
+                      : "Browse the library and click a companion to start chatting."}
                   </div>
                 ) : null}
 
