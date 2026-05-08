@@ -115,15 +115,34 @@ async function downloadToBytes(url: string) {
   const ct = res.headers.get("content-type") ?? "application/octet-stream";
   return { bytes: new Uint8Array(ab), contentType: ct };
 }
-async function generateImageBytes(prompt: string) {
-  const model = env("REPLICATE_IMAGE_MODEL", "black-forest-labs/flux-dev");
+async function generateImageBytes(prompt: string, contentRating: ContentRating) {
+  const isAdult = contentRating === ContentRating.ADULT;
+
+  const model = isAdult
+    ? env("REPLICATE_ADULT_IMAGE_MODEL", "google/nano-banana-2:71516450bdbeafc41df33ad538bc8cc6a90f80038a563b1260531c02d694f4fd")
+    : env("REPLICATE_IMAGE_MODEL", "black-forest-labs/flux-dev");
+
+  const input: Record<string, unknown> = isAdult
+    ? {
+        prompt,
+        negative_prompt:
+          "watermark, text, logo, signature, blurry, deformed, bad anatomy, " +
+          "low quality, worst quality, extra limbs, missing limbs, disfigured, " +
+          "ugly, mutation, cloned face, bad proportions",
+        num_inference_steps: 30,
+        guidance_scale: 7.5,
+        width: 768,
+        height: 1024,
+      }
+    : { prompt };
+
   const { signal, cancel } = timeoutSignal(
     REPLICATE_RUN_TIMEOUT_MS,
     "replicate.run",
   );
   let output: unknown;
   try {
-    output = await replicate.run(model, { input: { prompt }, signal });
+    output = await replicate.run(model as `${string}/${string}`, { input, signal });
   } finally {
     cancel();
   }
@@ -426,7 +445,7 @@ async function processJob(j: Awaited<ReturnType<typeof claimJobs>>[number]) {
 
   console.log("[worker] enhanced prompt:", enhancedPrompt);
 
-  const gen = await generateImageBytes(enhancedPrompt);
+  const gen = await generateImageBytes(enhancedPrompt, j.contentRating);
 
   const uploaded = await uploadToSupabase({
     rating: j.contentRating,
