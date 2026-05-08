@@ -37,7 +37,15 @@ const usingTogether = () => Boolean(process.env.TOGETHER_API_KEY);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const llamaExtras: any = { repetition_penalty: 1.15 };
 
-/** Chat completion with automatic fallback to OpenAI on Together credit errors. */
+const BASE_TOGETHER_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+
+function isTogetherRecoverable(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  // 400 = endpoint not running / model invalid; 402 = credit limit
+  return status === 400 || status === 402;
+}
+
+/** Chat completion with automatic fallback on Together AI errors. */
 export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.ChatCompletion> {
   const { client, model } = getChatClient();
   const extra = usingTogether() ? llamaExtras : {};
@@ -45,16 +53,20 @@ export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.Ch
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await (client.chat.completions.create as any)({ ...params, ...extra, model, stream: false });
   } catch (err: unknown) {
+    if (!isTogetherRecoverable(err)) throw err;
     const status = (err as { status?: number })?.status;
-    if (status === 402 && process.env.TOGETHER_API_KEY) {
-      console.warn("Together AI credit limit reached, falling back to OpenAI");
-      return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: false });
+    // 400 (endpoint down) → retry with base model; 402 (no credits) → OpenAI
+    if (status === 400 && model !== BASE_TOGETHER_MODEL) {
+      console.warn("Together AI fine-tune endpoint down, falling back to base model");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (getTogether().chat.completions.create as any)({ ...params, ...llamaExtras, model: BASE_TOGETHER_MODEL, stream: false });
     }
-    throw err;
+    console.warn("Together AI unavailable, falling back to OpenAI");
+    return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: false });
   }
 }
 
-/** Streaming chat completion with automatic fallback to OpenAI on Together credit errors. */
+/** Streaming chat completion with automatic fallback on Together AI errors. */
 export async function chatCompletionStream(params: StreamParams): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
   const { client, model } = getChatClient();
   const extra = usingTogether() ? llamaExtras : {};
@@ -62,11 +74,14 @@ export async function chatCompletionStream(params: StreamParams): Promise<AsyncI
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await (client.chat.completions.create as any)({ ...params, ...extra, model, stream: true });
   } catch (err: unknown) {
+    if (!isTogetherRecoverable(err)) throw err;
     const status = (err as { status?: number })?.status;
-    if (status === 402 && process.env.TOGETHER_API_KEY) {
-      console.warn("Together AI credit limit reached, falling back to OpenAI");
-      return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: true });
+    if (status === 400 && model !== BASE_TOGETHER_MODEL) {
+      console.warn("Together AI fine-tune endpoint down, falling back to base model");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (getTogether().chat.completions.create as any)({ ...params, ...llamaExtras, model: BASE_TOGETHER_MODEL, stream: true });
     }
-    throw err;
+    console.warn("Together AI unavailable, falling back to OpenAI");
+    return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: true });
   }
 }
