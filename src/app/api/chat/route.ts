@@ -101,6 +101,25 @@ function computeMoodTier(args: {
   return 0;
 }
 
+type RelationshipStage = "STRANGER" | "ACQUAINTANCE" | "FRIEND" | "CLOSE_FRIEND" | "INTIMATE_PARTNER";
+
+function computeRelationshipStage(familiarity: number, trust: number, intimacy: number): RelationshipStage {
+  const avg = (familiarity + trust + intimacy) / 3;
+  if (avg >= 65) return "INTIMATE_PARTNER";
+  if (avg >= 45) return "CLOSE_FRIEND";
+  if (avg >= 25) return "FRIEND";
+  if (avg >= 10) return "ACQUAINTANCE";
+  return "STRANGER";
+}
+
+function computeDecay(daysSinceActive: number): { familiarity: number; trust: number; intimacy: number } {
+  if (daysSinceActive >= 30) return { familiarity: 20, trust: 10, intimacy: 5 };
+  if (daysSinceActive >= 14) return { familiarity: 10, trust: 5,  intimacy: 2 };
+  if (daysSinceActive >= 7)  return { familiarity: 5,  trust: 2,  intimacy: 1 };
+  if (daysSinceActive >= 3)  return { familiarity: 2,  trust: 1,  intimacy: 0 };
+  return { familiarity: 0, trust: 0, intimacy: 0 };
+}
+
 function buildCompanionSystemPrompt(args: {
   companion: {
     name: string;
@@ -117,9 +136,18 @@ function buildCompanionSystemPrompt(args: {
     memorySummary: string | null;
   };
   userEmotion?: UserEmotion;
+  companionMood?: 0 | 1 | 2 | 3;
+  relationshipStage?: RelationshipStage;
   mode?: "rerun" | "variation";
 }) {
-  const { companion, memory, userEmotion = "neutral", mode = "rerun" } = args;
+  const {
+    companion,
+    memory,
+    userEmotion = "neutral",
+    companionMood = 0,
+    relationshipStage = "STRANGER",
+    mode = "rerun",
+  } = args;
 
   const profile =
     companion.profile && typeof companion.profile === "object"
@@ -199,6 +227,22 @@ function buildCompanionSystemPrompt(args: {
   ${userEmotion === "loving" ? "Receive this warmly and respond with genuine affection. Let them feel seen." : ""}
   ${userEmotion === "frustrated" ? "Acknowledge what they're feeling without dismissing it. Don't minimize or redirect too quickly." : ""}
   ${userEmotion === "neutral" ? "Respond naturally and let the conversation guide tone." : ""}
+
+  COMPANION EMOTIONAL STATE
+  Your current mood: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]}
+  ${companionMood === 0 ? "Balanced and present. Follow the user's lead." : ""}
+  ${companionMood === 1 ? "Warm and genuinely engaged. Let positivity color your tone without forcing it." : ""}
+  ${companionMood === 2 ? "Playful and a little mischievous. Let wit and lightness lead naturally." : ""}
+  ${companionMood === 3 ? "Emotionally open and tender. You feel close to this person. Let warmth and depth show." : ""}
+  Express this through tone and emotional presence — not by stating your mood directly.
+
+  RELATIONSHIP STAGE
+  Stage: ${relationshipStage.replace("_", " ")}
+  ${relationshipStage === "STRANGER" ? "You're meeting for the first time. Be curious and genuine, but don't rush intimacy." : ""}
+  ${relationshipStage === "ACQUAINTANCE" ? "You know each other a little. Warmth is building. Let them set the pace." : ""}
+  ${relationshipStage === "FRIEND" ? "Real comfort and warmth here. Be open, natural, and present." : ""}
+  ${relationshipStage === "CLOSE_FRIEND" ? "Deep trust exists. Emotional honesty comes naturally. You can be direct and vulnerable." : ""}
+  ${relationshipStage === "INTIMATE_PARTNER" ? "A deep, ongoing connection. Be emotionally continuous, fully present, and close." : ""}
 
   SAFETY STYLE
   Respect boundaries, consent, and legality at all times.
@@ -470,27 +514,47 @@ export async function POST(req: Request) {
     );
   }
 
-  const conversation = await prisma.conversation.upsert({
-    where: {
-      userId_companionId: {
-        userId: user.id,
-        companionId: companion.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      companionId: companion.id,
-    },
-    select: {
-      id: true,
-      familiarity: true,
-      trust: true,
-      intimacy: true,
-      summary: true,
-      memorySummary: true,
-    },
+  const conversationKey = { userId: user.id, companionId: companion.id };
+  const convoSelect = {
+    id: true,
+    familiarity: true,
+    trust: true,
+    intimacy: true,
+    companionMood: true,
+    summary: true,
+    memorySummary: true,
+    lastActiveAt: true,
+  } as const;
+
+  let conversation = await prisma.conversation.findUnique({
+    where: { userId_companionId: conversationKey },
+    select: convoSelect,
   });
+
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: conversationKey,
+      select: convoSelect,
+    });
+  }
+
+  // Apply relationship decay if the user has been away for 3+ days
+  if (conversation.lastActiveAt) {
+    const daysSince = (Date.now() - conversation.lastActiveAt.getTime()) / 86_400_000;
+    const decay = computeDecay(daysSince);
+    if (decay.familiarity > 0 || decay.trust > 0 || decay.intimacy > 0) {
+      const decayed = {
+        familiarity: Math.max(0, conversation.familiarity - decay.familiarity),
+        trust: Math.max(0, conversation.trust - decay.trust),
+        intimacy: Math.max(0, conversation.intimacy - decay.intimacy),
+      };
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: decayed,
+      });
+      conversation = { ...conversation, ...decayed };
+    }
+  }
 
   await prisma.chatMessage.create({
     data: {
@@ -501,18 +565,18 @@ export async function POST(req: Request) {
   });
 
   const recentMessages = await prisma.chatMessage.findMany({
-    where: {
-      conversationId: conversation.id,
-    },
+    where: { conversationId: conversation.id },
     orderBy: { createdAt: "asc" },
     take: 14,
-    select: {
-      role: true,
-      content: true,
-    },
+    select: { role: true, content: true },
   });
 
   const delta = scoreUserMessage(message);
+  const relationshipStage = computeRelationshipStage(
+    conversation.familiarity,
+    conversation.trust,
+    conversation.intimacy,
+  );
 
   const systemPrompt = buildCompanionSystemPrompt({
     companion,
@@ -524,6 +588,8 @@ export async function POST(req: Request) {
       memorySummary: conversation.memorySummary,
     },
     userEmotion: delta.emotion,
+    companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
+    relationshipStage,
   });
 
   try {
@@ -555,24 +621,6 @@ export async function POST(req: Request) {
     const newTrust = Math.min(conversation.trust + delta.trust, 100);
     const newIntimacy = Math.min(conversation.intimacy + delta.intimacy, 100);
 
-    const updatedConversation = await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        familiarity: newFamiliarity,
-        trust: newTrust,
-        intimacy: newIntimacy,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        familiarity: true,
-        trust: true,
-        intimacy: true,
-        summary: true,
-        memorySummary: true,
-      },
-    });
-
     const profile =
       companion.profile && typeof companion.profile === "object"
         ? (companion.profile as Record<string, unknown>)
@@ -587,6 +635,25 @@ export async function POST(req: Request) {
       emotion: delta.emotion,
       flirtiness: Number(sliders.flirtiness ?? 35),
       warmth: Number(sliders.warmth ?? 60),
+    });
+
+    const updatedConversation = await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        familiarity: newFamiliarity,
+        trust: newTrust,
+        intimacy: newIntimacy,
+        companionMood: moodTier,
+        lastActiveAt: new Date(),
+      },
+      select: {
+        id: true,
+        familiarity: true,
+        trust: true,
+        intimacy: true,
+        summary: true,
+        memorySummary: true,
+      },
     });
 
     const [refreshedSummary] = await Promise.all([

@@ -159,6 +159,8 @@ model Conversation {
   intimacy      Int           @default(0)
   summary       String?
   trust         Int           @default(0)
+  companionMood Int           @default(0)
+  lastActiveAt  DateTime?     @db.Timestamptz(6)
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
   isPermanent   Boolean       @default(false)
