@@ -12,7 +12,7 @@ export default function AdultLayout({
             <AdultTopNav />
             <div className="mx-auto w-full max-w-6xl px-4">
                 <div className="py-8">{children}</div>
-                <Footer className="rounded-[24px]" />
+                <AdultFooter className="rounded-[24px]" />
             </div>
         </>
     );
