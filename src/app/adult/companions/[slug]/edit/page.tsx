@@ -113,6 +113,7 @@ export default async function EditAdultCompanionPage({
                 companionId={companion.id}
                 contentRating={companion.contentRating}
                 defaultTag={companion.tags?.[0] ?? ""}
+                redirectAfterGenerate={`/adult/chat?companion=${companion.slug}`}
               />
             </CardBody>
           </Card>

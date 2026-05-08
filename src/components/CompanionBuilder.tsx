@@ -262,8 +262,8 @@ export function CompanionBuilder({
         throw new Error(json?.error || "Failed to save companion.");
       }
 
-      if (mode === "create" && json?.chatUrl) {
-        window.location.href = json.chatUrl;
+      if (mode === "create" && json?.editUrl) {
+        window.location.href = json.editUrl;
         return;
       }
 

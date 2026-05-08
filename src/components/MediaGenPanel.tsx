@@ -19,6 +19,7 @@ type MediaGenPanelProps = {
   defaultTag?: string;
   onGenerated?: (url: string, type: "image" | "video") => void;
   onHistoryRefresh?: () => void;
+  redirectAfterGenerate?: string;
 };
 
 type JobStatusResponse = {
@@ -43,6 +44,7 @@ export function MediaGenPanel({
   defaultTag = "",
   onGenerated,
   onHistoryRefresh,
+  redirectAfterGenerate,
 }: MediaGenPanelProps) {
   const [prompt, setPrompt] = useState(
     defaultTag ? `Portrait of ${defaultTag}` : "",
@@ -99,6 +101,9 @@ export function MediaGenPanel({
         onGenerated?.(job.resultUrl, type);
         onHistoryRefresh?.();
         fetchBalance();
+        if (redirectAfterGenerate) {
+          window.location.href = redirectAfterGenerate;
+        }
         return;
       }
 
