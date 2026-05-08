@@ -80,17 +80,6 @@ export default async function NewAdultCompanionPage() {
                     />
                 </CardBody>
             </Card>
-
-            <aside className="space-y-4 lg:col-span-5">
-                <MediaGenPanel
-                    allowAdult={allowAdult}
-                    loggedIn={!!user}
-                    companionId={companion.id}
-                    contentRating={companion.contentRating}
-                    defaultTag={companion.tags?.[0] ?? ""}
-                />
-            </aside>
-
         </main>
     );
 }
