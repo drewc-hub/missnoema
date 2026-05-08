@@ -409,28 +409,35 @@ export function CompanionChatWorkspace({
     }
   }
 
-  async function rerunLastAssistantReply() {
-    if (sending) return;
-    const lastUser = [...messages].reverse().find((m) => m.role === "user");
-    if (!lastUser?.id) return;
+  async function rerunReply(messageId?: string) {
+    if (sending || !memory) return;
 
     try {
       setSending(true);
-      const res = await fetch("/api/chat/rewrite", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          messageId: lastUser.id,
-          content: lastUser.content,
-          rerun: true,
-        }),
-      });
+      setError(null);
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to rerun reply.");
+      let res: Response;
+
+      if (messageId) {
+        // Rerun from a specific message (has a DB id — loaded from session)
+        const msg = messages.find((m) => m.id === messageId);
+        if (!msg) return;
+        res = await fetch("/api/chat/rewrite", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messageId, content: msg.content, rerun: true }),
+        });
+      } else {
+        // Rerun last reply using conversationId (works for optimistic messages too)
+        res = await fetch("/api/chat/rerun", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ conversationId: memory.id }),
+        });
       }
 
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Failed to rerun reply.");
       setMessages(data.messages ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rerun reply.");
@@ -669,19 +676,7 @@ export function CompanionChatWorkspace({
           <Card>
             <CardHeader
               title="Chat"
-              subtitle="Edit messages, rerun the latest reply, and use tailored suggestions."
-              right={
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={rerunLastAssistantReply}
-                  disabled={
-                    !messages.some((m) => m.role === "assistant") || sending
-                  }
-                >
-                  Rerun reply
-                </Button>
-              }
+              subtitle="Edit messages, rerun or re-speak any reply."
             />
 
             <CardBody>
@@ -741,18 +736,31 @@ export function CompanionChatWorkspace({
                       >
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                            {m.role}
+                            {m.role === "assistant"
+                              ? (activeCompanion?.name ?? "Companion")
+                              : "You"}
                           </div>
                           <div className="flex items-center gap-2">
                             {m.role === "assistant" ? (
-                              <button
-                                type="button"
-                                onClick={() => speakMessage(m.content, activeCompanion?.gender)}
-                                className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
-                                title="Read aloud"
-                              >
-                                🔊
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => speakMessage(m.content, activeCompanion?.gender)}
+                                  className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
+                                  title="Read aloud"
+                                >
+                                  🔊
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={sending}
+                                  onClick={() => rerunReply(m.id)}
+                                  className="text-[11px] text-zinc-500 hover:text-zinc-200 transition disabled:opacity-40"
+                                  title="Regenerate reply"
+                                >
+                                  ↺
+                                </button>
+                              </>
                             ) : null}
                             <button
                               type="button"
