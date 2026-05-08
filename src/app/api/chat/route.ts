@@ -603,12 +603,13 @@ export async function POST(req: Request) {
     }
   }
 
-  await prisma.chatMessage.create({
+  const userMsg = await prisma.chatMessage.create({
     data: {
       conversationId: conversation.id,
       role: "user",
       content: message,
     },
+    select: { id: true },
   });
 
   const recentMessages = await prisma.chatMessage.findMany({
@@ -677,8 +678,9 @@ export async function POST(req: Request) {
 
       const reply = fullReply.trim() || "I'm here with you.";
 
-      await prisma.chatMessage.create({
+      const assistantMsg = await prisma.chatMessage.create({
         data: { conversationId: conversation.id, role: "assistant", content: reply },
+        select: { id: true },
       });
 
       const newFamiliarity = Math.min(conversation.familiarity + delta.familiarity, 100);
@@ -717,6 +719,8 @@ export async function POST(req: Request) {
         type: "done",
         reply,
         moodTier,
+        userMsgId: userMsg.id,
+        assistantMsgId: assistantMsg.id,
         memory: {
           id: updatedConversation.id,
           familiarity: updatedConversation.familiarity,

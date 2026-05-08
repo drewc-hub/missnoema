@@ -423,6 +423,22 @@ export function CompanionChatWorkspace({
                 summary: (m.summary as string | null) ?? null,
               });
             }
+            // Stamp DB IDs onto the optimistic messages so they can be edited/rerun
+            if (typeof event.userMsgId === "string" || typeof event.assistantMsgId === "string") {
+              setMessages((prev) => {
+                const next = [...prev];
+                // Last two messages are the just-sent user + assistant pair
+                const assistantIdx = next.length - 1;
+                const userIdx = next.length - 2;
+                if (typeof event.assistantMsgId === "string" && next[assistantIdx]?.role === "assistant") {
+                  next[assistantIdx] = { ...next[assistantIdx], id: event.assistantMsgId as string };
+                }
+                if (typeof event.userMsgId === "string" && next[userIdx]?.role === "user") {
+                  next[userIdx] = { ...next[userIdx], id: event.userMsgId as string };
+                }
+                return next;
+              });
+            }
           } else if (event.type === "error") {
             // Throw outside the JSON parse try/catch so it reaches the outer handler
             throw new Error((event.error as string) || "Chat failed.");
