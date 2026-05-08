@@ -661,9 +661,7 @@ export async function POST(req: Request) {
           })),
         ],
         max_tokens: 1024,
-        temperature: 0.85,
-        frequency_penalty: 0.6,
-        presence_penalty: 0.4,
+        temperature: 0.95,
       });
 
       let fullReply = "";

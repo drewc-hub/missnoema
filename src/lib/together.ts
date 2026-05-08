@@ -31,11 +31,19 @@ export function getChatClient(): { client: OpenAI; model: string } {
 type ChatParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, "model" | "stream">;
 type StreamParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model" | "stream">;
 
+const usingTogether = () => Boolean(process.env.TOGETHER_API_KEY);
+
+// Llama-native anti-repetition param — injected when using Together AI
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const llamaExtras: any = { repetition_penalty: 1.15 };
+
 /** Chat completion with automatic fallback to OpenAI on Together credit errors. */
 export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.ChatCompletion> {
   const { client, model } = getChatClient();
+  const extra = usingTogether() ? llamaExtras : {};
   try {
-    return await client.chat.completions.create({ ...params, model, stream: false });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await (client.chat.completions.create as any)({ ...params, ...extra, model, stream: false });
   } catch (err: unknown) {
     const status = (err as { status?: number })?.status;
     if (status === 402 && process.env.TOGETHER_API_KEY) {
@@ -49,8 +57,10 @@ export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.Ch
 /** Streaming chat completion with automatic fallback to OpenAI on Together credit errors. */
 export async function chatCompletionStream(params: StreamParams): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
   const { client, model } = getChatClient();
+  const extra = usingTogether() ? llamaExtras : {};
   try {
-    return await client.chat.completions.create({ ...params, model, stream: true });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await (client.chat.completions.create as any)({ ...params, ...extra, model, stream: true });
   } catch (err: unknown) {
     const status = (err as { status?: number })?.status;
     if (status === 402 && process.env.TOGETHER_API_KEY) {
