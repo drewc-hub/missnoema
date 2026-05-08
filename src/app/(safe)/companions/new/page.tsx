@@ -45,24 +45,34 @@ export default async function Page({
     }
 
     return (
-        <main className="grid gap-5 lg:grid-cols-12">
-            <section className="space-y-4 lg:col-span-7">
-                <CompanionBuilder
-                    allowAdult={allowAdult}
-                    userEmail={user?.email ?? null}
-                    companion={companion}
-                />
-            </section>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6">
+            <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+                {/* LEFT */}
+                <section className="lg:col-span-7">
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950">
+                        <CompanionBuilder
+                            allowAdult={allowAdult}
+                            userEmail={user?.email ?? null}
+                            companion={companion}
+                        />
+                    </div>
+                </section>
 
-            <aside className="space-y-4 lg:col-span-5">
-                <MediaGenPanel
-                    allowAdult={allowAdult}
-                    loggedIn={!!user}
-                    companionId={companion.id}
-                    contentRating={companion.contentRating}
-                    defaultTag={companion.tags?.[0] ?? ""}
-                />
-            </aside>
+                {/* RIGHT */}
+                <aside className="lg:col-span-5">
+                    <div className="sticky top-6">
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950">
+                            <MediaGenPanel
+                                allowAdult={allowAdult}
+                                loggedIn={!!user}
+                                companionId={companion.id}
+                                contentRating={companion.contentRating}
+                                defaultTag={companion.tags?.[0] ?? ""}
+                            />
+                        </div>
+                    </div>
+                </aside>
+            </div>
         </main>
     );
 }
