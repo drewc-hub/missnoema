@@ -56,7 +56,8 @@ function speakMessage(text: string, voicePreset?: string | null, gender?: string
         : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
     );
     if (preferred) utter.voice = preferred;
-    window.speechSynthesis.speak(utter);
+    // Small delay after cancel() so the browser queue is fully cleared
+    setTimeout(() => window.speechSynthesis.speak(utter), 50);
   }
 
   // getVoices() is async on first call — wait for voiceschanged if needed
@@ -391,36 +392,40 @@ export function CompanionChatWorkspace({
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
 
-            if (event.type === "chunk") {
-              setMessages((prev) => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last?.role === "assistant") {
-                  next[next.length - 1] = { ...last, content: last.content + event.text };
-                }
-                return next;
-              });
-            } else if (event.type === "done") {
-              if (typeof event.moodTier === "number" && event.moodTier >= 0 && event.moodTier <= 3) {
-                setCompanionMood(event.moodTier as 0 | 1 | 2 | 3);
-              }
-              if (event.memory) {
-                setMemory({
-                  id: event.memory.id ?? memory?.id ?? "",
-                  familiarity: event.memory.familiarity,
-                  trust: event.memory.trust,
-                  intimacy: event.memory.intimacy,
-                  summary: event.memory.summary ?? null,
-                });
-              }
-            } else if (event.type === "error") {
-              throw new Error(event.error || "Chat failed.");
-            }
+          let event: Record<string, unknown>;
+          try {
+            event = JSON.parse(line.slice(6));
           } catch {
-            // skip malformed SSE lines
+            continue; // skip malformed JSON only
+          }
+
+          if (event.type === "chunk") {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = { ...last, content: last.content + (event.text as string) };
+              }
+              return next;
+            });
+          } else if (event.type === "done") {
+            if (typeof event.moodTier === "number" && event.moodTier >= 0 && event.moodTier <= 3) {
+              setCompanionMood(event.moodTier as 0 | 1 | 2 | 3);
+            }
+            if (event.memory && typeof event.memory === "object") {
+              const m = event.memory as Record<string, unknown>;
+              setMemory({
+                id: (m.id as string) ?? memory?.id ?? "",
+                familiarity: m.familiarity as number,
+                trust: m.trust as number,
+                intimacy: m.intimacy as number,
+                summary: (m.summary as string | null) ?? null,
+              });
+            }
+          } else if (event.type === "error") {
+            // Throw outside the JSON parse try/catch so it reaches the outer handler
+            throw new Error((event.error as string) || "Chat failed.");
           }
         }
       }
@@ -465,20 +470,21 @@ export function CompanionChatWorkspace({
         buf = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
+          let event: Record<string, unknown>;
           try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "skip") { setMessages([]); return; }
-            if (event.type === "chunk") {
-              setMessages((prev) => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last?.role === "assistant") {
-                  next[next.length - 1] = { ...last, content: last.content + event.text };
-                }
-                return next;
-              });
-            }
-          } catch { /* skip malformed */ }
+            event = JSON.parse(line.slice(6));
+          } catch { continue; }
+          if (event.type === "skip") { setMessages([]); return; }
+          if (event.type === "chunk") {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = { ...last, content: last.content + (event.text as string) };
+              }
+              return next;
+            });
+          }
         }
       }
     } catch {
