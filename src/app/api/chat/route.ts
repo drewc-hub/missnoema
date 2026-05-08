@@ -707,107 +707,107 @@ export async function POST(req: Request) {
     relationshipStage,
   });
 
-  try {
-    const response = await getOpenAI().responses.create({
-      model: "gpt-4o-mini",
-      input: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        ...recentMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ],
-    });
+  const encoder = new TextEncoder();
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const writer = writable.getWriter();
 
-    const reply = response.output_text?.trim() || "I'm here with you.";
-
-    await prisma.chatMessage.create({
-      data: {
-        conversationId: conversation.id,
-        role: "assistant",
-        content: reply,
-      },
-    });
-
-    const newFamiliarity = Math.min(conversation.familiarity + delta.familiarity, 100);
-    const newTrust = Math.min(conversation.trust + delta.trust, 100);
-    const newIntimacy = Math.min(conversation.intimacy + delta.intimacy, 100);
-
-    const profile =
-      companion.profile && typeof companion.profile === "object"
-        ? (companion.profile as Record<string, unknown>)
-        : {};
-    const sliders =
-      profile.sliders && typeof profile.sliders === "object"
-        ? (profile.sliders as Record<string, unknown>)
-        : {};
-
-    const moodTier = computeMoodTier({
-      intimacy: newIntimacy,
-      emotion: delta.emotion,
-      flirtiness: Number(sliders.flirtiness ?? 35),
-      warmth: Number(sliders.warmth ?? 60),
-    });
-
-    const updatedConversation = await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        familiarity: newFamiliarity,
-        trust: newTrust,
-        intimacy: newIntimacy,
-        companionMood: moodTier,
-        lastActiveAt: new Date(),
-      },
-      select: {
-        id: true,
-        familiarity: true,
-        trust: true,
-        intimacy: true,
-        summary: true,
-        memorySummary: true,
-        emotionalMemory: true,
-        emotionalProfile: true,
-      },
-    });
-
-    const [refreshedSummary] = await Promise.all([
-      maybeRefreshConversationSummary({
-        conversationId: conversation.id,
-        currentSummary: updatedConversation.summary,
-      }),
-      maybeExtractUserMemory({
-        conversationId: conversation.id,
-        currentMemory: updatedConversation.memorySummary,
-      }),
-      maybeExtractEmotionalMemory({
-        conversationId: conversation.id,
-        currentMemory: updatedConversation.emotionalMemory,
-      }),
-      maybeExtractEmotionalProfile({
-        conversationId: conversation.id,
-        currentProfile: updatedConversation.emotionalProfile,
-      }),
-    ]);
-
-    return NextResponse.json({
-      reply,
-      moodTier,
-      memory: {
-        id: updatedConversation.id,
-        familiarity: updatedConversation.familiarity,
-        trust: updatedConversation.trust,
-        intimacy: updatedConversation.intimacy,
-        summary: refreshedSummary,
-      },
-    });
-  } catch (error) {
-    console.error("Chat generation failed:", error);
-    return NextResponse.json(
-      { error: "Chat generation failed." },
-      { status: 500 },
-    );
+  async function sse(event: object) {
+    await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
+
+  (async () => {
+    try {
+      const openaiStream = getOpenAI().responses.stream({
+        model: "gpt-4o-mini",
+        input: [
+          { role: "system", content: systemPrompt },
+          ...recentMessages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        ],
+      });
+
+      let fullReply = "";
+
+      for await (const event of openaiStream) {
+        if (event.type === "response.output_text.delta") {
+          fullReply += event.delta;
+          await sse({ type: "chunk", text: event.delta });
+        }
+      }
+
+      const reply = fullReply.trim() || "I'm here with you.";
+
+      await prisma.chatMessage.create({
+        data: { conversationId: conversation.id, role: "assistant", content: reply },
+      });
+
+      const newFamiliarity = Math.min(conversation.familiarity + delta.familiarity, 100);
+      const newTrust = Math.min(conversation.trust + delta.trust, 100);
+      const newIntimacy = Math.min(conversation.intimacy + delta.intimacy, 100);
+
+      const profile =
+        companion.profile && typeof companion.profile === "object"
+          ? (companion.profile as Record<string, unknown>)
+          : {};
+      const sliders =
+        profile.sliders && typeof profile.sliders === "object"
+          ? (profile.sliders as Record<string, unknown>)
+          : {};
+
+      const moodTier = computeMoodTier({
+        intimacy: newIntimacy,
+        emotion: delta.emotion,
+        flirtiness: Number(sliders.flirtiness ?? 35),
+        warmth: Number(sliders.warmth ?? 60),
+      });
+
+      const updatedConversation = await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: {
+          familiarity: newFamiliarity,
+          trust: newTrust,
+          intimacy: newIntimacy,
+          companionMood: moodTier,
+          lastActiveAt: new Date(),
+        },
+        select: { id: true, familiarity: true, trust: true, intimacy: true, summary: true },
+      });
+
+      await sse({
+        type: "done",
+        reply,
+        moodTier,
+        memory: {
+          id: updatedConversation.id,
+          familiarity: updatedConversation.familiarity,
+          trust: updatedConversation.trust,
+          intimacy: updatedConversation.intimacy,
+          summary: updatedConversation.summary,
+        },
+      });
+
+      // Background memory tasks — non-critical, fire and forget
+      Promise.all([
+        maybeRefreshConversationSummary({ conversationId: conversation.id, currentSummary: conversation.summary }),
+        maybeExtractUserMemory({ conversationId: conversation.id, currentMemory: conversation.memorySummary }),
+        maybeExtractEmotionalMemory({ conversationId: conversation.id, currentMemory: conversation.emotionalMemory }),
+        maybeExtractEmotionalProfile({ conversationId: conversation.id, currentProfile: conversation.emotionalProfile }),
+      ]).catch(() => {});
+    } catch (error) {
+      console.error("Chat generation failed:", error);
+      try { await sse({ type: "error", error: "Chat generation failed." }); } catch {}
+    } finally {
+      try { await writer.close(); } catch {}
+    }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }

@@ -350,12 +350,12 @@ export function CompanionChatWorkspace({
     const userText = (customMessage ?? input).trim();
     if (!userText) return;
 
-    const optimisticUserMessage: ChatMessage = {
-      role: "user",
-      content: userText,
-    };
-
-    setMessages((prev) => [...prev, optimisticUserMessage]);
+    // Add user message + empty assistant placeholder immediately
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userText },
+      { role: "assistant", content: "" },
+    ]);
     setInput("");
     setSending(true);
     setError(null);
@@ -363,43 +363,68 @@ export function CompanionChatWorkspace({
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          companionId: activeCompanion.id,
-          message: userText,
-        }),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ companionId: activeCompanion.id, message: userText }),
       });
 
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Chat failed.");
+      if (!res.ok || !res.body) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || "Chat failed.");
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data?.reply || "I'm here with you.",
-        },
-      ]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
 
-      if (typeof data?.moodTier === "number" && data.moodTier >= 0 && data.moodTier <= 3) {
-        setCompanionMood(data.moodTier as 0 | 1 | 2 | 3);
-      }
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      if (data?.memory) {
-        setMemory({
-          id: data.memory.id ?? memory?.id ?? "",
-          familiarity: data.memory.familiarity,
-          trust: data.memory.trust,
-          intimacy: data.memory.intimacy,
-          summary: data.memory.summary ?? null,
-        });
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            if (event.type === "chunk") {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") {
+                  next[next.length - 1] = { ...last, content: last.content + event.text };
+                }
+                return next;
+              });
+            } else if (event.type === "done") {
+              if (typeof event.moodTier === "number" && event.moodTier >= 0 && event.moodTier <= 3) {
+                setCompanionMood(event.moodTier as 0 | 1 | 2 | 3);
+              }
+              if (event.memory) {
+                setMemory({
+                  id: event.memory.id ?? memory?.id ?? "",
+                  familiarity: event.memory.familiarity,
+                  trust: event.memory.trust,
+                  intimacy: event.memory.intimacy,
+                  summary: event.memory.summary ?? null,
+                });
+              }
+            } else if (event.type === "error") {
+              throw new Error(event.error || "Chat failed.");
+            }
+          } catch {
+            // skip malformed SSE lines
+          }
+        }
       }
     } catch (err) {
+      // Remove the empty assistant placeholder on failure
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        return last?.role === "assistant" && !last.content ? prev.slice(0, -1) : prev;
+      });
       setError(err instanceof Error ? err.message : "Chat failed.");
     } finally {
       setSending(false);
@@ -765,36 +790,38 @@ export function CompanionChatWorkspace({
                               ? (activeCompanion?.name ?? "Companion")
                               : "You"}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {m.role === "assistant" ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => speakMessage(m.content, activeCompanion?.profile?.voice, activeCompanion?.gender)}
-                                  className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
-                                  title="Read aloud"
-                                >
-                                  🔊
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={sending}
-                                  onClick={() => rerunReply(m.id)}
-                                  className="text-[11px] text-zinc-500 hover:text-zinc-200 transition disabled:opacity-40"
-                                  title="Regenerate reply"
-                                >
-                                  ↺
-                                </button>
-                              </>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => startEditMessage(i)}
-                              className="text-[11px] text-zinc-400 hover:text-zinc-200"
-                            >
-                              Edit
-                            </button>
-                          </div>
+                          {m.content ? (
+                            <div className="flex items-center gap-2">
+                              {m.role === "assistant" ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => speakMessage(m.content, activeCompanion?.profile?.voice, activeCompanion?.gender)}
+                                    className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
+                                    title="Read aloud"
+                                  >
+                                    🔊
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={sending}
+                                    onClick={() => rerunReply(m.id)}
+                                    className="text-[11px] text-zinc-500 hover:text-zinc-200 transition disabled:opacity-40"
+                                    title="Regenerate reply"
+                                  >
+                                    ↺
+                                  </button>
+                                </>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => startEditMessage(i)}
+                                className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
 
                         {editingIndex === i ? (
@@ -818,8 +845,14 @@ export function CompanionChatWorkspace({
                               </Button>
                             </div>
                           </div>
-                        ) : (
+                        ) : m.content ? (
                           <div>{m.content}</div>
+                        ) : (
+                          <div className="flex gap-1 py-0.5">
+                            <span className="animate-bounce text-zinc-500 text-xs" style={{ animationDelay: "0ms" }}>●</span>
+                            <span className="animate-bounce text-zinc-500 text-xs" style={{ animationDelay: "150ms" }}>●</span>
+                            <span className="animate-bounce text-zinc-500 text-xs" style={{ animationDelay: "300ms" }}>●</span>
+                          </div>
                         )}
                       </div>
                     ))
