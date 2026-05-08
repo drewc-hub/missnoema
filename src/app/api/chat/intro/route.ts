@@ -1,5 +1,5 @@
 // file: src/app/api/chat/intro/route.ts
-import { getOpenAI } from "@/lib/openai";
+import { getTogether, TOGETHER_CHAT_MODEL } from "@/lib/together";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -133,17 +133,21 @@ Make it feel like walking into a moment already in progress. Sound like a real p
 
   (async () => {
     try {
-      const openaiStream = getOpenAI().responses.stream({
-        model: "gpt-4o-mini",
-        input: [{ role: "user", content: systemPrompt }],
+      const chatStream = await getTogether().chat.completions.create({
+        model: TOGETHER_CHAT_MODEL,
+        messages: [{ role: "user", content: systemPrompt }],
+        stream: true,
+        max_tokens: 512,
+        temperature: 0.9,
       });
 
       let fullReply = "";
 
-      for await (const event of openaiStream) {
-        if (event.type === "response.output_text.delta") {
-          fullReply += event.delta;
-          await sse({ type: "chunk", text: event.delta });
+      for await (const chunk of chatStream) {
+        const text = chunk.choices[0]?.delta?.content ?? "";
+        if (text) {
+          fullReply += text;
+          await sse({ type: "chunk", text });
         }
       }
 

@@ -1,6 +1,7 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { getOpenAI } from "@/lib/openai";
+import { getTogether, TOGETHER_CHAT_MODEL } from "@/lib/together";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -650,23 +651,27 @@ export async function POST(req: Request) {
 
   (async () => {
     try {
-      const openaiStream = getOpenAI().responses.stream({
-        model: "gpt-4o-mini",
-        input: [
+      const chatStream = await getTogether().chat.completions.create({
+        model: TOGETHER_CHAT_MODEL,
+        messages: [
           { role: "system", content: systemPrompt },
           ...recentMessages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           })),
         ],
+        stream: true,
+        max_tokens: 1024,
+        temperature: 0.85,
       });
 
       let fullReply = "";
 
-      for await (const event of openaiStream) {
-        if (event.type === "response.output_text.delta") {
-          fullReply += event.delta;
-          await sse({ type: "chunk", text: event.delta });
+      for await (const chunk of chatStream) {
+        const text = chunk.choices[0]?.delta?.content ?? "";
+        if (text) {
+          fullReply += text;
+          await sse({ type: "chunk", text });
         }
       }
 

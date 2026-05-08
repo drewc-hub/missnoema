@@ -1,6 +1,6 @@
 // file: src/app/api/chat/rerun/route.ts
 import { NextResponse } from "next/server";
-import { getOpenAI } from "@/lib/openai";
+import { getTogether, TOGETHER_CHAT_MODEL } from "@/lib/together";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -148,18 +148,20 @@ Reply as ${conversation.companion.name} only.
 `.trim();
 
   try {
-    const response = await getOpenAI().responses.create({
-      model: "gpt-4o-mini",
-      input: [
+    const response = await getTogether().chat.completions.create({
+      model: TOGETHER_CHAT_MODEL,
+      messages: [
         { role: "system", content: systemPrompt },
         ...recentMessages.map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
       ],
+      max_tokens: 1024,
+      temperature: 0.85,
     });
 
-    const reply = response.output_text?.trim() || "I'm here with you.";
+    const reply = response.choices[0]?.message?.content?.trim() || "I'm here with you.";
 
     await prisma.chatMessage.create({
       data: { conversationId, role: "assistant", content: reply },
