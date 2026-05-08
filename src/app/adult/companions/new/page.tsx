@@ -72,18 +72,41 @@ export default async function NewAdultCompanionPage() {
                 />
             </section>
 
-            <aside className="space-y-4 lg:col-span-5">
-                <Card>
-                    <CardBody>
-                        <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                            <span className="text-3xl">🎨</span>
-                            <p className="font-medium text-zinc-200">Media generation</p>
-                            <p className="text-sm text-zinc-400">
-                                Save your companion first to unlock photo and video generation.
-                            </p>
-                        </div>
-                    </CardBody>
-                </Card>
+            <aside className="lg:col-span-5">
+                <div className="sticky top-6 space-y-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold tracking-tight">
+                            Create adult images and videos
+                        </h2>
+                        <p className="mt-1 text-sm text-zinc-400">
+                            Once you save your companion, generate NSFW photos and videos powered by Replicate AI — exclusive to verified members.
+                        </p>
+                    </div>
+
+                    <Card className="h-full min-h-[520px]">
+                        <CardBody className="flex h-full flex-col items-center justify-center gap-4 py-16 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-900/50 bg-rose-950/40 text-3xl">
+                                🔞
+                            </div>
+                            <div>
+                                <p className="font-semibold text-zinc-100">Media generation unlocks after saving</p>
+                                <p className="mt-1 text-sm text-zinc-400">
+                                    Fill out your companion profile on the left, then hit <span className="text-zinc-200">Create companion</span> to unlock the full studio.
+                                </p>
+                            </div>
+                            <div className="mt-2 flex flex-wrap justify-center gap-2">
+                                {["AI photos", "AI videos", "Custom scenes", "Wardrobe control"].map((f) => (
+                                    <span
+                                        key={f}
+                                        className="rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-400"
+                                    >
+                                        {f}
+                                    </span>
+                                ))}
+                            </div>
+                        </CardBody>
+                    </Card>
+                </div>
             </aside>
         </main>
     );
