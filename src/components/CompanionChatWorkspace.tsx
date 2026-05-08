@@ -18,11 +18,29 @@ type Companion = {
   name: string;
   description: string;
   tags: string[];
+  gender?: string | null;
   profile: any;
   contentRating: "SAFE" | "ADULT";
   visibility: "PUBLIC" | "UNLISTED" | "PRIVATE";
   thumbnailUrl?: string | null;
 };
+
+function speakMessage(text: string, gender?: string | null) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  const isFemale = !gender || gender === "female" || gender === "non-binary";
+  const preferred = voices.find((v) =>
+    isFemale
+      ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa/i.test(v.name)
+      : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
+  );
+  if (preferred) utter.voice = preferred;
+  utter.pitch = isFemale ? 1.1 : 0.9;
+  utter.rate = 1.0;
+  window.speechSynthesis.speak(utter);
+}
 
 type ChatMessage = {
   id?: string;
@@ -703,13 +721,25 @@ export function CompanionChatWorkspace({
                           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
                             {m.role}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => startEditMessage(i)}
-                            className="text-[11px] text-zinc-400 hover:text-zinc-200"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {m.role === "assistant" ? (
+                              <button
+                                type="button"
+                                onClick={() => speakMessage(m.content, activeCompanion?.gender)}
+                                className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
+                                title="Read aloud"
+                              >
+                                🔊
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => startEditMessage(i)}
+                              className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </div>
 
                         {editingIndex === i ? (

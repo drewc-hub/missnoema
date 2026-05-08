@@ -36,6 +36,7 @@ type CompanionShape = {
   name: string;
   description: string;
   tags: string[];
+  gender?: string | null;
   archetype?: string | null;
   visibility?: Visibility;
   contentRating: ContentRating;
@@ -48,6 +49,20 @@ type CompanionBuilderProps = {
   allowAdult: boolean;
   companion: CompanionShape;
 };
+
+const TRAIT_OPTIONS = [
+  // Personality
+  "witty", "playful", "caring", "gentle", "shy", "curious", "adventurous",
+  "sarcastic", "intellectual", "mysterious", "confident", "loyal", "protective",
+  "calm", "energetic", "creative", "empathetic", "independent", "stubborn",
+  "honest", "charming", "mischievous", "dreamy", "grounded", "intense",
+  "patient", "passionate", "whimsical", "stoic", "warm", "nurturing",
+  "mischievous", "rebellious", "poetic", "pragmatic", "flirtatious",
+  // Tone / vibe
+  "dominant", "submissive", "teasing", "bold", "assertive", "sensual",
+  "seductive", "reserved", "earnest", "dry", "dark", "light-hearted",
+  "introspective", "outgoing", "magnetic", "commanding", "tender",
+] as const;
 
 const SCENE_PRESETS = [
   "Coffee shop",
@@ -120,6 +135,7 @@ export function CompanionBuilder({
   const [description, setDescription] = useState(companion.description ?? "");
   const [tags, setTags] = useState((companion.tags ?? []).join(", "));
   const [archetype, setArchetype] = useState(companion.archetype ?? "");
+  const [gender, setGender] = useState(companion.gender ?? "");
   const [visibility, setVisibility] = useState<Visibility>(
     companion.visibility ?? "UNLISTED",
   );
@@ -144,8 +160,8 @@ export function CompanionBuilder({
   const [background, setBackground] = useState(profile.background ?? "");
   const [personality, setPersonality] = useState(profile.personality ?? "");
   const [wardrobe, setWardrobe] = useState(profile.wardrobe ?? "");
-  const [traits, setTraits] = useState(
-    Array.isArray(profile.traits) ? profile.traits.join(", ") : "",
+  const [traitList, setTraitList] = useState<string[]>(
+    Array.isArray(profile.traits) ? profile.traits.slice(0, 10) : [],
   );
   const [boundaries, setBoundaries] = useState(
     Array.isArray(profile.boundaries) ? profile.boundaries.join(", ") : "",
@@ -189,6 +205,7 @@ export function CompanionBuilder({
           .split(",")
           .map((x) => x.trim())
           .filter(Boolean),
+        gender: gender.trim() || null,
         archetype: archetype.trim() || null,
         visibility,
         contentRating,
@@ -197,10 +214,7 @@ export function CompanionBuilder({
           background: background.trim(),
           personality: personality.trim(),
           wardrobe: wardrobe.trim(),
-          traits: traits
-            .split(",")
-            .map((x) => x.trim())
-            .filter(Boolean),
+          traits: traitList,
           sliders: {
             warmth,
             humor,
@@ -293,16 +307,12 @@ export function CompanionBuilder({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-2">
-              <div className="text-xs text-zinc-400">
-                Tags (comma-separated)
-              </div>
+              <div className="text-xs text-zinc-400">Tags (comma-separated)</div>
               <Input
                 value={tags}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setTags(e.target.value)
-                }
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)}
                 placeholder="romance, cozy, fantasy"
               />
             </div>
@@ -311,12 +321,24 @@ export function CompanionBuilder({
               <div className="text-xs text-zinc-400">Archetype</div>
               <Input
                 value={archetype}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setArchetype(e.target.value)
-                }
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArchetype(e.target.value)}
                 placeholder="vampire noble, barista, fae trickster"
               />
             </div>
+
+            <label className="space-y-1">
+              <div className="text-xs text-zinc-400">Gender (voice)</div>
+              <select
+                value={gender}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+              >
+                <option value="">Unspecified</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="non-binary">Non-binary</option>
+              </select>
+            </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -402,16 +424,46 @@ export function CompanionBuilder({
 
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="space-y-2">
-              <div className="text-xs text-zinc-400">
-                Traits (comma-separated)
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs text-zinc-400">Traits</div>
+                <div className="text-[11px] text-zinc-500">{traitList.length}/10</div>
               </div>
-              <Input
-                value={traits}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setTraits(e.target.value)
-                }
-                placeholder="witty, shy, affectionate"
-              />
+              <select
+                value=""
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  if (traitList.length >= 10) return;
+                  if (traitList.includes(val)) return;
+                  setTraitList((prev) => [...prev, val]);
+                  e.target.value = "";
+                }}
+                disabled={traitList.length >= 10}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 disabled:opacity-50"
+              >
+                <option value="">
+                  {traitList.length >= 10 ? "Limit reached (10)" : "Add a trait…"}
+                </option>
+                {TRAIT_OPTIONS.filter((t) => !traitList.includes(t)).map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              {traitList.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {traitList.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTraitList((prev) => prev.filter((x) => x !== t))}
+                      className="inline-flex items-center gap-1 rounded-full border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-200 hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 transition"
+                    >
+                      {t} ✕
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] text-zinc-600 pt-1">No traits selected yet.</div>
+              )}
             </div>
 
             <div className="space-y-2">
