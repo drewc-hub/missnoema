@@ -25,21 +25,46 @@ type Companion = {
   thumbnailUrl?: string | null;
 };
 
-function speakMessage(text: string, gender?: string | null) {
+const VOICE_PRESET_SETTINGS: Record<string, { pitch: number; rate: number; femaleHint: boolean }> = {
+  "soft-young":          { pitch: 1.25, rate: 1.0,  femaleHint: true  },
+  "warm-sultry":         { pitch: 0.9,  rate: 0.82, femaleHint: true  },
+  "deep-breathy":        { pitch: 0.85, rate: 0.88, femaleHint: true  },
+  "playful-energetic":   { pitch: 1.2,  rate: 1.12, femaleHint: true  },
+  "mature-refined":      { pitch: 0.92, rate: 0.9,  femaleHint: false },
+  "older-distinguished": { pitch: 0.78, rate: 0.85, femaleHint: false },
+  "dark-mysterious":     { pitch: 0.82, rate: 0.88, femaleHint: false },
+};
+
+function speakMessage(text: string, voicePreset?: string | null, gender?: string | null) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
+
   const utter = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
-  const isFemale = !gender || gender === "female" || gender === "non-binary";
-  const preferred = voices.find((v) =>
-    isFemale
-      ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa/i.test(v.name)
-      : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
-  );
-  if (preferred) utter.voice = preferred;
-  utter.pitch = isFemale ? 1.1 : 0.9;
-  utter.rate = 1.0;
-  window.speechSynthesis.speak(utter);
+  const preset = voicePreset ? VOICE_PRESET_SETTINGS[voicePreset] : null;
+  const isFemale = preset
+    ? preset.femaleHint
+    : (!gender || gender === "female" || gender === "non-binary");
+
+  utter.pitch = preset?.pitch ?? (isFemale ? 1.1 : 0.9);
+  utter.rate  = preset?.rate  ?? 1.0;
+
+  function assignAndSpeak() {
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find((v) =>
+      isFemale
+        ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa/i.test(v.name)
+        : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
+    );
+    if (preferred) utter.voice = preferred;
+    window.speechSynthesis.speak(utter);
+  }
+
+  // getVoices() is async on first call — wait for voiceschanged if needed
+  if (window.speechSynthesis.getVoices().length > 0) {
+    assignAndSpeak();
+  } else {
+    window.speechSynthesis.addEventListener("voiceschanged", assignAndSpeak, { once: true });
+  }
 }
 
 type ChatMessage = {
@@ -745,7 +770,7 @@ export function CompanionChatWorkspace({
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => speakMessage(m.content, activeCompanion?.gender)}
+                                  onClick={() => speakMessage(m.content, activeCompanion?.profile?.voice, activeCompanion?.gender)}
                                   className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
                                   title="Read aloud"
                                 >

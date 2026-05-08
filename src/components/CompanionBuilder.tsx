@@ -21,6 +21,7 @@ type CompanionProfile = {
   personality?: string;
   wardrobe?: string;
   traits?: string[];
+  voice?: string;
   sliders?: {
     warmth?: number;
     humor?: number;
@@ -29,6 +30,17 @@ type CompanionProfile = {
   };
   boundaries?: string[];
 };
+
+const VOICE_PRESETS = [
+  { value: "",                  label: "Default (gender-based)" },
+  { value: "soft-young",        label: "Soft & Young" },
+  { value: "warm-sultry",       label: "Warm & Sultry" },
+  { value: "deep-breathy",      label: "Deep & Breathy" },
+  { value: "playful-energetic", label: "Playful & Energetic" },
+  { value: "mature-refined",    label: "Mature & Refined" },
+  { value: "older-distinguished", label: "Older & Distinguished" },
+  { value: "dark-mysterious",   label: "Dark & Mysterious" },
+] as const;
 
 type CompanionShape = {
   id?: string;
@@ -136,6 +148,7 @@ export function CompanionBuilder({
   const [tags, setTags] = useState((companion.tags ?? []).join(", "));
   const [archetype, setArchetype] = useState(companion.archetype ?? "");
   const [gender, setGender] = useState(companion.gender ?? "");
+  const [voice, setVoice] = useState((companion.profile as CompanionProfile | null)?.voice ?? "");
   const [visibility, setVisibility] = useState<Visibility>(
     companion.visibility ?? "UNLISTED",
   );
@@ -215,6 +228,7 @@ export function CompanionBuilder({
           personality: personality.trim(),
           wardrobe: wardrobe.trim(),
           traits: traitList,
+          voice: voice || null,
           sliders: {
             warmth,
             humor,
@@ -327,7 +341,7 @@ export function CompanionBuilder({
             </div>
 
             <label className="space-y-1">
-              <div className="text-xs text-zinc-400">Gender (voice)</div>
+              <div className="text-xs text-zinc-400">Gender</div>
               <select
                 value={gender}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)}
@@ -337,6 +351,21 @@ export function CompanionBuilder({
                 <option value="female">Female</option>
                 <option value="male">Male</option>
                 <option value="non-binary">Non-binary</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1">
+              <div className="text-xs text-zinc-400">Voice style</div>
+              <select
+                value={voice}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVoice(e.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+              >
+                {VOICE_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
               </select>
             </label>
           </div>
