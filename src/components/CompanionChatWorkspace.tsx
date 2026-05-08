@@ -70,6 +70,7 @@ export function CompanionChatWorkspace({
 
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -358,7 +359,8 @@ export function CompanionChatWorkspace({
   }
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   async function refreshSuggestions() {
@@ -679,7 +681,7 @@ export function CompanionChatWorkspace({
                   </>
                 ) : null}
 
-                <div className="max-h-[430px] space-y-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                <div ref={messagesContainerRef} className="max-h-[430px] space-y-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
                   {loadingConversation ? (
                     <div className="text-sm text-zinc-500">
                       Loading conversation...
@@ -738,7 +740,6 @@ export function CompanionChatWorkspace({
                       </div>
                     ))
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 <div className="space-y-2">
