@@ -9,7 +9,7 @@
 @layer base {
   body {
     @apply text-zinc-100 antialiased;
-    background: linear-gradient(135deg, #0c1628 0%, #111827 45%, #0d1f3c 100%);
+    background: linear-gradient(135deg, #020b1c 0%, #021d59 45%, #0d1f3c 100%);
     min-height: 100dvh;
   }
   a {
