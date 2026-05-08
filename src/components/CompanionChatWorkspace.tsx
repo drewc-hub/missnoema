@@ -70,7 +70,7 @@ export function CompanionChatWorkspace({
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<MediaHistoryItem | null>(null);
 
   const [mediaHistory, setMediaHistory] = useState<MediaHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -110,10 +110,6 @@ export function CompanionChatWorkspace({
 
       const items = Array.isArray(data?.items) ? data.items : [];
       setMediaHistory(items);
-
-      if (items.length > 0 && !previewUrl) {
-        setPreviewUrl(items[0].url);
-      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load media history.",
@@ -141,9 +137,10 @@ export function CompanionChatWorkspace({
         throw new Error(data?.error || "Failed to update favorite.");
       }
 
+      const toggled = !item.isFavorite;
       setMediaHistory((prev) => {
         const next = prev.map((x) =>
-          x.id === item.id ? { ...x, isFavorite: !x.isFavorite } : x,
+          x.id === item.id ? { ...x, isFavorite: toggled } : x,
         );
         return next.sort((a, b) => {
           if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
@@ -152,6 +149,9 @@ export function CompanionChatWorkspace({
           );
         });
       });
+      setLightboxItem((prev) =>
+        prev?.id === item.id ? { ...prev, isFavorite: toggled } : prev,
+      );
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to update favorite.",
@@ -176,9 +176,8 @@ export function CompanionChatWorkspace({
 
       setMediaHistory((prev) => prev.filter((x) => x.id !== item.id));
 
-      if (previewUrl === item.url) {
-        const remaining = mediaHistory.filter((x) => x.id !== item.id);
-        setPreviewUrl(remaining[0]?.url ?? null);
+      if (lightboxItem?.id === item.id) {
+        setLightboxItem(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete media.");
@@ -239,14 +238,13 @@ export function CompanionChatWorkspace({
         setMessages([]);
         setMemory(null);
         setMediaHistory([]);
-        setPreviewUrl(null);
+        setLightboxItem(null);
         return;
       }
 
       try {
         setLoadingConversation(true);
         setError(null);
-        setPreviewUrl(null);
 
         const [conversationRes, suggestionRes] = await Promise.all([
           fetch(
@@ -493,6 +491,50 @@ export function CompanionChatWorkspace({
               </div>
             </CardBody>
           </Card>
+          {activeCompanion ? (
+            <Card>
+              <CardHeader
+                title="Media history"
+                subtitle={loadingHistory ? "Loading…" : `${mediaHistory.length} item${mediaHistory.length === 1 ? "" : "s"}`}
+              />
+              <CardBody>
+                {loadingHistory ? (
+                  <div className="text-sm text-zinc-400">Loading history...</div>
+                ) : mediaHistory.length === 0 ? (
+                  <div className="text-sm text-zinc-500">No generated media yet.</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {mediaHistory.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setLightboxItem(item)}
+                        className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition hover:border-zinc-600"
+                      >
+                        <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+                          {item.type === "VIDEO" ? (
+                            <video className="h-full w-full object-cover" muted>
+                              <source src={item.url} />
+                            </video>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.url}
+                              alt="Media history item"
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                        </div>
+                        <div className="p-1.5 text-center text-[10px] text-zinc-500">
+                          {item.type} {item.isFavorite ? "★" : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          ) : null}
         </aside>
 
         <section className="space-y-4 lg:col-span-6">
@@ -725,152 +767,82 @@ export function CompanionChatWorkspace({
 
         <aside className="space-y-4 lg:col-span-3">
           {activeCompanion ? (
-            <>
-              <MediaGenPanel
-                allowAdult={allowAdult}
-                loggedIn={true}
-                companionId={activeCompanion.id}
-                contentRating={activeCompanion.contentRating}
-                defaultTag={activeCompanion.tags?.[0] ?? ""}
-                onGenerated={setPreviewUrl}
-                onHistoryRefresh={() => loadMediaHistory(activeCompanion.id)}
-              />
-
-              <Card>
-                <CardHeader
-                  title="Preview"
-                  subtitle="Latest generated image or video preview."
-                />
-                <CardBody>
-                  {previewUrl ? (
-                    mediaHistory.find((m) => m.url === previewUrl)?.type === "VIDEO" ? (
-                      <video
-                        controls
-                        className="w-full rounded-2xl border border-zinc-800"
-                      >
-                        <source src={previewUrl} />
-                      </video>
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={previewUrl}
-                        alt="Generated preview"
-                        className="w-full rounded-2xl border border-zinc-800 object-cover"
-                      />
-                    )
-                  ) : (
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-500">
-                      No preview yet.
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardHeader
-                  title="Media history"
-                  subtitle="Favorite or delete generated media for this companion."
-                />
-                <CardBody>
-                  <div className="space-y-3">
-                    {loadingHistory ? (
-                      <div className="text-sm text-zinc-400">
-                        Loading history...
-                      </div>
-                    ) : mediaHistory.length === 0 ? (
-                      <div className="text-sm text-zinc-500">
-                        No generated media yet.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        {mediaHistory.map((item) => {
-                          const isVideo = item.type === "VIDEO";
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => setPreviewUrl(item.url)}
-                                className="block w-full text-left"
-                              >
-                                <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-                                  {isVideo ? (
-                                    <video
-                                      className="h-full w-full object-cover"
-                                      muted
-                                    >
-                                      <source src={item.url} />
-                                    </video>
-                                  ) : (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      src={item.url}
-                                      alt="Media history item"
-                                      className="h-full w-full object-cover"
-                                    />
-                                  )}
-                                </div>
-                              </button>
-
-                              <div className="space-y-2 p-2">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[11px] text-zinc-300">
-                                    {item.type}
-                                  </span>
-                                  <Badge
-                                    tone={
-                                      item.contentRating === "ADULT"
-                                        ? "adult"
-                                        : "safe"
-                                    }
-                                  >
-                                    {item.contentRating}
-                                  </Badge>
-                                </div>
-
-                                <div className="line-clamp-2 text-[11px] text-zinc-500">
-                                  {item.prompt || "No prompt saved"}
-                                </div>
-
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant={
-                                      item.isFavorite ? "primary" : "secondary"
-                                    }
-                                    className="px-2 py-1 text-xs"
-                                    onClick={() => toggleFavorite(item)}
-                                  >
-                                    {item.isFavorite
-                                      ? "★ Favorite"
-                                      : "☆ Favorite"}
-                                  </Button>
-
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="px-2 py-1 text-xs"
-                                    onClick={() => deleteMedia(item)}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            </>
+            <MediaGenPanel
+              allowAdult={allowAdult}
+              loggedIn={true}
+              companionId={activeCompanion.id}
+              contentRating={activeCompanion.contentRating}
+              defaultTag={activeCompanion.tags?.[0] ?? ""}
+              onGenerated={() => loadMediaHistory(activeCompanion.id)}
+              onHistoryRefresh={() => loadMediaHistory(activeCompanion.id)}
+            />
           ) : null}
         </aside>
       </div>
+
+      {lightboxItem ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxItem(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-4xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxItem(null)}
+              className="absolute -top-10 right-0 text-sm text-zinc-400 hover:text-zinc-100"
+            >
+              Close ✕
+            </button>
+
+            {lightboxItem.type === "VIDEO" ? (
+              <video
+                controls
+                autoPlay
+                className="max-h-[80vh] w-full rounded-2xl border border-zinc-700"
+              >
+                <source src={lightboxItem.url} />
+              </video>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={lightboxItem.url}
+                alt="Media full size"
+                className="max-h-[80vh] w-full rounded-2xl border border-zinc-700 object-contain"
+              />
+            )}
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Badge tone={lightboxItem.contentRating === "ADULT" ? "adult" : "safe"}>
+                  {lightboxItem.contentRating}
+                </Badge>
+                <span className="text-xs text-zinc-400">{lightboxItem.type}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={lightboxItem.isFavorite ? "primary" : "secondary"}
+                  className="px-3 py-1.5 text-xs"
+                  onClick={() => toggleFavorite(lightboxItem)}
+                >
+                  {lightboxItem.isFavorite ? "★ Favorited" : "☆ Favorite"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="px-3 py-1.5 text-xs"
+                  onClick={() => deleteMedia(lightboxItem)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

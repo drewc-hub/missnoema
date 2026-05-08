@@ -20,6 +20,7 @@ RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" \
     pnpm prisma generate --schema prisma/schema.prisma
 ARG NEXT_PUBLIC_DESCOPE_PROJECT_ID
 ENV NEXT_PUBLIC_DESCOPE_PROJECT_ID=$NEXT_PUBLIC_DESCOPE_PROJECT_ID
+ENV ASSETS_UPLOAD_SUPABASE=0
 RUN pnpm build
 
 # ── runner ──────────────────────────────────────────────────────────────────
