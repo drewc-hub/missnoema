@@ -79,7 +79,7 @@ export default async function NewAdultCompanionPage() {
                             Create adult images and videos
                         </h2>
                         <p className="mt-1 text-sm text-zinc-400">
-                            Once you save your companion, generate NSFW photos and videos powered by Replicate AI — exclusive to verified members.
+                            Generate NSFW photos and videos exclusive to subscribers.
                         </p>
                     </div>
 
