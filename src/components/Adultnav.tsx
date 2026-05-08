@@ -5,7 +5,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
     return (
         <a
             href={href}
-            className="inline-flex rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-white"
+            className="inline-flex rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-blue-900/40 hover:text-white"
         >
             {label}
         </a>
@@ -15,7 +15,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 export function AdultTopNav() {
     return (
-        <header className="sticky top-0 z-20 border-b border-zinc-800 bg-slate-800 bg-opacity-50">
+        <header className="sticky top-0 z-20 border-b border-blue-900/60 bg-gradient-to-r from-blue-950/95 to-blue-900/80 backdrop-blur-md">
             <div className="mx-auto flex w-full max-w-6xl items-center px-4 py-3">
                 <a
                     href="/"

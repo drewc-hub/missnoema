@@ -18,7 +18,7 @@ export function Footer({
   return (
     <footer
       className={cx(
-        "mt-14 border-zinc-400 border-[3px] py-10 text-sm bg-blue-700 bg-opacity-25",
+        "mt-14 border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 py-10 text-sm",
         className,
       )}
     >
@@ -150,7 +150,7 @@ export function Footer({
         </div>
 
         <div className="md:col-span-12">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300">
+          <div className="rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/60 to-blue-950/30 p-5 text-sm text-zinc-300">
             <div className="font-semibold text-zinc-100">
               Fair pricing. No hard paywall.
             </div>
