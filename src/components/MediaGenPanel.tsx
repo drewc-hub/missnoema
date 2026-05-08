@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardBody,
@@ -52,7 +52,24 @@ export function MediaGenPanel({
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultType, setResultType] = useState<"image" | "video" | null>(null);
   const [jobStatus, setJobStatus] = useState<string | null>(null);
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
+
+  async function fetchBalance() {
+    try {
+      const res = await fetch("/api/me/balance");
+      const data = await res.json().catch(() => null);
+      if (res.ok && typeof data?.coinBalance === "number") {
+        setCoinBalance(data.coinBalance);
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  useEffect(() => {
+    if (loggedIn) fetchBalance();
+  }, [loggedIn]);
 
   const canGenerateVideo = contentRating === "ADULT" && allowAdult;
   const isGenerating = loadingType !== null;
@@ -81,6 +98,7 @@ export function MediaGenPanel({
         setResultType(type);
         onGenerated?.(job.resultUrl, type);
         onHistoryRefresh?.();
+        fetchBalance();
         return;
       }
 
@@ -138,6 +156,32 @@ export function MediaGenPanel({
 
       <CardBody>
         <div className="space-y-4">
+          {/* Coin balance + pricing */}
+          <div className="rounded-xl border border-blue-900/60 bg-blue-950/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-zinc-300">Your balance</div>
+              <div className="text-sm font-bold text-white">
+                {loggedIn
+                  ? coinBalance === null
+                    ? "Loading…"
+                    : `${coinBalance} coins`
+                  : "—"}
+              </div>
+            </div>
+            <div className="border-t border-blue-900/40 pt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+              <span className="text-zinc-400">Chat message</span>
+              <span className="text-right text-emerald-400 font-medium">Free</span>
+              <span className="text-zinc-400">HD image</span>
+              <span className="text-right text-zinc-200 font-medium">5 coins</span>
+              <span className="text-zinc-400">Premium image</span>
+              <span className="text-right text-zinc-200 font-medium">10 coins</span>
+              <span className="text-zinc-400">Short video</span>
+              <span className="text-right text-zinc-200 font-medium">20 coins</span>
+              <span className="text-zinc-400">Long HQ video</span>
+              <span className="text-right text-zinc-200 font-medium">50 coins</span>
+            </div>
+          </div>
+
           {!loggedIn ? (
             <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-400">
               Log in to generate media.
