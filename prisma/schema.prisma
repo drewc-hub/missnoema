@@ -35,6 +35,22 @@ model Companion {
   slug                                                                   String                  @unique
   description                                                            String
   tags                                                                   String[]
+  gender								 String
+  era									 String
+  age                                                                    Int
+  race                                                                   String
+  bio                                                                    String                  @db.Text
+  greeting                                                               String                  @db.Text
+  scenario                                                               String                  @db.Text
+  
+  personalityTags   String[]
+  kinkTags          String[]
+  relationshipTags  String[]
+  aestheticTags     String[]
+
+  nsfw              Boolean  @default(false)
+  public            Boolean  @default(true)
+
   archetype                                                              String?
   profile                                                                Json
   visibility                                                             Visibility              @default(PUBLIC)
