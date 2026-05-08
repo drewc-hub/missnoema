@@ -1,7 +1,7 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { getOpenAI } from "@/lib/openai";
-import { getTogether, TOGETHER_CHAT_MODEL } from "@/lib/together";
+import { getChatClient } from "@/lib/together";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -651,8 +651,9 @@ export async function POST(req: Request) {
 
   (async () => {
     try {
-      const chatStream = await getTogether().chat.completions.create({
-        model: TOGETHER_CHAT_MODEL,
+      const { client: chatClient, model: chatModel } = getChatClient();
+      const chatStream = await chatClient.chat.completions.create({
+        model: chatModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...recentMessages.map((m) => ({

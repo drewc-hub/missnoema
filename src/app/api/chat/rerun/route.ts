@@ -1,6 +1,6 @@
 // file: src/app/api/chat/rerun/route.ts
 import { NextResponse } from "next/server";
-import { getTogether, TOGETHER_CHAT_MODEL } from "@/lib/together";
+import { getChatClient } from "@/lib/together";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -148,8 +148,9 @@ Reply as ${conversation.companion.name} only.
 `.trim();
 
   try {
-    const response = await getTogether().chat.completions.create({
-      model: TOGETHER_CHAT_MODEL,
+    const { client: chatClient, model: chatModel } = getChatClient();
+    const response = await chatClient.chat.completions.create({
+      model: chatModel,
       messages: [
         { role: "system", content: systemPrompt },
         ...recentMessages.map((m) => ({
