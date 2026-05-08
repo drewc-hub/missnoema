@@ -1,48 +1,44 @@
 // app/page.tsx
+// app/page.tsx
 "use client";
 
-import { FormEvent, useState } from "react";
-import { ChatCompletionStream } from "together-ai/lib/ChatCompletionStream";
+import { useChat } from "@ai-sdk/react";
+import { useState } from "react";
 
 export default function Chat() {
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+    const [input, setInput] = useState("");
+    const { messages, sendMessage } = useChat();
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (input.trim()) {
+            sendMessage({
+                role: "user",
+                parts: [{ type: "text", text: input }],
+            });
+            setInput("");
+        }
+    };
 
-    setIsLoading(true);
-    setAnswer("");
+    return (
+        <div>
+            {messages.map((message) => (
+                <div key={message.id}>
+                    <strong>{message.role}:</strong>
+                    {message.parts.map((part, i) =>
+                        part.type === "text" ? <span key={i}> {part.text}</span> : null
+                    )}
+                </div>
+            ))}
 
-    const res = await fetch("/api/answer", {
-      method: "POST",
-      body: JSON.stringify({ question }),
-    });
-
-    if (!res.body) return;
-
-    ChatCompletionStream.fromReadableStream(res.body)
-      .on("content", (delta) => setAnswer((text) => text + delta))
-      .on("end", () => setIsLoading(false));
-  }
-
-  return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask me a question"
-          required
-        />
-
-        <button disabled={isLoading} type="submit">
-          Submit
-        </button>
-      </form>
-
-      <p>{answer}</p>
-    </div>
-  );
+            <form onSubmit={handleSubmit}>
+                <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Send a message"
+                />
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    );
 }

@@ -28,6 +28,7 @@
     "gen:thumbnails": "dotenv -e .env -- tsx scripts/generate-companion-thumbnails.ts"
   },
   "dependencies": {
+    "@ai-sdk/togetherai": "^2.0.51",
     "@dotenvx/dotenvx": "^1.52.0",
     "@netlify/database": "^1.0.0",
     "@prisma/client": "^6.19.2",
