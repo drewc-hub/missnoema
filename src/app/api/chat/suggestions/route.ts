@@ -78,13 +78,13 @@ function pickSuggestions(args: {
     out.push(`What does this place feel like to you?`);
   }
 
-  if (familiarity < 10) {
+  if (familiarity < 15) {
     out.push("Tell me more about yourself.");
     out.push("What should I know about you first?");
-  } else if (trust < 20) {
+  } else if (trust < 40) {
     out.push("What makes you feel comfortable with someone?");
     out.push("What kind of connection are you looking for?");
-  } else if (intimacy < 25) {
+  } else if (intimacy < 60) {
     out.push("I want to understand you better.");
     out.push("What are you feeling right now?");
   } else {

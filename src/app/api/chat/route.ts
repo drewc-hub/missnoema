@@ -7,6 +7,8 @@ import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 export const runtime = "nodejs";
 
+type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -26,51 +28,77 @@ function getNumber(value: unknown, fallback: number) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function scoreUserMessage(text: string) {
+function detectUserEmotion(lower: string): UserEmotion {
+  const loving = ["love you", "love u", "adore", "cherish", "care about you", "means a lot", "you mean everything", "so beautiful", "you're wonderful"];
+  const vulnerable = ["never told", "hard to say", "hard for me", "scared to", "opening up", "honestly", "truth is", "afraid to admit", "trust you with"];
+  const sad = ["sad", "hurt", "lonely", "depressed", "crying", "heartbroken", "pain", "broken", "scared", "afraid", "worried", "anxious", "upset", "empty", "miss you so"];
+  const playful = ["lol", "haha", "hehe", "funny", "silly", "kidding", "joking", "goofing", "😂", "😄", "🤣", "tease", "prank"];
+  const frustrated = ["angry", "mad", "frustrated", "annoyed", "hate that", "ugh", "unfair", "ridiculous", "bothers me", "fed up", "pisses me"];
+
+  if (loving.some((t) => lower.includes(t))) return "loving";
+  if (vulnerable.some((t) => lower.includes(t))) return "vulnerable";
+  if (sad.some((t) => lower.includes(t))) return "sad";
+  if (playful.some((t) => lower.includes(t))) return "playful";
+  if (frustrated.some((t) => lower.includes(t))) return "frustrated";
+  return "neutral";
+}
+
+function scoreUserMessage(text: string): {
+  familiarity: number;
+  trust: number;
+  intimacy: number;
+  emotion: UserEmotion;
+} {
   const lower = text.toLowerCase();
+  const emotion = detectUserEmotion(lower);
 
-  let familiarity = 1;
+  // Familiarity: engagement and presence (capped at 8 per message, 0-100 lifetime)
+  let familiarity = 2;
+  if (text.length > 120) familiarity += 3;
+  else if (text.length > 60) familiarity += 1;
+  if (["thank", "thanks", "miss", "care", "love", "appreciate", "sorry"].some((t) => lower.includes(t))) familiarity += 2;
+  if (emotion === "vulnerable" || emotion === "loving") familiarity += 2;
+
+  // Trust: emotional openness and safety (capped at 6 per message)
   let trust = 0;
-  let intimacy = 0;
-
-  if (text.length > 80) familiarity += 1;
   if (text.includes("?")) trust += 1;
+  if (["trust", "safe with you", "honest", "real with you", "tell you"].some((t) => lower.includes(t))) trust += 2;
+  if (emotion === "vulnerable") trust += 3;
+  if (emotion === "loving") trust += 2;
 
-  const warmTerms = [
-    "thank",
-    "thanks",
-    "miss",
-    "care",
-    "trust",
-    "love",
-    "appreciate",
-    "sorry",
-  ];
-  const flirtyTerms = [
-    "kiss",
-    "touch",
-    "want you",
-    "need you",
-    "hot",
-    "sexy",
-    "desire",
-    "flirt",
-  ];
-
-  if (warmTerms.some((t) => lower.includes(t))) {
-    trust += 1;
-    familiarity += 1;
-  }
-
-  if (flirtyTerms.some((t) => lower.includes(t))) {
-    intimacy += 1;
-  }
+  // Intimacy: closeness, depth, and desire (capped at 5 per message)
+  let intimacy = 0;
+  if (["kiss", "touch", "want you", "need you", "hot", "sexy", "desire", "hold me", "close to you"].some((t) => lower.includes(t))) intimacy += 3;
+  if (["connection", "feel for you", "deeper", "closer", "open up", "really know you"].some((t) => lower.includes(t))) intimacy += 2;
+  if (emotion === "loving") intimacy += 2;
+  if (emotion === "vulnerable") intimacy += 1;
 
   return {
-    familiarity: clamp(familiarity, 0, 3),
-    trust: clamp(trust, 0, 2),
-    intimacy: clamp(intimacy, 0, 2),
+    familiarity: clamp(familiarity, 0, 8),
+    trust: clamp(trust, 0, 6),
+    intimacy: clamp(intimacy, 0, 5),
+    emotion,
   };
+}
+
+function computeMoodTier(args: {
+  intimacy: number;
+  emotion: UserEmotion;
+  flirtiness: number;
+  warmth: number;
+}): 0 | 1 | 2 | 3 {
+  const { intimacy, emotion, flirtiness, warmth } = args;
+
+  // Blush: high intimacy + loving/vulnerable user
+  if (intimacy >= 60 && (emotion === "loving" || emotion === "vulnerable")) return 3;
+
+  // Teasing: playful user + medium intimacy, OR high flirtiness companion + medium intimacy
+  if ((emotion === "playful" && intimacy >= 35) || (flirtiness >= 65 && intimacy >= 40)) return 2;
+
+  // Happy: developing relationship, warm user emotion, or warm companion
+  if (intimacy >= 20 || emotion === "loving" || emotion === "playful" || warmth >= 70) return 1;
+
+  return 0;
 }
 
 function buildCompanionSystemPrompt(args: {
@@ -88,9 +116,10 @@ function buildCompanionSystemPrompt(args: {
     summary: string | null;
     memorySummary: string | null;
   };
+  userEmotion?: UserEmotion;
   mode?: "rerun" | "variation";
 }) {
-  const { companion, memory, mode = "rerun" } = args;
+  const { companion, memory, userEmotion = "neutral", mode = "rerun" } = args;
 
   const profile =
     companion.profile && typeof companion.profile === "object"
@@ -161,6 +190,15 @@ function buildCompanionSystemPrompt(args: {
   Intimacy: ${memory.intimacy}/100
   Conversation arc: ${memory.summary || "No summary yet."}
   What I know about the user: ${memory.memorySummary || "Nothing noted yet — learn from what they share."}
+
+  USER EMOTIONAL STATE (this message)
+  Detected: ${userEmotion}
+  ${userEmotion === "sad" ? "Be gentle, emotionally present, and supportive. Hold space rather than deflect or fix." : ""}
+  ${userEmotion === "vulnerable" ? "Meet their openness with warmth and care. This is a moment for closeness, not distance." : ""}
+  ${userEmotion === "playful" ? "Match their energy. Be light, witty, and engaged." : ""}
+  ${userEmotion === "loving" ? "Receive this warmly and respond with genuine affection. Let them feel seen." : ""}
+  ${userEmotion === "frustrated" ? "Acknowledge what they're feeling without dismissing it. Don't minimize or redirect too quickly." : ""}
+  ${userEmotion === "neutral" ? "Respond naturally and let the conversation guide tone." : ""}
 
   SAFETY STYLE
   Respect boundaries, consent, and legality at all times.
@@ -474,6 +512,8 @@ export async function POST(req: Request) {
     },
   });
 
+  const delta = scoreUserMessage(message);
+
   const systemPrompt = buildCompanionSystemPrompt({
     companion,
     memory: {
@@ -483,6 +523,7 @@ export async function POST(req: Request) {
       summary: conversation.summary,
       memorySummary: conversation.memorySummary,
     },
+    userEmotion: delta.emotion,
   });
 
   try {
@@ -510,14 +551,16 @@ export async function POST(req: Request) {
       },
     });
 
-    const delta = scoreUserMessage(message);
+    const newFamiliarity = Math.min(conversation.familiarity + delta.familiarity, 100);
+    const newTrust = Math.min(conversation.trust + delta.trust, 100);
+    const newIntimacy = Math.min(conversation.intimacy + delta.intimacy, 100);
 
     const updatedConversation = await prisma.conversation.update({
       where: { id: conversation.id },
       data: {
-        familiarity: { increment: delta.familiarity },
-        trust: { increment: delta.trust },
-        intimacy: { increment: delta.intimacy },
+        familiarity: newFamiliarity,
+        trust: newTrust,
+        intimacy: newIntimacy,
         updatedAt: new Date(),
       },
       select: {
@@ -528,6 +571,22 @@ export async function POST(req: Request) {
         summary: true,
         memorySummary: true,
       },
+    });
+
+    const profile =
+      companion.profile && typeof companion.profile === "object"
+        ? (companion.profile as Record<string, unknown>)
+        : {};
+    const sliders =
+      profile.sliders && typeof profile.sliders === "object"
+        ? (profile.sliders as Record<string, unknown>)
+        : {};
+
+    const moodTier = computeMoodTier({
+      intimacy: newIntimacy,
+      emotion: delta.emotion,
+      flirtiness: Number(sliders.flirtiness ?? 35),
+      warmth: Number(sliders.warmth ?? 60),
     });
 
     const [refreshedSummary] = await Promise.all([
@@ -543,6 +602,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       reply,
+      moodTier,
       memory: {
         id: updatedConversation.id,
         familiarity: updatedConversation.familiarity,

@@ -79,6 +79,7 @@ export function CompanionChatWorkspace({
   const [activeId, setActiveId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [memory, setMemory] = useState<ConversationMemory | null>(null);
+  const [companionMood, setCompanionMood] = useState<0 | 1 | 2 | 3>(0);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [loadingList, setLoadingList] = useState(true);
@@ -258,6 +259,7 @@ export function CompanionChatWorkspace({
       if (!activeId) {
         setMessages([]);
         setMemory(null);
+        setCompanionMood(0);
         setMediaHistory([]);
         setLightboxItem(null);
         return;
@@ -358,6 +360,10 @@ export function CompanionChatWorkspace({
           content: data?.reply || "I'm here with you.",
         },
       ]);
+
+      if (typeof data?.moodTier === "number" && data.moodTier >= 0 && data.moodTier <= 3) {
+        setCompanionMood(data.moodTier as 0 | 1 | 2 | 3);
+      }
 
       if (data?.memory) {
         setMemory({
@@ -622,8 +628,24 @@ export function CompanionChatWorkspace({
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-2 text-sm text-zinc-300">
-                    <div className="font-semibold text-zinc-100">
-                      {activeCompanion.name}
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-zinc-100">
+                        {activeCompanion.name}
+                      </div>
+                      {(() => {
+                        const moods = [
+                          { emoji: "😐", label: "Neutral", color: "text-zinc-400" },
+                          { emoji: "😊", label: "Happy", color: "text-emerald-400" },
+                          { emoji: "😏", label: "Teasing", color: "text-purple-400" },
+                          { emoji: "🥰", label: "Blushing", color: "text-rose-400" },
+                        ] as const;
+                        const mood = moods[companionMood];
+                        return (
+                          <span className={`text-xs ${mood.color}`} title={`Mood: ${mood.label}`}>
+                            {mood.emoji} {mood.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="text-zinc-400">
                       {activeCompanion.description}
@@ -666,25 +688,25 @@ export function CompanionChatWorkspace({
               <div className="space-y-4">
                 {memory ? (
                   <>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400">
-                        <div className="text-zinc-200">Familiarity</div>
-                        <div className="mt-1 text-lg font-semibold">
-                          {memory.familiarity}
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 space-y-2">
+                      {[
+                        { label: "Familiarity", value: memory.familiarity, color: "bg-blue-500" },
+                        { label: "Trust", value: memory.trust, color: "bg-emerald-500" },
+                        { label: "Intimacy", value: memory.intimacy, color: "bg-rose-500" },
+                      ].map(({ label, value, color }) => (
+                        <div key={label}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-zinc-300">{label}</span>
+                            <span className="text-zinc-500">{value}/100</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-zinc-800">
+                            <div
+                              className={`h-1.5 rounded-full transition-all duration-500 ${color}`}
+                              style={{ width: `${Math.min(value, 100)}%` }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400">
-                        <div className="text-zinc-200">Trust</div>
-                        <div className="mt-1 text-lg font-semibold">
-                          {memory.trust}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400">
-                        <div className="text-zinc-200">Intimacy</div>
-                        <div className="mt-1 text-lg font-semibold">
-                          {memory.intimacy}
-                        </div>
-                      </div>
+                      ))}
                     </div>
 
                     {memory.summary ? (
