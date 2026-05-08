@@ -1,6 +1,5 @@
-// file: src/app/api/me/companions/route.ts
 import { NextResponse } from "next/server";
-import { ContentRating } from "@prisma/client";
+import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
@@ -15,15 +14,17 @@ export async function GET() {
   }
 
   const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
 
   const items = await prisma.companion.findMany({
     where: {
-      ownerId: user.id,
-      contentRating: {
-        in: allowAdult
-          ? [ContentRating.SAFE, ContentRating.ADULT]
-          : [ContentRating.SAFE],
-      },
+      contentRating: { in: allowedRatings },
+      OR: [
+        { ownerId: user.id },
+        { visibility: Visibility.PUBLIC },
+      ],
     },
     orderBy: { updatedAt: "desc" },
     select: {
@@ -38,24 +39,23 @@ export async function GET() {
       assets: {
         where: {
           type: "IMAGE",
-          contentRating: {
-            in: allowAdult
-              ? [ContentRating.SAFE, ContentRating.ADULT]
-              : [ContentRating.SAFE],
-          },
+          contentRating: { in: allowedRatings },
         },
-        orderBy: { createdAt: "desc" },
+        // Prefer ADULT cover on adult-rated companions ("ADULT" < "SAFE")
+        orderBy: [{ contentRating: "asc" }, { createdAt: "desc" }],
         take: 1,
-        select: {
-          id: true,
-          publicUrl: true,
-        },
+        select: { id: true, publicUrl: true, contentRating: true },
       },
     },
   });
 
   const normalized = items.map((item) => {
     const asset = item.assets[0];
+    const thumbnailUrl = asset
+      ? asset.contentRating === ContentRating.ADULT
+        ? `/media/${asset.id}`
+        : (asset.publicUrl ?? `/media/${asset.id}`)
+      : null;
 
     return {
       id: item.id,
@@ -66,7 +66,7 @@ export async function GET() {
       profile: item.profile,
       contentRating: item.contentRating,
       visibility: item.visibility,
-      thumbnailUrl: asset ? (asset.publicUrl ?? `/media/${asset.id}`) : null,
+      thumbnailUrl,
     };
   });
 

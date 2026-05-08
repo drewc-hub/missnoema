@@ -117,7 +117,7 @@ export async function listCompanions({
                         { createdAt: "desc" },
                     ],
                     take: 1,
-                    select: { id: true, publicUrl: true },
+                    select: { id: true, publicUrl: true, contentRating: true },
                 },
             },
         }),
@@ -158,7 +158,11 @@ export async function listCompanions({
             tags: c.tags,
             contentRating: c.contentRating,
             featuredRank: c.featuredRank ?? null,
-            thumbnailUrl: asset ? (asset.publicUrl ?? `/media/${asset.id}`) : null,
+            thumbnailUrl: asset
+                ? asset.contentRating === ContentRating.ADULT
+                    ? `/media/${asset.id}`
+                    : (asset.publicUrl ?? `/media/${asset.id}`)
+                : null,
             imagesCount: counts.images,
             videosCount: counts.videos,
         };

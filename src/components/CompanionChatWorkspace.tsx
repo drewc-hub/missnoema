@@ -51,8 +51,10 @@ type MediaHistoryItem = {
 
 export function CompanionChatWorkspace({
   allowAdult,
+  initialCompanionId,
 }: {
   allowAdult: boolean;
+  initialCompanionId?: string;
 }) {
   const [companions, setCompanions] = useState<Companion[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -196,9 +198,11 @@ export function CompanionChatWorkspace({
         setCompanions(items);
 
         setActiveId((current) => {
-          if (!current && items.length > 0) {
-            console.log("[CompanionChatWorkspace] setting initial activeId:", items[0].id);
-            return items[0].id;
+          if (!current) {
+            const preferred = initialCompanionId && items.find((c: Companion) => c.id === initialCompanionId);
+            const target = preferred ? preferred.id : (items[0]?.id ?? "");
+            console.log("[CompanionChatWorkspace] setting initial activeId:", target);
+            return target;
           }
           return current;
         });

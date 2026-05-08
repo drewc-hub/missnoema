@@ -1,193 +1,136 @@
-
-import { prisma } from "@/lib/prisma";
+import React from "react";
 import { getAuthedUser } from "@/lib/auth";
-import { isAdultAllowed, requireAdultAllowed } from "@/lib/ratings";
-import { companion } from "@/components/CompanionDetailView";
+import { listCompanions } from "@/lib/companions";
 import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
-import { ContentRating } from "@prisma/client";
 
-type SearchParams = { category?: string };
+type SearchParams = { q?: string; tags?: string; page?: string };
 
-export default async function CompanionDetailPage({
-    params,
-    searchParams
+type ApiItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  tags: string[];
+  contentRating: "SAFE" | "ADULT";
+  thumbnailUrl: string | null;
+  imagesCount?: number;
+  videosCount?: number;
+};
+
+function qs(params: Record<string, string | undefined>) {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null && v !== "") p.set(k, v);
+  }
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+function CompanionCard({ c }: { c: ApiItem }) {
+  return (
+    <a href={`/chat?companion=${encodeURIComponent(c.slug)}`} className="group">
+      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 transition hover:bg-zinc-900/70">
+        <div className="relative aspect-[4/3] w-full bg-zinc-950">
+          {c.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={c.thumbnailUrl}
+              alt={`${c.name} cover`}
+              className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
+              No cover yet
+            </div>
+          )}
+          <div className="absolute left-3 top-3">
+            <Badge tone="safe">SAFE</Badge>
+          </div>
+        </div>
+        <div className="p-5">
+          <div className="truncate text-lg font-semibold group-hover:text-white">{c.name}</div>
+          <div className="mt-1 line-clamp-2 text-sm text-zinc-400">{c.description}</div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {c.tags.slice(0, 6).map((t) => (
+              <span key={t} className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-800">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+export default async function SafeCompanionsPage({
+  searchParams,
 }: {
-    params: Promise<{ slug: string }>;
-    searchParams: Promise<SearchParams>;
+  searchParams: Promise<SearchParams>;
 }) {
-    const { slug } = await params;
-    const sp = await searchParams;
+  const sp = await searchParams;
+  const user = await getAuthedUser();
 
-    const user = await getAuthedUser();
-    const allowAdult = isAdultAllowed(user);
+  const q = (sp.q ?? "").trim();
+  const tags = (sp.tags ?? "").trim();
+  const page = Math.max(1, Number(sp.page ?? "1") || 1);
+  const pageSize = 12;
 
-    const allowedRatings: ContentRating[] = [ContentRating.SAFE];
-    if (allowAdult) allowedRatings.push(ContentRating.ADULT);
+  const data = await listCompanions({ user, q, tags, page, pageSize, includeAdult: false });
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+  const baseParams = { q, tags };
 
-    // Optional: allow filtering the companion list by category via query param.
-    // Usually this belongs on /companions (library), not here.
-    const category = (sp.category ?? "").trim();
+  return (
+    <main className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Companion library</h1>
+          <p className="text-sm text-zinc-400">Safe-for-work companions. Click to start a chat.</p>
+        </div>
+        <a href="/adult/companions">
+          <Badge tone="adult">18+ section →</Badge>
+        </a>
+      </div>
 
-    const where: any = {
-        slug,
-        visibility: "PUBLIC",
-        contentRating: { in: allowedRatings }
-    };
-
-    if (category) {
-        where.categories = {
-            some: { category: { slug: category } }
-        };
-    }
-
-    const companion = await prisma.companion.findFirst({
-        where,
-        select: {
-            id: true,
-            ownerId: true,
-            name: true,
-            slug: true,
-            description: true,
-            tags: true,
-            profile: true,
-            contentRating: true,
-            assets: {
-                where: { contentRating: { in: allowedRatings } },
-                orderBy: { createdAt: "desc" },
-                select: { id: true, type: true, contentRating: true }
-            }
-        }
-    });
-
-    if (!companion) {
-        return (
-            <main>
-                <h1 className="text-2xl font-semibold">Not found</h1>
-            </main>
-        );
-    }
-
-    if (companion.contentRating === "ADULT") requireAdultAllowed(user);
-
-    const coverAssetId = companion.assets.find((a) => a.type === "IMAGE")?.id ?? null;
-
-    return (
-        <main className="space-y-5">
-            {coverAssetId ? (
-                <div className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/media/${coverAssetId}`} alt={`${companion.name} cover`} className="h-[260px] w-full object-cover" />
-                </div>
-            ) : (
-                <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-10 text-sm text-zinc-500">
-                    No cover image yet — upload one in Admin or generate one.
-                </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-semibold tracking-tight">{companion.name}</h1>
-                    <Badge tone={companion.contentRating === "ADULT" ? "adult" : "safe"}>{companion.contentRating}</Badge>
-                </div>
-                <p className="max-w-3xl text-zinc-300">{companion.description}</p>
-                <div className="flex flex-wrap gap-2">
-                    {companion.tags.map((t) => (
-                        <span key={t} className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-800">
-                            {t}
-                        </span>
-                    ))}
-                </div>
+      <Card>
+        <CardHeader title="Search" />
+        <CardBody>
+          <form method="get" className="grid gap-3 md:grid-cols-12 md:items-end">
+            <div className="space-y-1 md:col-span-6">
+              <div className="text-xs text-zinc-400">Search</div>
+              <Input name="q" placeholder="Search..." defaultValue={q} />
             </div>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-4">
-                    <Card>
-                        <CardHeader title="Media" subtitle="Assets are served via /media/<assetId>." />
-                        <CardBody>
-                            {companion.assets.length ? (
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    {companion.assets.map((a) => (
-                                        <div key={a.id} className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
-                                            <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2 text-xs text-zinc-400">
-                                                <span>{a.type}</span>
-                                                <Badge tone={a.contentRating === "ADULT" ? "adult" : "safe"}>{a.contentRating}</Badge>
-                                            </div>
-                                            {a.type === "IMAGE" ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={`/media/${a.id}`} alt="asset" className="h-auto w-full" />
-                                            ) : (
-                                                <video controls src={`/media/${a.id}`} className="h-auto w-full" />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-sm text-zinc-500">No media yet. Queue an image/video on the right.</div>
-                            )}
-                        </CardBody>
-                    </Card>
-
-                    <Card>
-                        <CardHeader title="Profile" subtitle="Stored JSON (upgrade to a form UI later)." />
-                        <CardBody>
-                            <pre className="max-h-[420px] overflow-auto rounded-xl bg-zinc-950 p-4 text-xs text-zinc-200 ring-1 ring-zinc-800">
-                                {JSON.stringify(companion.profile, null, 2)}
-                            </pre>
-                        </CardBody>
-                    </Card>
-                </div>
-
-                <div className="space-y-4">
-                    <Card>
-                        <CardHeader
-                            title="Generate"
-                            subtitle={user ? "Queues jobs for the worker to process." : "Login required to generate."}
-                            right={user ? <Badge tone="safe">Logged in</Badge> : <Badge>Guest</Badge>}
-                        />
-                        <CardBody className="space-y-4">
-                            {!user ? (
-                                <a href="/login">
-                                    <Button className="w-full">Login to generate</Button>
-                                </a>
-                            ) : (
-                                <>
-                                    <form action="/api/generate/image" method="post" className="space-y-2">
-                                        <input type="hidden" name="companionId" value={companion.id} />
-                                        <input type="hidden" name="contentRating" value={companion.contentRating} />
-                                        <div className="text-xs text-zinc-400">Image prompt</div>
-                                        <Input name="prompt" placeholder="Portrait, soft lighting, clean background..." required />
-                                        <Button type="submit" className="w-full">Queue image</Button>
-                                    </form>
-
-                                    <form action="/api/generate/video" method="post" className="space-y-2">
-                                        <input type="hidden" name="companionId" value={companion.id} />
-                                        <input type="hidden" name="contentRating" value={companion.contentRating} />
-                                        <div className="text-xs text-zinc-400">Video prompt</div>
-                                        <Input name="prompt" placeholder="5s intro clip, cinematic, friendly..." required />
-                                        <Button type="submit" variant="secondary" className="w-full">Queue video</Button>
-                                    </form>
-
-                                    <div className="text-xs text-zinc-500">
-                                        If video isn’t enabled on your OpenAI account, video jobs will fail (safe).
-                                    </div>
-                                </>
-                            )}
-                        </CardBody>
-                    </Card>
-
-                    <Card>
-                        <CardHeader title="Quick actions" />
-                        <CardBody className="space-y-2">
-                            <a href="/companions">
-                                <Button variant="ghost" className="w-full">Back to library</Button>
-                            </a>
-                            <a href={`/companions/${companion.slug}/edit`}>
-                                <Button variant="secondary" className="w-full">Edit companion</Button>
-                            </a>
-                        </CardBody>
-                    </Card>
-                </div>
+            <div className="space-y-1 md:col-span-4">
+              <div className="text-xs text-zinc-400">Tags</div>
+              <Input name="tags" placeholder="witty, calm, fantasy" defaultValue={tags} />
             </div>
-        </main>
-    );
+            <div className="flex gap-2 md:col-span-2 md:justify-end">
+              <Button type="submit" className="h-10">Apply</Button>
+              <a href="/companions"><Button type="button" variant="secondary" className="h-10">Clear</Button></a>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.items.map((c) => <CompanionCard key={c.id} c={c} />)}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm text-zinc-500">
+          Page <span className="text-zinc-200">{data.page}</span> of{" "}
+          <span className="text-zinc-200">{totalPages}</span>
+        </div>
+        <div className="flex gap-2">
+          <a className={page <= 1 ? "pointer-events-none opacity-40" : ""} href={`/companions${qs({ ...baseParams, page: String(page - 1) })}`}>
+            <Button variant="secondary">Prev</Button>
+          </a>
+          <a className={page >= totalPages ? "pointer-events-none opacity-40" : ""} href={`/companions${qs({ ...baseParams, page: String(page + 1) })}`}>
+            <Button variant="secondary">Next</Button>
+          </a>
+        </div>
+      </div>
+    </main>
+  );
 }
