@@ -37,9 +37,7 @@ export function SafeTopNav() {
                     <li>
                         <NavLink href="/admin" label="Admin" />
                     </li>
-                    <li>
-                        <NavLink href="/(safe)/generate" label="Generate" />
-                    </li>
+
                     <li>
                         <NavLink href="/(safe)/media" label="Media" />
                     </li>
