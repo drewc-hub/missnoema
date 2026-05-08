@@ -29,7 +29,7 @@ function qs(params: Record<string, string | undefined>) {
 function CompanionCard({ c }: { c: ApiItem }) {
   return (
     <a href={`/chat?companion=${encodeURIComponent(c.slug)}`} className="group">
-      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 transition hover:bg-zinc-900/70">
+      <div className="overflow-hidden rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 transition hover:from-blue-950 hover:to-blue-950/70">
         <div className="relative aspect-[4/3] w-full bg-zinc-950">
           {c.thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

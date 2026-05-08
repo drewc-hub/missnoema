@@ -13,7 +13,7 @@ export default async function HomePage() {
     return (
         <main className="space-y-8">
             {/* Hero */}
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8">
+            <section className="rounded-3xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 p-8">
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge tone="safe">SAFE by default</Badge>

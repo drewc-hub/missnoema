@@ -18,7 +18,7 @@ export function Card({
     return (
         <div
             className={cn(
-                "rounded-2xl border-[3px] border-zinc-400 bg-blue-400/25 shadow-sm",
+                "rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 shadow-sm",
                 className,
             )}
         >
@@ -37,7 +37,7 @@ export function CardHeader({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-400 p-5">
+        <div className="flex items-start justify-between gap-4 border-b border-blue-900/60 p-5">
             <div>
                 <div className="text-lg font-semibold">{title}</div>
                 {subtitle ? (
@@ -49,8 +49,8 @@ export function CardHeader({
     );
 }
 
-export function CardBody({ children }: { children: React.ReactNode }) {
-    return <div className="p-5">{children}</div>;
+export function CardBody({ children, className }: { children: React.ReactNode; className?: string }) {
+    return <div className={cn("p-5", className)}>{children}</div>;
 }
 
 export function Button({
