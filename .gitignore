@@ -56,3 +56,6 @@ coverage/
 
 # Embedded repo (handle separately)
 Heimdall/
+
+# Local Netlify folder
+.netlify
