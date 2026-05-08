@@ -134,6 +134,8 @@ function buildCompanionSystemPrompt(args: {
     intimacy: number;
     summary: string | null;
     memorySummary: string | null;
+    emotionalMemory: string | null;
+    emotionalProfile: string | null;
   };
   userEmotion?: UserEmotion;
   companionMood?: 0 | 1 | 2 | 3;
@@ -218,6 +220,8 @@ function buildCompanionSystemPrompt(args: {
   Intimacy: ${memory.intimacy}/100
   Conversation arc: ${memory.summary || "No summary yet."}
   What I know about the user: ${memory.memorySummary || "Nothing noted yet — learn from what they share."}
+  Emotional moments: ${memory.emotionalMemory || "None recorded yet."}
+  User emotional style: ${memory.emotionalProfile || "Still learning — observe how they express feelings."}
 
   USER EMOTIONAL STATE (this message)
   Detected: ${userEmotion}
@@ -460,6 +464,113 @@ async function maybeExtractUserMemory(args: {
   }
 }
 
+async function maybeExtractEmotionalMemory(args: {
+  conversationId: string;
+  currentMemory: string | null;
+}) {
+  const { conversationId, currentMemory } = args;
+
+  const messageCount = await prisma.chatMessage.count({ where: { conversationId } });
+  if (messageCount < 8 || messageCount % 8 !== 0) return;
+
+  const messages = await prisma.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+    take: 40,
+    select: { role: true, content: true },
+  });
+
+  if (messages.length === 0) return;
+
+  try {
+    const response = await getOpenAI().responses.create({
+      model: "gpt-4o-mini",
+      input: [
+        {
+          role: "system" as const,
+          content:
+            "Extract a concise log of emotional moments from this conversation. " +
+            "Focus on: what the user felt and in what context (e.g. 'felt vulnerable discussing family', " +
+            "'playful and lighthearted when talking about travel', 'needed reassurance after conflict'). " +
+            "Use past tense, short phrases separated by semicolons. Max 120 words. " +
+            "Merge with existing log — keep the most meaningful entries, prune trivial or redundant ones. " +
+            "Output only the updated log, no preamble.",
+        },
+        {
+          role: "user" as const,
+          content: [
+            currentMemory ? `Existing log:\n${currentMemory}` : "Existing log: (none)",
+            "Conversation:\n" + messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n"),
+          ].join("\n\n"),
+        },
+      ],
+    });
+
+    const extracted = response.output_text?.trim();
+    if (extracted) {
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { emotionalMemory: extracted },
+      });
+    }
+  } catch {
+    // non-critical
+  }
+}
+
+async function maybeExtractEmotionalProfile(args: {
+  conversationId: string;
+  currentProfile: string | null;
+}) {
+  const { conversationId, currentProfile } = args;
+
+  const messageCount = await prisma.chatMessage.count({ where: { conversationId } });
+  if (messageCount < 20 || messageCount % 20 !== 0) return;
+
+  const messages = await prisma.chatMessage.findMany({
+    where: { conversationId, role: "user" },
+    orderBy: { createdAt: "asc" },
+    take: 80,
+    select: { content: true },
+  });
+
+  if (messages.length < 10) return;
+
+  try {
+    const response = await getOpenAI().responses.create({
+      model: "gpt-4o-mini",
+      input: [
+        {
+          role: "system" as const,
+          content:
+            "Based on how this user communicates emotionally, infer their emotional preferences and patterns. " +
+            "Include: how much reassurance they seem to need (low/medium/high), whether they enjoy teasing or prefer sincerity, " +
+            "their communication style (direct/indirect/playful/reserved), any recurring emotional needs or sensitivities. " +
+            "Update from the existing profile if patterns have shifted. " +
+            "Output 3-5 short bullet points. No preamble.",
+        },
+        {
+          role: "user" as const,
+          content: [
+            currentProfile ? `Existing profile:\n${currentProfile}` : "Existing profile: (none)",
+            "User messages:\n" + messages.map((m) => `- ${m.content}`).join("\n"),
+          ].join("\n\n"),
+        },
+      ],
+    });
+
+    const extracted = response.output_text?.trim();
+    if (extracted) {
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { emotionalProfile: extracted },
+      });
+    }
+  } catch {
+    // non-critical
+  }
+}
+
 export async function POST(req: Request) {
   const user = await getAuthedUser();
   if (!user) {
@@ -523,6 +634,8 @@ export async function POST(req: Request) {
     companionMood: true,
     summary: true,
     memorySummary: true,
+    emotionalMemory: true,
+    emotionalProfile: true,
     lastActiveAt: true,
   } as const;
 
@@ -586,6 +699,8 @@ export async function POST(req: Request) {
       intimacy: conversation.intimacy,
       summary: conversation.summary,
       memorySummary: conversation.memorySummary,
+      emotionalMemory: conversation.emotionalMemory,
+      emotionalProfile: conversation.emotionalProfile,
     },
     userEmotion: delta.emotion,
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
@@ -653,6 +768,8 @@ export async function POST(req: Request) {
         intimacy: true,
         summary: true,
         memorySummary: true,
+        emotionalMemory: true,
+        emotionalProfile: true,
       },
     });
 
@@ -664,6 +781,14 @@ export async function POST(req: Request) {
       maybeExtractUserMemory({
         conversationId: conversation.id,
         currentMemory: updatedConversation.memorySummary,
+      }),
+      maybeExtractEmotionalMemory({
+        conversationId: conversation.id,
+        currentMemory: updatedConversation.emotionalMemory,
+      }),
+      maybeExtractEmotionalProfile({
+        conversationId: conversation.id,
+        currentProfile: updatedConversation.emotionalProfile,
       }),
     ]);
 
