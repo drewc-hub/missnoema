@@ -18,6 +18,7 @@ const ProfileSchema = z.object({
   personality: z.string().optional().default(""),
   wardrobe: z.string().optional().default(""),
   traits: z.array(z.string()).optional().default([]),
+  voice: z.string().optional().nullable(),
   sliders: z
     .object({
       warmth: z.number().min(0).max(100).optional().default(50),
@@ -180,5 +181,9 @@ export async function POST(req: Request) {
       companion.contentRating === ContentRating.ADULT
         ? `/adult/companions/${companion.slug}`
         : `/companions/${companion.slug}`,
+    chatUrl:
+      companion.contentRating === ContentRating.ADULT
+        ? `/adult/chat?companion=${companion.slug}`
+        : `/chat?companion=${companion.slug}`,
   });
 }
