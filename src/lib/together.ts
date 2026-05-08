@@ -27,3 +27,36 @@ export function getChatClient(): { client: OpenAI; model: string } {
   }
   return { client: getOpenAI(), model: "gpt-4o-mini" };
 }
+
+type ChatParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, "model" | "stream">;
+type StreamParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model" | "stream">;
+
+/** Chat completion with automatic fallback to OpenAI on Together credit errors. */
+export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.ChatCompletion> {
+  const { client, model } = getChatClient();
+  try {
+    return await client.chat.completions.create({ ...params, model, stream: false });
+  } catch (err: unknown) {
+    const status = (err as { status?: number })?.status;
+    if (status === 402 && process.env.TOGETHER_API_KEY) {
+      console.warn("Together AI credit limit reached, falling back to OpenAI");
+      return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: false });
+    }
+    throw err;
+  }
+}
+
+/** Streaming chat completion with automatic fallback to OpenAI on Together credit errors. */
+export async function chatCompletionStream(params: StreamParams): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
+  const { client, model } = getChatClient();
+  try {
+    return await client.chat.completions.create({ ...params, model, stream: true });
+  } catch (err: unknown) {
+    const status = (err as { status?: number })?.status;
+    if (status === 402 && process.env.TOGETHER_API_KEY) {
+      console.warn("Together AI credit limit reached, falling back to OpenAI");
+      return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: true });
+    }
+    throw err;
+  }
+}
