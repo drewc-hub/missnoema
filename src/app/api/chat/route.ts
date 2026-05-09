@@ -33,6 +33,7 @@ function scoreUserMessage(text: string): {
   familiarity: number;
   trust: number;
   intimacy: number;
+  kink: number;
   emotion: UserEmotion;
 } {
   const lower = text.toLowerCase();
@@ -59,10 +60,19 @@ function scoreUserMessage(text: string): {
   if (emotion === "loving") intimacy += 2;
   if (emotion === "vulnerable") intimacy += 1;
 
+  // Kink: escalation signals (only applied for adult companions with kink slider > 0)
+  let kink = 0;
+  if (["bdsm", "collar", "leash", "kneel", "submit", "obey", "restrain", "bound", "slave",
+       "master", "mistress", "punish", "spank", "worship", "degrade", "claimed", "owned",
+       "dominant", "submissive", "blindfold", "handcuff", "tied up", "whip", "on my knees",
+       "at your feet", "good girl", "good boy"].some((t) => lower.includes(t))) kink += 5;
+  if (["control me", "control you", "power over", "use me", "take control"].some((t) => lower.includes(t))) kink += 3;
+
   return {
     familiarity: clamp(familiarity, 0, 8),
     trust: clamp(trust, 0, 6),
     intimacy: clamp(intimacy, 0, 5),
+    kink: clamp(kink, 0, 5),
     emotion,
   };
 }
@@ -553,6 +563,7 @@ export async function POST(req: Request) {
     familiarity: true,
     trust: true,
     intimacy: true,
+    kinkLevel: true,
     companionMood: true,
     summary: true,
     memorySummary: true,
@@ -693,6 +704,8 @@ ${lastAssistantReplies || "(none)"}
       const newFamiliarity = delta ? Math.min(conversation.familiarity + delta.familiarity, 100) : conversation.familiarity;
       const newTrust = delta ? Math.min(conversation.trust + delta.trust, 100) : conversation.trust;
       const newIntimacy = delta ? Math.min(conversation.intimacy + delta.intimacy, 100) : conversation.intimacy;
+      const kinkDelta = (delta && companion.contentRating === ContentRating.ADULT && Number(sliders.kink ?? 0) > 0) ? delta.kink : 0;
+      const newKinkLevel = Math.min(conversation.kinkLevel + kinkDelta, 100);
 
       const moodTier = computeMoodTier({
         intimacy: newIntimacy,
@@ -707,10 +720,11 @@ ${lastAssistantReplies || "(none)"}
           familiarity: newFamiliarity,
           trust: newTrust,
           intimacy: newIntimacy,
+          kinkLevel: newKinkLevel,
           companionMood: moodTier,
           lastActiveAt: new Date(),
         },
-        select: { id: true, familiarity: true, trust: true, intimacy: true, summary: true },
+        select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true },
       });
 
       await sse({
@@ -724,6 +738,7 @@ ${lastAssistantReplies || "(none)"}
           familiarity: updatedConversation.familiarity,
           trust: updatedConversation.trust,
           intimacy: updatedConversation.intimacy,
+          kinkLevel: updatedConversation.kinkLevel,
           summary: updatedConversation.summary,
         },
       });

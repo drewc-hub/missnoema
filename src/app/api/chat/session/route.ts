@@ -68,6 +68,7 @@ export async function GET(req: Request) {
       familiarity: true,
       trust: true,
       intimacy: true,
+      kinkLevel: true,
       summary: true,
       messages: {
         orderBy: { createdAt: "asc" },

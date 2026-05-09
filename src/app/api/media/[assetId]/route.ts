@@ -24,9 +24,7 @@ export async function PATCH(
   const asset = await prisma.companionAsset.findFirst({
     where: {
       id,
-      companion: {
-        ownerId: user.id,
-      },
+      ownerId: user.id,
     },
     select: {
       id: true,

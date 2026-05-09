@@ -56,8 +56,11 @@ function speakMessage(text: string, voicePreset?: string | null, gender?: string
         : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
     );
     if (preferred) utter.voice = preferred;
-    // Small delay after cancel() so the browser queue is fully cleared
-    setTimeout(() => window.speechSynthesis.speak(utter), 50);
+    utter.onerror = () => {};
+    setTimeout(() => {
+      window.speechSynthesis.resume();
+      window.speechSynthesis.speak(utter);
+    }, 50);
   }
 
   // getVoices() is async on first call — wait for voiceschanged if needed
@@ -80,6 +83,7 @@ type ConversationMemory = {
   familiarity: number;
   trust: number;
   intimacy: number;
+  kinkLevel: number;
   summary?: string | null;
 };
 
@@ -347,6 +351,7 @@ export function CompanionChatWorkspace({
           familiarity: conversationData.conversation.familiarity,
           trust: conversationData.conversation.trust,
           intimacy: conversationData.conversation.intimacy,
+          kinkLevel: conversationData.conversation.kinkLevel ?? 0,
           summary: conversationData.conversation.summary ?? null,
         });
 
@@ -450,6 +455,7 @@ export function CompanionChatWorkspace({
                 familiarity: m.familiarity as number,
                 trust: m.trust as number,
                 intimacy: m.intimacy as number,
+                kinkLevel: typeof m.kinkLevel === "number" ? m.kinkLevel : (memory?.kinkLevel ?? 0),
                 summary: (m.summary as string | null) ?? null,
               });
             }
@@ -707,7 +713,7 @@ export function CompanionChatWorkspace({
         return;
       }
       setMessages([]);
-      setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, summary: null } : null);
+      setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, kinkLevel: 0, summary: null } : null);
       setSuggestions([]);
       setResetConfirmId(null);
     } finally {
@@ -842,17 +848,30 @@ export function CompanionChatWorkspace({
                           : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-medium text-zinc-100">{c.name}</div>
-                        <Badge
-                          tone={c.contentRating === "ADULT" ? "adult" : "safe"}
-                        >
-                          {c.contentRating}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-1 line-clamp-2 text-xs text-zinc-400">
-                        {c.description}
+                      <div className="flex items-start gap-2">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
+                          {c.thumbnailUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={c.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sm text-zinc-600">
+                              {c.name[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-medium text-zinc-100 truncate">{c.name}</div>
+                            <Badge
+                              tone={c.contentRating === "ADULT" ? "adult" : "safe"}
+                            >
+                              {c.contentRating}
+                            </Badge>
+                          </div>
+                          <div className="mt-0.5 line-clamp-2 text-xs text-zinc-400">
+                            {c.description}
+                          </div>
+                        </div>
                       </div>
                     </button>
                     <button
@@ -1017,10 +1036,11 @@ export function CompanionChatWorkspace({
                   <>
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 space-y-2">
                       {[
-                        { label: "Familiarity", value: memory.familiarity, color: "bg-blue-500" },
-                        { label: "Trust", value: memory.trust, color: "bg-emerald-500" },
-                        { label: "Intimacy", value: memory.intimacy, color: "bg-rose-500" },
-                      ].map(({ label, value, color }) => (
+                        { label: "Familiarity", value: memory.familiarity, color: "bg-blue-500", show: true },
+                        { label: "Trust", value: memory.trust, color: "bg-emerald-500", show: true },
+                        { label: "Intimacy", value: memory.intimacy, color: "bg-rose-500", show: true },
+                        { label: "Kink", value: memory.kinkLevel, color: "bg-violet-500", show: activeCompanion?.contentRating === "ADULT" },
+                      ].filter((s) => s.show).map(({ label, value, color }) => (
                         <div key={label}>
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-zinc-300">{label}</span>
