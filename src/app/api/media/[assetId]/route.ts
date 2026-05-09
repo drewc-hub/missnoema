@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ assetId: string }> },
 ) {
-  const { id } = await params;
+  const { assetId: id } = await params;
 
   const user = await getAuthedUser();
   if (!user) {
@@ -57,9 +57,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ assetId: string }> },
 ) {
-  const { id } = await params;
+  const { assetId: id } = await params;
 
   const user = await getAuthedUser();
   if (!user) {
