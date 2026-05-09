@@ -2,7 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, generateText } from "ai";
 
 const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "mistralai/mistral-nemo";
+  process.env.OPENROUTER_MODEL ?? "mistralai/Mistral-Nemo-Instruct-v1";
 
 let provider: ReturnType<typeof createOpenAI> | undefined;
 
@@ -35,7 +35,7 @@ export function companionStream(
   messages: Msg[],
 ): AsyncIterable<string> {
   const result = streamText({
-    model: getProvider()(OPENROUTER_MODEL),
+    model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
     temperature: 0.95,
@@ -50,7 +50,7 @@ export async function companionGenerate(
   messages: Msg[],
 ): Promise<string> {
   const result = await generateText({
-    model: getProvider()(OPENROUTER_MODEL),
+    model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
     temperature: 1.05,
