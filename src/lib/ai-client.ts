@@ -37,7 +37,7 @@ export function companionStream(
   messages: Msg[],
 ): AsyncIterable<string> {
   const result = streamText({
-    model: getProvider()(OPENROUTER_MODEL),
+    model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
     ...streamSettings,
@@ -51,7 +51,7 @@ export async function companionGenerate(
   messages: Msg[],
 ): Promise<string> {
   const result = await generateText({
-    model: getProvider()(OPENROUTER_MODEL),
+    model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
     ...generateSettings,

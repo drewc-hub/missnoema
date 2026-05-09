@@ -1,6 +1,6 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
-import { getOpenAI } from "@/lib/openai";
+import { chatCompletion } from "@/lib/together";
 import { companionStream } from "@/lib/ai-client";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -302,13 +302,10 @@ async function maybeRefreshConversationSummary(args: {
     },
   ];
 
-  const summaryResponse = await getOpenAI().responses.create({
-    model: "gpt-4o-mini",
-    input: summaryInput,
-  });
+  const summaryResponse = await chatCompletion({ messages: summaryInput, max_tokens: 400 });
 
   const nextSummary =
-    summaryResponse.output_text?.trim() || currentSummary || null;
+    summaryResponse.choices[0]?.message?.content?.trim() || currentSummary || null;
 
   if (nextSummary) {
     await prisma.conversation.update({
@@ -344,9 +341,8 @@ async function maybeExtractUserMemory(args: {
   if (userMessages.length === 0) return;
 
   try {
-    const response = await getOpenAI().responses.create({
-      model: "gpt-4o-mini",
-      input: [
+    const response = await chatCompletion({
+      messages: [
         {
           role: "system" as const,
           content:
@@ -366,9 +362,10 @@ async function maybeExtractUserMemory(args: {
           ].join("\n\n"),
         },
       ],
+      max_tokens: 400,
     });
 
-    const extracted = response.output_text?.trim();
+    const extracted = response.choices[0]?.message?.content?.trim();
     if (extracted) {
       await prisma.conversation.update({
         where: { id: conversationId },
@@ -399,9 +396,8 @@ async function maybeExtractEmotionalMemory(args: {
   if (messages.length === 0) return;
 
   try {
-    const response = await getOpenAI().responses.create({
-      model: "gpt-4o-mini",
-      input: [
+    const response = await chatCompletion({
+      messages: [
         {
           role: "system" as const,
           content:
@@ -420,9 +416,10 @@ async function maybeExtractEmotionalMemory(args: {
           ].join("\n\n"),
         },
       ],
+      max_tokens: 200,
     });
 
-    const extracted = response.output_text?.trim();
+    const extracted = response.choices[0]?.message?.content?.trim();
     if (extracted) {
       await prisma.conversation.update({
         where: { id: conversationId },
@@ -453,9 +450,8 @@ async function maybeExtractEmotionalProfile(args: {
   if (messages.length < 10) return;
 
   try {
-    const response = await getOpenAI().responses.create({
-      model: "gpt-4o-mini",
-      input: [
+    const response = await chatCompletion({
+      messages: [
         {
           role: "system" as const,
           content:
@@ -473,9 +469,10 @@ async function maybeExtractEmotionalProfile(args: {
           ].join("\n\n"),
         },
       ],
+      max_tokens: 200,
     });
 
-    const extracted = response.output_text?.trim();
+    const extracted = response.choices[0]?.message?.content?.trim();
     if (extracted) {
       await prisma.conversation.update({
         where: { id: conversationId },
