@@ -58,51 +58,6 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* Feature cards — equal height, button pinned to bottom */}
-            <section className="grid gap-4 lg:grid-cols-3">
-                <Card className="flex flex-col">
-                    <CardHeader title="Library" subtitle="Search, filter, and discover." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Public SAFE companions show by default. Verified users can opt into 18+ browsing — all clearly labeled and age-gated.
-                        </p>
-                        <a href="/companions">
-                            <Button variant="secondary" className="w-full">
-                                Open library
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-
-                <Card className="flex flex-col">
-                    <CardHeader title="Creator" subtitle="Design personality + boundaries." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Build companions with structured profiles — scene, backstory, personality sliders, kink tags, and relationship styles.
-                        </p>
-                        <a href="/companions/new">
-                            <Button variant="secondary" className="w-full">
-                                Create a companion
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-
-                <Card className="flex flex-col">
-                    <CardHeader title="Generation" subtitle="Queue jobs, worker produces media." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Generate images and video server-side. Assets are stored securely — adult content stays private behind signed URLs.
-                        </p>
-                        <a href="/companions">
-                            <Button variant="secondary" className="w-full">
-                                Generate from a companion
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-            </section>
-
             {/* Memory features */}
             <section className="rounded-2xl border border-blue-900/40 bg-gradient-to-b from-blue-950/60 to-zinc-900/60 p-6 space-y-6">
                 <div className="space-y-1">
@@ -177,6 +132,52 @@ export default async function HomePage() {
                     <span className="text-xs text-zinc-500">Memory builds automatically — no setup required.</span>
                 </div>
             </section>
+
+            {/* Feature cards — equal height, button pinned to bottom */}
+            <section className="grid gap-4 lg:grid-cols-3">
+                <Card className="flex flex-col">
+                    <CardHeader title="Library" subtitle="Search, filter, and discover." />
+                    <CardBody className="flex flex-col flex-1 gap-3">
+                        <p className="flex-1 text-sm text-zinc-300">
+                            Public SAFE companions show by default. Verified users can opt into 18+ browsing — all clearly labeled and age-gated.
+                        </p>
+                        <a href="/companions">
+                            <Button variant="secondary" className="w-full">
+                                Open library
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+
+                <Card className="flex flex-col">
+                    <CardHeader title="Creator" subtitle="Design personality + boundaries." />
+                    <CardBody className="flex flex-col flex-1 gap-3">
+                        <p className="flex-1 text-sm text-zinc-300">
+                            Build companions with structured profiles — scene, backstory, personality sliders, kink tags, and relationship styles.
+                        </p>
+                        <a href="/companions/new">
+                            <Button variant="secondary" className="w-full">
+                                Create a companion
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+
+                <Card className="flex flex-col">
+                    <CardHeader title="Generation" subtitle="Queue jobs, worker produces media." />
+                    <CardBody className="flex flex-col flex-1 gap-3">
+                        <p className="flex-1 text-sm text-zinc-300">
+                            Generate images and video server-side. Assets are stored securely — adult content stays private behind signed URLs.
+                        </p>
+                        <a href="/companions">
+                            <Button variant="secondary" className="w-full">
+                                Generate from a companion
+                            </Button>
+                        </a>
+                    </CardBody>
+                </Card>
+            </section>
+
         </main>
     );
 }
