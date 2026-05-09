@@ -71,7 +71,7 @@ export default async function HomePage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     {/* Longer context window */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-2">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xl">📖</span>
                             <span className="font-medium text-zinc-100">Longer context window</span>
@@ -80,14 +80,14 @@ export default async function HomePage() {
                             Your plan determines how many recent messages stay live in the AI&apos;s awareness — up to 40 messages at a time on Unlimited. The AI always knows what was just said, not just the last two lines.
                         </p>
                         <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-400">Basic · 12 messages</span>
-                            <span className="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-400">Pro · 25 messages</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-400">Basic · 12 messages</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-400">Pro · 25 messages</span>
                             <span className="rounded-full bg-blue-900/60 px-2.5 py-1 text-xs text-blue-300">Unlimited · 40 messages</span>
                         </div>
                     </div>
 
                     {/* Saved fact list */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-2">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xl">🗂️</span>
                             <span className="font-medium text-zinc-100">Saved fact list</span>
@@ -96,14 +96,14 @@ export default async function HomePage() {
                             Tell your companion your name, your kinks, your limits, your preferences — once. Those facts are automatically injected into every conversation so you never have to repeat yourself.
                         </p>
                         <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;My name is Alex&quot;</span>
-                            <span className="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;I enjoy bondage&quot;</span>
-                            <span className="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;Hard limits: …&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;My name is Alex&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;I enjoy bondage&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;Hard limits: …&quot;</span>
                         </div>
                     </div>
 
                     {/* Pinned messages */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-2">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xl">📌</span>
                             <span className="font-medium text-zinc-100">Pinned messages</span>
@@ -114,7 +114,7 @@ export default async function HomePage() {
                     </div>
 
                     {/* Longitudinal understanding */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-2">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xl">🧠</span>
                             <span className="font-medium text-zinc-100">Persistent longitudinal understanding</span>
