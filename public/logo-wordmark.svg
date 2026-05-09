@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56">
+  <defs>
+    <linearGradient id="gw" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="gt" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Memory thread: thin arc flowing from the N over the word to the A -->
+  <!-- Starts near the top of N (~x=12), arcs up and over, lands near the A apex (~x=218) -->
+  <path d="M 12,10 C 60,-8 175,-8 218,10"
+        fill="none"
+        stroke="url(#gt)"
+        stroke-width="1.5"
+        stroke-linecap="round"/>
+
+  <!-- NOEMA wordmark -->
+  <text
+    x="8"
+    y="48"
+    font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
+    font-weight="600"
+    font-size="40"
+    letter-spacing="6"
+    fill="url(#gw)">NOEMA</text>
+</svg>

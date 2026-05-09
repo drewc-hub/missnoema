@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!--
+    N letterform whose outer vertical edges are shaped as face profiles.
+    Left outer edge: profile facing left  (nose tip at x≈2, y≈48)
+    Right outer edge: profile facing right (nose tip at x≈98, y≈48)
+    Together the two faces frame the letter — look at the outer silhouette.
+  -->
+  <path fill="url(#g)" d="
+    M 8,100
+    C 8,78  2,62  2,50
+    C 2,38  8,22  8,0
+    L 26,0
+    L 74,100
+    L 92,100
+    C 92,78  98,62  98,50
+    C 98,38  92,22  92,0
+    L 74,0
+    L 26,100
+    Z
+  "/>
+</svg>

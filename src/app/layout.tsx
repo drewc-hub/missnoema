@@ -2,8 +2,9 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "NOMEA",
-  description: "Companion library + custom companions",
+  title: "Noema",
+  description: "AI companions with real memory — longer context, saved facts, pinned moments.",
+  icons: { icon: "/logo-icon.svg" },
 };
 
 export default function RootLayout({
