@@ -123,6 +123,11 @@ export function CompanionChatWorkspace({
   const [mediaHistory, setMediaHistory] = useState<MediaHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [saveInfo, setSaveInfo] = useState<{ total: number; limit: number | null; coinBalance: number; coinCost: number } | null>(null);
+  const [coinPromptMsg, setCoinPromptMsg] = useState<ChatMessage | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
@@ -142,6 +147,19 @@ export function CompanionChatWorkspace({
   useEffect(() => {
     console.log("[CompanionChatWorkspace] activeId changed:", activeId);
   }, [activeId]);
+
+  async function loadSavedIds(conversationId: string) {
+    try {
+      const res = await fetch(`/api/saved-messages?conversationId=${encodeURIComponent(conversationId)}`);
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setSavedIds(new Set(data.ids ?? []));
+        setSaveInfo({ total: data.total, limit: data.limit, coinBalance: data.coinBalance, coinCost: data.coinCost });
+      }
+    } catch {
+      // non-critical
+    }
+  }
 
   async function loadMediaHistory(companionId: string) {
     try {
@@ -337,7 +355,10 @@ export function CompanionChatWorkspace({
           setSuggestions([]);
         }
 
-        await loadMediaHistory(activeId);
+        await Promise.all([
+          loadMediaHistory(activeId),
+          loadSavedIds(conversationData.conversation.id),
+        ]);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load conversation.",
@@ -563,6 +584,43 @@ export function CompanionChatWorkspace({
       setError(err instanceof Error ? err.message : "Failed to rerun reply.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSaveMessage(m: ChatMessage, useCoin = false) {
+    if (!m.id || !activeCompanion) return;
+    setSavingId(m.id);
+    try {
+      const res = await fetch("/api/saved-messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          messageId: m.id,
+          content: m.content,
+          companionId: activeCompanion.id,
+          companionName: activeCompanion.name,
+          useCoin,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok && !data?.limitReached) {
+        setError(data?.error || "Failed to save message.");
+        return;
+      }
+      if (data?.limitReached) {
+        setCoinPromptMsg(m);
+        return;
+      }
+      if (data?.saved) {
+        setSavedIds((prev) => new Set([...prev, m.id!]));
+        setSaveInfo((prev) => prev ? { ...prev, total: prev.total + 1, coinBalance: data.newCoinBalance ?? prev.coinBalance } : prev);
+      } else {
+        setSavedIds((prev) => { const next = new Set(prev); next.delete(m.id!); return next; });
+        setSaveInfo((prev) => prev ? { ...prev, total: Math.max(0, prev.total - 1) } : prev);
+      }
+      setCoinPromptMsg(null);
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -796,7 +854,13 @@ export function CompanionChatWorkspace({
           <Card>
             <CardHeader
               title="Chat"
-              subtitle="Edit messages, rerun or re-speak any reply."
+              subtitle={
+                saveInfo
+                  ? saveInfo.limit === null
+                    ? "Unlimited saves · Edit, rerun or re-speak any reply."
+                    : `${saveInfo.total}/${saveInfo.limit} saves used · Edit, rerun or re-speak any reply.`
+                  : "Edit messages, rerun or re-speak any reply."
+              }
             />
 
             <CardBody>
@@ -881,6 +945,21 @@ export function CompanionChatWorkspace({
                                   >
                                     ↺
                                   </button>
+                                  {m.id ? (
+                                    <button
+                                      type="button"
+                                      disabled={savingId === m.id}
+                                      onClick={() => handleSaveMessage(m)}
+                                      className={`text-[11px] transition disabled:opacity-40 ${
+                                        savedIds.has(m.id)
+                                          ? "text-amber-400 hover:text-amber-200"
+                                          : "text-zinc-500 hover:text-zinc-200"
+                                      }`}
+                                      title={savedIds.has(m.id) ? "Unsave" : saveInfo && saveInfo.limit !== null && saveInfo.total >= saveInfo.limit ? `Save (${saveInfo.coinCost} coins)` : "Save"}
+                                    >
+                                      {savedIds.has(m.id) ? "🔖 Saved" : "Save"}
+                                    </button>
+                                  ) : null}
                                 </>
                               ) : null}
                               <button
@@ -1006,6 +1085,42 @@ export function CompanionChatWorkspace({
           ) : null}
         </aside>
       </div>
+
+      {coinPromptMsg ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setCoinPromptMsg(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-base font-semibold text-zinc-100">Save limit reached</div>
+            <div className="text-sm text-zinc-400">
+              You&apos;ve used all {saveInfo?.limit} saves on your plan.
+              Spend <span className="text-amber-400 font-medium">{saveInfo?.coinCost} coins</span> to save this message.
+            </div>
+            <div className="text-xs text-zinc-500">
+              Your balance: <span className="text-zinc-300">{saveInfo?.coinBalance ?? 0} coins</span>
+            </div>
+            {saveInfo && (saveInfo.coinBalance ?? 0) < (saveInfo.coinCost ?? 5) ? (
+              <div className="text-xs text-red-400">Not enough coins. Top up in Account → Billing.</div>
+            ) : null}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                disabled={!saveInfo || (saveInfo.coinBalance ?? 0) < (saveInfo.coinCost ?? 5) || savingId === coinPromptMsg.id}
+                onClick={() => handleSaveMessage(coinPromptMsg, true)}
+              >
+                {savingId === coinPromptMsg.id ? "Saving…" : `Spend ${saveInfo?.coinCost} coins`}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setCoinPromptMsg(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {lightboxItem ? (
         <div

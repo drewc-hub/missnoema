@@ -114,6 +114,21 @@ model CompanionReaction {
   @@schema("public")
 }
 
+model SavedMessage {
+  id            String   @id @default(cuid())
+  userId        String
+  messageId     String?
+  content       String
+  companionId   String
+  companionName String
+  coinPurchased Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@index([userId, messageId])
+  @@schema("public")
+}
+
 model Content {
   id                String           @id @default(uuid())
   text              String
