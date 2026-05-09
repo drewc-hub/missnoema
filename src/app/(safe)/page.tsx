@@ -80,8 +80,8 @@ export default async function HomePage() {
                             Your plan determines how many recent messages stay live in the AI&apos;s awareness — up to 40 messages at a time on Unlimited. The AI always knows what was just said, not just the last two lines.
                         </p>
                         <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-400">Basic · 12 messages</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-400">Pro · 25 messages</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-200">Basic · 12 messages</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-200">Pro · 25 messages</span>
                             <span className="rounded-full bg-blue-900/60 px-2.5 py-1 text-xs text-blue-300">Unlimited · 40 messages</span>
                         </div>
                     </div>
@@ -92,13 +92,13 @@ export default async function HomePage() {
                             <span className="text-xl">🗂️</span>
                             <span className="font-medium text-zinc-100">Saved fact list</span>
                         </div>
-                        <p className="text-sm text-zinc-400">
+                        <p className="text-sm text-zinc-300">
                             Tell your companion your name, your kinks, your limits, your preferences — once. Those facts are automatically injected into every conversation so you never have to repeat yourself.
                         </p>
                         <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;My name is Alex&quot;</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;I enjoy bondage&quot;</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-500 italic">&quot;Hard limits: …&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;My name is Alex&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;I enjoy bondage&quot;</span>
+                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;Hard limits: …&quot;</span>
                         </div>
                     </div>
 
@@ -108,7 +108,7 @@ export default async function HomePage() {
                             <span className="text-xl">📌</span>
                             <span className="font-medium text-zinc-100">Pinned messages</span>
                         </div>
-                        <p className="text-sm text-zinc-400">
+                        <p className="text-sm text-zinc-300">
                             Pin any message — a confession, a promise, a defining moment — and it stays anchored in the AI&apos;s context permanently. No matter how long the conversation grows, pinned messages are never forgotten.
                         </p>
                     </div>
@@ -119,7 +119,7 @@ export default async function HomePage() {
                             <span className="text-xl">🧠</span>
                             <span className="font-medium text-zinc-100">Persistent longitudinal understanding</span>
                         </div>
-                        <p className="text-sm text-zinc-400">
+                        <p className="text-sm text-zinc-300">
                             Behind the scenes, Noema continuously builds an emotional profile of you — your communication style, your recurring needs, moments of vulnerability. Companions develop a genuine sense of who you are across weeks and months of conversation.
                         </p>
                     </div>
@@ -129,7 +129,7 @@ export default async function HomePage() {
                     <a href="/companions">
                         <Button>Start a conversation</Button>
                     </a>
-                    <span className="text-xs text-zinc-500">Memory builds automatically — no setup required.</span>
+                    <span className="text-xs text-zinc-300">Memory builds automatically — no setup required.</span>
                 </div>
             </section>
 
