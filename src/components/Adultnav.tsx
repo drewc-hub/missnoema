@@ -33,7 +33,7 @@ export function AdultTopNav() {
                         <NavLink href="/adult" label="Adult" />
                     </li>
                     <li>
-                        <NavLink href="/admin" label="Admin" />
+                        <NavLink href="/about" label="About Us" />
                     </li>
                     <li>
                         <NavLink href="/media" label="Media" />
