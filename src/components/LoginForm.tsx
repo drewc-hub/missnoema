@@ -39,6 +39,7 @@ export function LoginForm({ next }: { next: string }) {
   const [pwStatus, setPwStatus] = useState<"idle" | "loading" | "error">("idle");
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwValidationErrors, setPwValidationErrors] = useState<string[]>([]);
+  const [pwConfirmSent, setPwConfirmSent] = useState(false);
 
   // Password recovery state
   const [recoverStatus, setRecoverStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
@@ -109,6 +110,9 @@ console.log("Sending magic link with next:", safeNext);
       if (!res.ok || json.error) {
         setPwError(json.error ?? "Something went wrong. Please try again.");
         setPwStatus("error");
+      } else if (json.requiresConfirmation) {
+        setPwStatus("idle");
+        setPwConfirmSent(true);
       } else {
         // Redirect to the destination after successful auth
         window.location.href = json.redirectTo ?? next;
@@ -245,6 +249,12 @@ console.log("Sending magic link with next:", safeNext);
           {/* ── Email & password form ── */}
           {method === "password" && (
             <>
+              {pwConfirmSent ? (
+                <div className="rounded-xl border border-emerald-800 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-300">
+                  ✓ Confirmation email sent! Check your inbox and click the link to activate your account.
+                </div>
+              ) : null}
+
               {/* Sign in / Sign up sub-toggle */}
               <div className="flex gap-3 border-b border-zinc-800 pb-3">
                 <button
@@ -253,6 +263,7 @@ console.log("Sending magic link with next:", safeNext);
                     setPwMode("signin");
                     setPwError(null);
                     setPwValidationErrors([]);
+                    setPwConfirmSent(false);
                     setRecoverStatus("idle");
                     setRecoverError(null);
                   }}
@@ -271,6 +282,7 @@ console.log("Sending magic link with next:", safeNext);
                     setPwMode("signup");
                     setPwError(null);
                     setPwValidationErrors([]);
+                    setPwConfirmSent(false);
                     setRecoverStatus("idle");
                     setRecoverError(null);
                   }}
