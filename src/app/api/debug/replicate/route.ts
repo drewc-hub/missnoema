@@ -24,7 +24,7 @@ export async function GET() {
       );
     }
 
-    const replicate = new Replicate({ bearerToken: token });
+    const replicate = new Replicate({ auth: token });
 
     try {
       const out = await replicate.run("black-forest-labs/flux-dev", {

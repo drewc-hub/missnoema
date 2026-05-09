@@ -8,7 +8,7 @@ const SAVE_LIMITS: Record<string, number | null> = {
   UNLIMITED: null,
 };
 
-export const COIN_COST_PER_SAVE = 5;
+const COIN_COST_PER_SAVE = 5;
 
 export async function GET(req: Request) {
   const user = await getAuthedUser();

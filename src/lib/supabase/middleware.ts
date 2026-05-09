@@ -16,10 +16,11 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
-            supabaseResponse = supabaseResponseWithCookie(name, value)
+            supabaseResponse = NextResponse.next({ request: { headers: request.headers } })
+            supabaseResponse.cookies.set(name, value)
           })
         },
       },

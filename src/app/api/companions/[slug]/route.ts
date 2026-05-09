@@ -134,9 +134,9 @@ export async function PATCH(
     ok: true,
     companion: updated,
     editUrl:
-      companion.contentRating === ContentRating.ADULT
-        ? `/adult/companions/${companion.slug}/edit`
-        : `/companions/${companion.slug}/edit`,
+      updated.contentRating === ContentRating.ADULT
+        ? `/adult/companions/${updated.slug}/edit`
+        : `/companions/${updated.slug}/edit`,
 
     viewUrl:
       updated.contentRating === ContentRating.ADULT

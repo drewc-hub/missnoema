@@ -1,38 +1,36 @@
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
-import companions from "/src/components/companions";
+type Companion = {
+  id: string;
+  name: string;
+  description?: string;
+  tags: string[];
+};
 
-export default function HomeScreen() {
-  const router = useRouter();
-
+export default function CompanionGrid({
+  companions,
+  className = "",
+}: {
+  companions: Companion[];
+  className?: string;
+}) {
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>
-        Choose Your Companion
-      </Text>
-
-      <FlatList
-        data={companions}
-        keyExtractor={(item) => item.name}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: "/session",
-                params: { name: item.name },
-              })
-            }
-            style={{
-              padding: 16,
-              backgroundColor: "#222",
-              marginTop: 12,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: "white", fontSize: 18 }}>{item.name}</Text>
-            <Text style={{ color: "#aaa" }}>{item.role}</Text>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
+    <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
+      {companions.map((c) => (
+        <a
+          key={c.id}
+          href={`/chat?companion=${encodeURIComponent(c.id)}`}
+          className="block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-600"
+        >
+          <div className="font-semibold text-zinc-100">{c.name}</div>
+          {c.description && (
+            <div className="mt-1 line-clamp-2 text-sm text-zinc-400">{c.description}</div>
+          )}
+          <div className="mt-2 flex flex-wrap gap-1">
+            {c.tags.slice(0, 5).map((t) => (
+              <span key={t} className="rounded-full bg-zinc-900 px-2 py-0.5 text-xs text-zinc-400">{t}</span>
+            ))}
+          </div>
+        </a>
+      ))}
+    </div>
   );
 }

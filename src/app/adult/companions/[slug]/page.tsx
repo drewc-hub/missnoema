@@ -47,9 +47,17 @@ export default async function Page({
     <main className="grid gap-5 lg:grid-cols-12">
       <section className="space-y-4 lg:col-span-7">
         <CompanionBuilder
+          mode="edit"
           allowAdult={allowAdult}
           userEmail={user?.email ?? null}
-          companion={companion}
+          companion={{
+            id: companion.id,
+            name: companion.name,
+            description: companion.description,
+            tags: companion.tags,
+            profile: companion.profile as any,
+            contentRating: companion.contentRating,
+          }}
         />
       </section>
 

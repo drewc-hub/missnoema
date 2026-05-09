@@ -31,5 +31,5 @@
     "worker/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "prisma", "worker", "scripts"]
+  "exclude": ["node_modules", "prisma", "worker", "scripts", "supabase"]
 }
