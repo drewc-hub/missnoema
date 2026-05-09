@@ -96,10 +96,11 @@ function pickSuggestions(args: {
     out.push("What kind of tension are you feeling right now?");
   }
 
-  out.push("What are you thinking right now?");
-  out.push("Tell me more.");
+  out.push("I keep thinking about you. It's a little embarrassing how much.");
+  out.push("I'm not sure what I want to say — I just know I wanted to be here, talking to you.");
 
-  return Array.from(new Set(out)).slice(0, 6);
+  // Return 2 distinct drafts — take first 2 unique items
+  return Array.from(new Set(out)).slice(0, 2);
 }
 
 export async function GET(req: Request) {
@@ -219,18 +220,20 @@ export async function POST(req: Request) {
   const personality = typeof profile.personality === "string" ? profile.personality : "";
   const scene = typeof profile.scene === "string" ? profile.scene : "";
 
-  const last = recentMessages.slice(-8);
+  const last = recentMessages.slice(-12);
   const isAdult = companion.contentRating === ContentRating.ADULT;
 
   const systemPrompt = [
-    `You are helping a user compose a reply to ${companion.name}, an AI companion.`,
+    `You are ghostwriting two different reply options for a user in a chat with ${companion.name}, an AI companion.`,
     personality ? `${companion.name}'s personality: ${personality}` : "",
-    scene ? `Setting: ${scene}` : "",
+    scene ? `Current scene: ${scene}` : "",
     isAdult
-      ? "Adult themes are permitted. Suggestions can be flirtatious or intimate if the conversation warrants it."
-      : "Keep suggestions appropriate for a general audience.",
-    "Generate exactly 4 short, natural things the USER could say next. Each suggestion must be under 15 words.",
-    'Respond with valid JSON: { "suggestions": ["...", "...", "...", "..."] }',
+      ? "Adult and intimate themes are permitted. Suggestions can be sensual, flirtatious, or emotionally vulnerable depending on the conversation's direction."
+      : "Keep suggestions warm and emotionally genuine, appropriate for a general audience.",
+    "Write exactly 2 reply drafts the USER could send. Each draft should be 2–4 sentences — specific, emotionally genuine, and feel like something a real person would actually say.",
+    "Draft A and Draft B must take meaningfully different angles: one might be more vulnerable or sincere, the other more playful or bold — or one might deepen the current thread while the other shifts it slightly.",
+    "Do NOT write companion replies. Write USER replies — things the user would say TO the companion.",
+    'Respond with valid JSON only: { "suggestions": ["draft A full text", "draft B full text"] }',
   ]
     .filter(Boolean)
     .join(" ");
@@ -247,18 +250,18 @@ export async function POST(req: Request) {
         })),
         {
           role: "user",
-          content: "Give me 4 suggested replies I could send right now.",
+          content: "Write 2 different reply drafts I could send right now, based on this conversation.",
         },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 250,
-      temperature: 0.9,
+      max_tokens: 400,
+      temperature: 0.92,
     });
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
     const parsed = JSON.parse(raw);
     const suggestions: string[] = Array.isArray(parsed.suggestions)
-      ? parsed.suggestions.filter((s: unknown) => typeof s === "string").slice(0, 4)
+      ? parsed.suggestions.filter((s: unknown) => typeof s === "string").slice(0, 2)
       : [];
 
     return NextResponse.json({ suggestions });

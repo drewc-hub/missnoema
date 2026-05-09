@@ -22,6 +22,7 @@ type CompanionProfile = {
   wardrobe?: string;
   traits?: string[];
   voice?: string;
+  sexuality?: string;
   sliders?: {
     warmth?: number;
     humor?: number;
@@ -149,6 +150,7 @@ export function CompanionBuilder({
   const [tags, setTags] = useState((companion.tags ?? []).join(", "));
   const [archetype, setArchetype] = useState(companion.archetype ?? "");
   const [gender, setGender] = useState(companion.gender ?? "");
+  const [sexuality, setSexuality] = useState((companion.profile as CompanionProfile | null)?.sexuality ?? "");
   const [voice, setVoice] = useState((companion.profile as CompanionProfile | null)?.voice ?? "");
   const [visibility, setVisibility] = useState<Visibility>(
     companion.visibility ?? "UNLISTED",
@@ -231,6 +233,7 @@ export function CompanionBuilder({
           wardrobe: wardrobe.trim(),
           traits: traitList,
           voice: voice || null,
+          sexuality: sexuality.trim() || null,
           sliders: {
             warmth,
             humor,
@@ -344,7 +347,7 @@ export function CompanionBuilder({
             </div>
 
             <label className="space-y-1">
-              <div className="text-xs text-zinc-400">Gender</div>
+              <div className="text-xs text-zinc-400">Gender identity</div>
               <select
                 value={gender}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)}
@@ -354,11 +357,30 @@ export function CompanionBuilder({
                 <option value="female">Female</option>
                 <option value="male">Male</option>
                 <option value="non-binary">Non-binary</option>
+                <option value="trans-woman">Transgender woman</option>
+                <option value="trans-man">Transgender man</option>
+                <option value="gender-fluid">Gender-fluid</option>
               </select>
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1">
+              <div className="text-xs text-zinc-400">Sexual orientation</div>
+              <select
+                value={sexuality}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexuality(e.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+              >
+                <option value="">Unspecified</option>
+                <option value="heterosexual">Heterosexual</option>
+                <option value="gay-lesbian">Gay / Lesbian</option>
+                <option value="bisexual">Bisexual</option>
+                <option value="pansexual">Pansexual</option>
+                <option value="asexual">Asexual</option>
+              </select>
+            </label>
+
             <label className="space-y-1">
               <div className="text-xs text-zinc-400">Voice style</div>
               <select

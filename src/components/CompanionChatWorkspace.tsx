@@ -754,7 +754,7 @@ export function CompanionChatWorkspace({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           companionId: activeCompanion.id,
-          messages: messages.slice(-8),
+          messages: messages.slice(-12),
         }),
       });
       const data = await res.json().catch(() => null);
@@ -1322,28 +1322,40 @@ export function CompanionChatWorkspace({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-zinc-400">Suggested responses</div>
+                    <div className="text-xs text-zinc-400">Draft replies</div>
                     <button
                       type="button"
                       onClick={refreshSuggestions}
                       disabled={loadingSuggestion || !activeCompanion || messages.length === 0}
                       className="rounded-lg border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-300 hover:bg-blue-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
                     >
-                      {loadingSuggestion ? "Thinking…" : "✦ Suggest a reply"}
+                      {loadingSuggestion ? "Drafting…" : "✦ Generate drafts"}
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestions.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setInput(s)}
-                        className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+                  {suggestions.length > 0 && (
+                    <div className="space-y-2">
+                      {suggestions.map((s, i) => (
+                        <div
+                          key={i}
+                          className="group flex items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-medium text-zinc-500 mb-1">
+                              Option {i + 1}
+                            </div>
+                            <p className="text-sm text-zinc-300 leading-relaxed">{s}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setInput(s)}
+                            className="shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition mt-0.5"
+                          >
+                            Use
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
