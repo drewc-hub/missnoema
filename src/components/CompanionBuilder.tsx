@@ -78,6 +78,24 @@ const TRAIT_OPTIONS = [
   "introspective", "outgoing", "magnetic", "commanding", "tender",
 ] as const;
 
+const ARCHETYPE_CHIPS = [
+  // Fantasy creatures
+  "Demon", "Devil girl", "Succubus", "Incubus",
+  "Elf", "Dark elf", "Wood elf", "High elf",
+  "Goblin", "Hobgoblin", "Orc", "Half-orc",
+  "Alien", "Android", "Cyborg", "AI entity",
+  "Vampire", "Werewolf", "Witch", "Warlock",
+  "Fae", "Fairy", "Angel", "Fallen angel",
+  "Dragon", "Naga", "Mermaid", "Ghost",
+  // Human archetypes
+  "Idol", "Athlete", "Scholar", "Rebel",
+  "Royalty", "Knight", "Rogue", "Bard",
+  "Barista", "Chef", "Artist", "Nurse",
+  // Identity-forward
+  "Trans woman", "Trans man", "Non-binary",
+  "Gay / bi man", "Lesbian / bi woman", "Pansexual",
+] as const;
+
 const SCENE_PRESETS = [
   "Coffee shop",
   "Beach at sunset",
@@ -342,8 +360,24 @@ export function CompanionBuilder({
               <Input
                 value={archetype}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArchetype(e.target.value)}
-                placeholder="vampire noble, barista, fae trickster"
+                placeholder="demon noble, fae trickster, trans idol…"
               />
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {ARCHETYPE_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setArchetype(chip)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                      archetype === chip
+                        ? "border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-200"
+                        : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                    }`}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <label className="space-y-1">

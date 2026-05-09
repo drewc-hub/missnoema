@@ -18,7 +18,7 @@ export function AdultFooter({
     return (
         <footer
             className={cx(
-                "mt-14 border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 py-10 text-sm",
+                "mt-14 border-t border-zinc-800 bg-zinc-950 py-10 text-sm",
                 className,
             )}
         >
