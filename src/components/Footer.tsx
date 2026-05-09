@@ -149,21 +149,7 @@ export function Footer({
           </div>
         </div>
 
-        <div className="md:col-span-12">
-          <div className="rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/60 to-blue-950/30 p-5 text-sm text-zinc-300">
-            <div className="font-semibold text-zinc-100">
-              Fair pricing. No hard paywall.
-            </div>
-            <p className="mt-2 text-zinc-400">
-              We offer optional subscriptions and coin packs for higher limits
-              and media generation, but browsing, chatting, and creating
-              companions remain usable without spending an arm and a leg.
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              Prices and limits may change as infrastructure improves.
-            </p>
-          </div>
-        </div>
+        
       </div>
     </footer>
   );
