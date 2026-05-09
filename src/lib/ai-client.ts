@@ -40,7 +40,7 @@ export function companionStream(
     messages,
     temperature: 0.75,
     topP: 0.9,
-    maxOutputTokens: 450,
+    maxOutputTokens: 900,
     frequencyPenalty: 0.7,
     presencePenalty: 0.35,
   });
