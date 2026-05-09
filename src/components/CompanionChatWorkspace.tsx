@@ -1420,12 +1420,10 @@ export function CompanionChatWorkspace({
               {factsOpen ? (
                 <CardBody className="space-y-3">
                   <div className="text-xs text-zinc-500">
-                    Facts are automatically included in every chat with this companion — things like your name, preferences, or anything you want them to always remember.
+                    Always injected into the AI context — name, kinks, limits, anything you want remembered.
                   </div>
 
-                  {userFacts.length === 0 ? (
-                    <div className="text-xs text-zinc-600">No facts saved yet.</div>
-                  ) : (
+                  {userFacts.length > 0 ? (
                     <ul className="space-y-1.5">
                       {userFacts.map((f) => (
                         <li key={f.id} className="flex items-start gap-2 rounded-lg bg-zinc-900 px-2.5 py-2 text-xs text-zinc-300">
@@ -1435,21 +1433,52 @@ export function CompanionChatWorkspace({
                             disabled={deletingFactId === f.id}
                             onClick={() => deleteFact(f.id)}
                             className="shrink-0 text-zinc-600 hover:text-red-400 transition disabled:opacity-40"
-                            title="Remove fact"
+                            title="Remove"
                           >
                             ✕
                           </button>
                         </li>
                       ))}
                     </ul>
+                  ) : (
+                    <div className="text-xs text-zinc-600">No facts yet — add one below or use a quick-add template.</div>
                   )}
+
+                  {/* Quick-add templates */}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-600">Quick add</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: "My name", template: "My name is " },
+                        { label: "Birthday", template: "My birthday is " },
+                        { label: "Kinks", template: "My kinks include: " },
+                        { label: "Bondage", template: "I enjoy bondage and restraint play" },
+                        { label: "CBT", template: "I enjoy CBT (cock and ball torture)" },
+                        { label: "Foot worship", template: "I enjoy foot worship" },
+                        { label: "Hard limits", template: "My hard limits are: " },
+                        { label: "Soft limits", template: "My soft limits are: " },
+                        { label: "Prefer called", template: "I prefer to be called " },
+                        { label: "Pronouns", template: "My pronouns are " },
+                        { label: "Role", template: "In roleplay I prefer the role of " },
+                      ].map(({ label, template }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setNewFact(template)}
+                          className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition"
+                        >
+                          + {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="flex gap-2">
                     <input
                       value={newFact}
                       onChange={(e) => setNewFact(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFact(); } }}
-                      placeholder="e.g. My name is Alex, I love cats"
+                      placeholder="e.g. My name is Alex"
                       maxLength={500}
                       className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
                     />

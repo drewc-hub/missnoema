@@ -60,19 +60,26 @@ function scoreUserMessage(text: string): {
   if (emotion === "loving") intimacy += 2;
   if (emotion === "vulnerable") intimacy += 1;
 
-  // Kink: escalation signals (only applied for adult companions with kink slider > 0)
+  // Kink: escalation signals — applies to all adult companions regardless of kink slider
   let kink = 0;
+  // Base adult content signals (any sexual/sensual language)
+  if (["sex", "fuck", "cock", "pussy", "naked", "nude", "orgasm", "cum", "moan", "pleasure",
+       "touch me", "touch you", "feel you", "feel me", "body", "skin", "lick", "suck", "bite",
+       "strip", "undress", "hard", "wet", "horny", "turned on", "explicit", "dirty",
+       "naughty", "tease me", "tease you", "spread", "inside", "take me"].some((t) => lower.includes(t))) kink += 2;
+  // Roleplay power-exchange and BDSM keywords
   if (["bdsm", "collar", "leash", "kneel", "submit", "obey", "restrain", "bound", "slave",
        "master", "mistress", "punish", "spank", "worship", "degrade", "claimed", "owned",
        "dominant", "submissive", "blindfold", "handcuff", "tied up", "whip", "on my knees",
-       "at your feet", "good girl", "good boy"].some((t) => lower.includes(t))) kink += 5;
-  if (["control me", "control you", "power over", "use me", "take control"].some((t) => lower.includes(t))) kink += 3;
+       "at your feet", "good girl", "good boy", "rope", "cbt", "bondage", "foot", "feet",
+       "humiliate", "edge", "denial", "choke", "pet", "sir", "ma'am", "goddess", "daddy",
+       "baby girl", "use me", "control me", "control you", "power over", "take control"].some((t) => lower.includes(t))) kink += 4;
 
   return {
     familiarity: clamp(familiarity, 0, 8),
     trust: clamp(trust, 0, 6),
     intimacy: clamp(intimacy, 0, 5),
-    kink: clamp(kink, 0, 5),
+    kink: clamp(kink, 0, 6),
     emotion,
   };
 }
@@ -755,7 +762,7 @@ ${lastAssistantReplies || "(none)"}
       const newFamiliarity = delta ? Math.min(conversation.familiarity + delta.familiarity, 100) : conversation.familiarity;
       const newTrust = delta ? Math.min(conversation.trust + delta.trust, 100) : conversation.trust;
       const newIntimacy = delta ? Math.min(conversation.intimacy + delta.intimacy, 100) : conversation.intimacy;
-      const kinkDelta = (delta && companion.contentRating === ContentRating.ADULT && Number(sliders.kink ?? 0) > 0) ? delta.kink : 0;
+      const kinkDelta = (delta && companion.contentRating === ContentRating.ADULT) ? delta.kink : 0;
       const newKinkLevel = Math.min(conversation.kinkLevel + kinkDelta, 100);
 
       const moodTier = computeMoodTier({
