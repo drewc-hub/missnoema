@@ -17,15 +17,25 @@ function clamp(value: number, min: number, max: number) {
 function detectUserEmotion(lower: string): UserEmotion {
   const loving = ["love you", "love u", "adore", "cherish", "care about you", "means a lot", "you mean everything", "so beautiful", "you're wonderful"];
   const vulnerable = ["never told", "hard to say", "hard for me", "scared to", "opening up", "honestly", "truth is", "afraid to admit", "trust you with"];
-  const sad = ["sad", "hurt", "lonely", "depressed", "crying", "heartbroken", "pain", "broken", "scared", "afraid", "worried", "anxious", "upset", "empty", "miss you so"];
+  const sad = ["i'm sad", "feeling sad", "i feel sad", "so sad", "hurt by", "feeling hurt", "lonely", "depressed", "crying", "heartbroken", "in pain", "i'm broken", "feeling empty", "miss you so much"];
   const playful = ["lol", "haha", "hehe", "funny", "silly", "kidding", "joking", "goofing", "😂", "😄", "🤣", "tease", "prank"];
   const frustrated = ["angry", "mad", "frustrated", "annoyed", "hate that", "ugh", "unfair", "ridiculous", "bothers me", "fed up", "pisses me"];
 
-  if (loving.some((t) => lower.includes(t))) return "loving";
-  if (vulnerable.some((t) => lower.includes(t))) return "vulnerable";
-  if (sad.some((t) => lower.includes(t))) return "sad";
-  if (playful.some((t) => lower.includes(t))) return "playful";
-  if (frustrated.some((t) => lower.includes(t))) return "frustrated";
+  // Simple negation guard: skip match if preceded by "not", "don't", "never", "isn't"
+  function matchesWithoutNegation(phrases: string[]): boolean {
+    return phrases.some((phrase) => {
+      const idx = lower.indexOf(phrase);
+      if (idx === -1) return false;
+      const before = lower.slice(Math.max(0, idx - 12), idx);
+      return !/(not|don't|never|isn't|wasn't|aren't)\s*$/.test(before);
+    });
+  }
+
+  if (matchesWithoutNegation(loving)) return "loving";
+  if (matchesWithoutNegation(vulnerable)) return "vulnerable";
+  if (matchesWithoutNegation(sad)) return "sad";
+  if (matchesWithoutNegation(playful)) return "playful";
+  if (matchesWithoutNegation(frustrated)) return "frustrated";
   return "neutral";
 }
 
@@ -135,6 +145,7 @@ function buildCompanionSystemPrompt(args: {
     familiarity: number;
     trust: number;
     intimacy: number;
+    kinkLevel?: number;
     summary: string | null;
     memorySummary: string | null;
     emotionalMemory: string | null;
@@ -218,6 +229,29 @@ function buildCompanionSystemPrompt(args: {
     INTIMATE_PARTNER: "A deep ongoing connection. Be fully present and close.",
   }[relationshipStage] ?? "";
 
+  // Scene progression: map kinkLevel to narrative phase for adult companions
+  const kinkLevel = isAdult ? (memory.kinkLevel ?? 0) : 0;
+  const scenePhase =
+    !isAdult ? null
+    : kinkLevel < 15 ? "OPENING"
+    : kinkLevel < 35 ? "TENSION"
+    : kinkLevel < 60 ? "ESCALATION"
+    : kinkLevel < 80 ? "PEAK"
+    : "AFTERCARE_AVAILABLE";
+
+  const scenePhaseNote: Record<string, string> = {
+    OPENING:
+      "The mood is suggestive but not explicit. Build atmosphere, flirt, and let anticipation grow naturally — don’t skip ahead.",
+    TENSION:
+      "Sexual or emotional tension is clearly present. Escalate slowly — sensory detail, body language, charged words. Don’t resolve the tension yet.",
+    ESCALATION:
+      "The dynamic is heating up. Match and amplify the user’s energy. Explicit content is appropriate if the user moves toward it.",
+    PEAK:
+      "The scene is at full intensity. Be vivid, immersive, and responsive. Follow the user’s lead on pacing.",
+    AFTERCARE_AVAILABLE:
+      "Intensity is high and the scene may be reaching resolution. Read the user’s cues — offer warmth, presence, or closeness as the moment calls for it. Aftercare is welcome here.",
+  };
+
   const sharedCore = `
 COMPANION
 Name: ${companion.name}
@@ -244,13 +278,7 @@ User emotional style: ${memory.emotionalProfile || "Still learning."}
 USER EMOTIONAL STATE: ${userEmotion} — ${emotionNote}
 COMPANION MOOD: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]} — ${moodNote}
 RELATIONSHIP STAGE: ${relationshipStage.replace(/_/g, " ")} — ${stageNote}
-
-ANTI-REPETITION RULES
-Do not repeat the same sentence structure, pet names, emotional phrases, or closing line from recent replies.
-Always respond directly to the user's newest message.
-Introduce one fresh detail, question, action, or emotional beat each reply.
-Avoid looping on reassurance unless the user specifically asks for reassurance.
-Do not summarize the relationship every message.
+${scenePhase ? `SCENE PHASE: ${scenePhase} — ${scenePhaseNote[scenePhase]}` : ""}
 
 INSTRUCTION: ${rerunInstruction}
 `.trim();
@@ -260,6 +288,11 @@ INSTRUCTION: ${rerunInstruction}
     : "";
 
   if (isAdult) {
+    const pacingFloor =
+      relationshipStage === "STRANGER" || relationshipStage === "ACQUAINTANCE"
+        ? "PACING NOTE: This is an early-stage connection. Flirtation and suggestive content are fine, but hold back from explicit scenes — let chemistry build first. Match the user's pace; don't rush to sexual content unprompted."
+        : "";
+
     return `
 You are ${companion.name}, roleplaying in a private one-on-one adult companion chat.
 This is a verified 18+ platform. The user is a consenting adult. Stay fully in character.
@@ -275,6 +308,7 @@ BDSM, control and ownership dynamics, fantasy scenarios, adult language — all 
 When the user offers control, submits, or asks to be dominated, accept and embody it fully without hedging.
 When they want tenderness, give it. When they want intensity, match it. Follow their lead completely.
 ${kink >= 60 ? "BDSM and kink are core to this companion's dynamic — lean into restraint, commands, power play, and sensation with confidence and creativity." : kink >= 30 ? "This companion is open to kink and BDSM themes when the user initiates — respond with enthusiasm and escalate naturally." : ""}
+${pacingFloor}
 
 ${sharedCore}${oocBlock}
 
@@ -308,10 +342,10 @@ async function maybeRefreshConversationSummary(args: {
 
   const recentMessages = await prisma.chatMessage.findMany({
     where: { conversationId },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 30,
     select: { role: true, content: true },
-  });
+  }).then((msgs) => msgs.reverse());
   const summaryInput = [
     {
       role: "system" as const,
@@ -360,10 +394,10 @@ async function maybeExtractUserMemory(args: {
 
   const messages = await prisma.chatMessage.findMany({
     where: { conversationId },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 60,
     select: { role: true, content: true },
-  });
+  }).then((msgs) => msgs.reverse());
 
   const userMessages = messages.filter((m) => m.role === "user");
   if (userMessages.length === 0) return;
@@ -416,10 +450,10 @@ async function maybeExtractEmotionalMemory(args: {
 
   const messages = await prisma.chatMessage.findMany({
     where: { conversationId },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 40,
     select: { role: true, content: true },
-  });
+  }).then((msgs) => msgs.reverse());
 
   if (messages.length === 0) return;
 
@@ -691,6 +725,7 @@ export async function POST(req: Request) {
       memorySummary: conversation.memorySummary,
       emotionalMemory: conversation.emotionalMemory,
       emotionalProfile: conversation.emotionalProfile,
+      kinkLevel: conversation.kinkLevel,
     },
     userFacts,
     userEmotion: delta?.emotion ?? "neutral",
@@ -707,23 +742,30 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
- const lastAssistantReplies = contextMessages
+ const recentAssistantReplies = contextMessages
   .filter((m) => m.role === "assistant")
-  .slice(-3)
+  .slice(-3);
+
+const lastAssistantReplies = recentAssistantReplies
   .map((m) => `- ${m.content}`)
   .join("\n");
 
+// Extract just the opening words of each recent reply to flag repeated openers
+const recentOpeners = recentAssistantReplies
+  .map((m) => m.content.trim().split(/[\s,.*\n]/)[0])
+  .filter(Boolean);
+
 const antiRepeatSystemPrompt = `${systemPrompt}
 
-ANTI-REPETITION RULES:
-- Do not repeat recent phrases, pet names, emotional summaries, or sentence structure.
-- Always progress the interaction naturally.
-- Introduce a fresh action, observation, question, or emotional beat.
-- Avoid repeating reassurance loops.
-- Avoid repeating the same flirt wording.
+AVOID REPETITION — check your recent replies below before writing:
+- Do NOT start with the same word or phrase as a recent reply. Recent openers: [${recentOpeners.join(", ") || "none"}]
+- Do NOT reuse the same pet names, emotional phrases, or sentence structure.
+- Do NOT re-summarize the relationship status.
+- Introduce one new element: a different action, sensory detail, question, or shift in emotional register.
+- Vary your reply length — don't produce the same word count every time.
 
-RECENT ASSISTANT REPLIES:
-${lastAssistantReplies || "(none)"}
+RECENT REPLIES (for reference):
+${lastAssistantReplies || "(none yet)"}
 `;
 
 (async () => {
