@@ -45,6 +45,9 @@ export function SafeTopNav() {
                     <li>
                         <NavLink href="account/billing" label="Subscriptions" />
                     </li>
+                    <li>
+                      <NavLink href="/about" label="About Us" />
+                     </li>
                 </ul>
 
                 <div className="ml-auto flex items-center gap-2">
