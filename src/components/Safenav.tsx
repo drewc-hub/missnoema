@@ -46,7 +46,7 @@ export function SafeTopNav() {
                         <NavLink href="account/billing" label="Subscriptions" />
                     </li>
                     <li>
-                      <NavLink href="/about" label="About Us" />
+                      <NavLink href="/aboutus" label="About Us" />
                      </li>
                 </ul>
 
