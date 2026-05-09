@@ -4,7 +4,7 @@ import { chatCompletion } from "@/lib/together";
 import { companionStream } from "@/lib/ai-client";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAuthedUser } from "@/lib/auth";
+import { getAuthedUser, DAILY_MESSAGE_LIMITS, CONTEXT_WINDOW_SIZES } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 export const runtime = "nodejs";
 
@@ -133,6 +133,8 @@ function buildCompanionSystemPrompt(args: {
     emotionalMemory: string | null;
     emotionalProfile: string | null;
   };
+  userFacts?: string[];
+  pinnedMessages?: { role: string; content: string }[];
   userEmotion?: UserEmotion;
   companionMood?: 0 | 1 | 2 | 3;
   relationshipStage?: RelationshipStage;
@@ -142,6 +144,7 @@ function buildCompanionSystemPrompt(args: {
   const {
     companion,
     memory,
+    userFacts = [],
     userEmotion = "neutral",
     companionMood = 0,
     relationshipStage = "STRANGER",
@@ -226,7 +229,7 @@ Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Domin
 
 RELATIONSHIP MEMORY
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100
-Conversation arc: ${memory.summary || "No summary yet."}
+Conversation arc: ${memory.summary || "No summary yet."}${userFacts.length > 0 ? `\n\nKNOWN USER FACTS (always remember these):\n${userFacts.map((f) => `• ${f}`).join("\n")}` : ""}
 What I know about the user: ${memory.memorySummary || "Nothing noted yet."}
 Emotional moments: ${memory.emotionalMemory || "None recorded yet."}
 User emotional style: ${memory.emotionalProfile || "Still learning."}
@@ -525,6 +528,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing message." }, { status: 400 });
   }
 
+  // Daily message limit check (OOC-only requests don't count toward the limit)
+  if (message) {
+    const dailyLimit = DAILY_MESSAGE_LIMITS[user.plan];
+    if (dailyLimit !== null) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const todayCount = await prisma.chatMessage.count({
+        where: {
+          role: "user",
+          createdAt: { gte: startOfDay },
+          conversation: { userId: user.id },
+        },
+      });
+      if (todayCount >= dailyLimit) {
+        return NextResponse.json(
+          { error: `Daily message limit reached (${dailyLimit} messages). Upgrade your plan for more.`, limitReached: true, dailyLimit, used: todayCount },
+          { status: 429 },
+        );
+      }
+    }
+  }
+
   const companion = await prisma.companion.findFirst({
     where: {
       id: companionId,
@@ -610,12 +635,37 @@ export async function POST(req: Request) {
       })
     : null;
 
-  const recentMessages = await prisma.chatMessage.findMany({
-    where: { conversationId: conversation.id },
-    orderBy: { createdAt: "asc" },
-    take: 14,
-    select: { role: true, content: true },
-  });
+  const contextWindow = CONTEXT_WINDOW_SIZES[user.plan];
+
+  // Load pinned messages (always included regardless of context window)
+  const [pinnedMessages, recentMessages, userFactRows] = await Promise.all([
+    prisma.chatMessage.findMany({
+      where: { conversationId: conversation.id, isPinned: true },
+      orderBy: { createdAt: "asc" },
+      take: 10,
+      select: { role: true, content: true },
+    }),
+    prisma.chatMessage.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: "desc" },
+      take: contextWindow,
+      select: { role: true, content: true },
+    }).then((msgs) => msgs.reverse()),
+    prisma.userFact.findMany({
+      where: {
+        userId: user.id,
+        OR: [{ companionId: companion.id }, { companionId: null }],
+      },
+      orderBy: { createdAt: "asc" },
+      select: { fact: true },
+    }),
+  ]);
+
+  // Merge pinned + recent, deduplicating by content (pinned first as anchors)
+  const pinnedContents = new Set(pinnedMessages.map((m) => m.content));
+  const dedupedRecent = recentMessages.filter((m) => !pinnedContents.has(m.content));
+  const contextMessages = [...pinnedMessages, ...dedupedRecent];
+  const userFacts = userFactRows.map((r) => r.fact);
 
   const delta = message ? scoreUserMessage(message) : null;
   const relationshipStage = computeRelationshipStage(
@@ -635,6 +685,7 @@ export async function POST(req: Request) {
       emotionalMemory: conversation.emotionalMemory,
       emotionalProfile: conversation.emotionalProfile,
     },
+    userFacts,
     userEmotion: delta?.emotion ?? "neutral",
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
     relationshipStage,
@@ -649,7 +700,7 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
- const lastAssistantReplies = recentMessages
+ const lastAssistantReplies = contextMessages
   .filter((m) => m.role === "assistant")
   .slice(-3)
   .map((m) => `- ${m.content}`)
@@ -672,7 +723,7 @@ ${lastAssistantReplies || "(none)"}
   try {
     const textStream = companionStream(
       antiRepeatSystemPrompt,
-      recentMessages.map((m) => ({
+      contextMessages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
@@ -727,12 +778,24 @@ ${lastAssistantReplies || "(none)"}
         select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true },
       });
 
+      const dailyLimit = DAILY_MESSAGE_LIMITS[user.plan];
+      let dailyUsed: number | null = null;
+      if (dailyLimit !== null && userMsg) {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        dailyUsed = await prisma.chatMessage.count({
+          where: { role: "user", createdAt: { gte: startOfDay }, conversation: { userId: user.id } },
+        });
+      }
+
       await sse({
         type: "done",
         reply,
         moodTier,
         userMsgId: userMsg?.id ?? null,
         assistantMsgId: assistantMsg.id,
+        dailyUsed,
+        dailyLimit,
         memory: {
           id: updatedConversation.id,
           familiarity: updatedConversation.familiarity,

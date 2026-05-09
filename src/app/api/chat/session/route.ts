@@ -78,6 +78,7 @@ export async function GET(req: Request) {
           role: true,
           content: true,
           createdAt: true,
+          isPinned: true,
         },
       },
     },

@@ -76,6 +76,14 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   createdAt?: string;
+  isPinned?: boolean;
+};
+
+type UserFact = {
+  id: string;
+  fact: string;
+  companionId: string | null;
+  createdAt: string;
 };
 
 type ConversationMemory = {
@@ -141,6 +149,15 @@ export function CompanionChatWorkspace({
   // OOC bubbles are shown in-line but never stored in DB
   const [oocBubbles, setOocBubbles] = useState<{ id: string; text: string }[]>([]);
 
+  const [dailyUsed, setDailyUsed] = useState<number | null>(null);
+  const [dailyLimit, setDailyLimit] = useState<number | null>(null);
+
+  const [userFacts, setUserFacts] = useState<UserFact[]>([]);
+  const [factsOpen, setFactsOpen] = useState(false);
+  const [newFact, setNewFact] = useState("");
+  const [savingFact, setSavingFact] = useState(false);
+  const [deletingFactId, setDeletingFactId] = useState<string | null>(null);
+
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
@@ -168,6 +185,76 @@ export function CompanionChatWorkspace({
       if (res.ok) {
         setSavedIds(new Set(data.ids ?? []));
         setSaveInfo({ total: data.total, limit: data.limit, coinBalance: data.coinBalance, coinCost: data.coinCost });
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function loadDailyCount() {
+    try {
+      const res = await fetch("/api/me/message-count");
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setDailyUsed(data.used ?? null);
+        setDailyLimit(data.limit ?? null);
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function loadFacts(companionId: string) {
+    try {
+      const res = await fetch(`/api/facts?companionId=${encodeURIComponent(companionId)}`);
+      const data = await res.json().catch(() => null);
+      if (res.ok) setUserFacts(data.facts ?? []);
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function addFact() {
+    if (!newFact.trim() || !activeCompanion || savingFact) return;
+    setSavingFact(true);
+    try {
+      const res = await fetch("/api/facts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fact: newFact.trim(), companionId: activeCompanion.id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.fact) {
+        setUserFacts((prev) => [...prev, data.fact]);
+        setNewFact("");
+      } else {
+        setError(data?.error || "Failed to save fact.");
+      }
+    } finally {
+      setSavingFact(false);
+    }
+  }
+
+  async function deleteFact(factId: string) {
+    setDeletingFactId(factId);
+    try {
+      const res = await fetch(`/api/facts/${factId}`, { method: "DELETE" });
+      if (res.ok) setUserFacts((prev) => prev.filter((f) => f.id !== factId));
+    } finally {
+      setDeletingFactId(null);
+    }
+  }
+
+  async function pinMessage(m: ChatMessage, pin: boolean) {
+    if (!m.id) return;
+    try {
+      const res = await fetch(`/api/chat/messages/${m.id}/pin`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isPinned: pin }),
+      });
+      if (res.ok) {
+        setMessages((prev) => prev.map((msg) => msg.id === m.id ? { ...msg, isPinned: pin } : msg));
       }
     } catch {
       // non-critical
@@ -372,6 +459,8 @@ export function CompanionChatWorkspace({
         await Promise.all([
           loadMediaHistory(activeId),
           loadSavedIds(conversationData.conversation.id),
+          loadFacts(activeId),
+          loadDailyCount(),
         ]);
       } catch (err) {
         setError(
@@ -459,6 +548,8 @@ export function CompanionChatWorkspace({
                 summary: (m.summary as string | null) ?? null,
               });
             }
+            if (typeof event.dailyUsed === "number") setDailyUsed(event.dailyUsed);
+            if (typeof event.dailyLimit === "number") setDailyLimit(event.dailyLimit);
             // Stamp DB IDs onto the optimistic messages so they can be edited/rerun
             if (typeof event.userMsgId === "string" || typeof event.assistantMsgId === "string") {
               setMessages((prev) => {
@@ -1010,12 +1101,18 @@ export function CompanionChatWorkspace({
           <Card>
             <CardHeader
               title="Chat"
-              subtitle={
+              subtitle={[
+                dailyLimit !== null && dailyUsed !== null
+                  ? `${dailyUsed}/${dailyLimit} messages today`
+                  : dailyLimit === null && dailyUsed !== null
+                  ? "Unlimited messages"
+                  : null,
                 saveInfo
                   ? saveInfo.limit === null
-                    ? "Unlimited saves · Edit, rerun or re-speak any reply."
-                    : `${saveInfo.total}/${saveInfo.limit} saves used · Edit, rerun or re-speak any reply.`
-                  : "Edit messages, rerun or re-speak any reply."
+                    ? "Unlimited saves"
+                    : `${saveInfo.total}/${saveInfo.limit} saves`
+                  : null,
+              ].filter(Boolean).join(" · ") || "Edit, rerun or re-speak any reply."
               }
               right={
                 activeCompanion && memory ? (
@@ -1129,6 +1226,16 @@ export function CompanionChatWorkspace({
                                     </button>
                                   ) : null}
                                 </>
+                              ) : null}
+                              {m.id ? (
+                                <button
+                                  type="button"
+                                  onClick={() => pinMessage(m, !m.isPinned)}
+                                  className={`text-[11px] transition ${m.isPinned ? "text-amber-400 hover:text-amber-200" : "text-zinc-500 hover:text-zinc-200"}`}
+                                  title={m.isPinned ? "Unpin (remove from always-in-context)" : "Pin (always include in AI context)"}
+                                >
+                                  {m.isPinned ? "📌" : "Pin"}
+                                </button>
                               ) : null}
                               <button
                                 type="button"
@@ -1266,6 +1373,12 @@ export function CompanionChatWorkspace({
                   </div>
                 ) : null}
 
+                {dailyLimit !== null && dailyUsed !== null && dailyUsed >= dailyLimit ? (
+                  <div className="rounded-xl border border-amber-800/50 bg-amber-900/20 p-3 text-sm text-amber-200">
+                    Daily message limit reached ({dailyLimit} messages). Resets at midnight. Upgrade your plan for more.
+                  </div>
+                ) : null}
+
                 {error ? (
                   <div className="rounded-xl border border-red-800/50 bg-red-900/20 p-3 text-sm text-red-200">
                     {error}
@@ -1287,6 +1400,71 @@ export function CompanionChatWorkspace({
               onGenerated={() => loadMediaHistory(activeCompanion.id)}
               onHistoryRefresh={() => loadMediaHistory(activeCompanion.id)}
             />
+          ) : null}
+
+          {activeCompanion ? (
+            <Card>
+              <CardHeader
+                title="Saved facts"
+                subtitle={`${userFacts.length} fact${userFacts.length === 1 ? "" : "s"} · always in context`}
+                right={
+                  <button
+                    type="button"
+                    onClick={() => setFactsOpen((v) => !v)}
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
+                  >
+                    {factsOpen ? "▲ Collapse" : "▼ Expand"}
+                  </button>
+                }
+              />
+              {factsOpen ? (
+                <CardBody className="space-y-3">
+                  <div className="text-xs text-zinc-500">
+                    Facts are automatically included in every chat with this companion — things like your name, preferences, or anything you want them to always remember.
+                  </div>
+
+                  {userFacts.length === 0 ? (
+                    <div className="text-xs text-zinc-600">No facts saved yet.</div>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {userFacts.map((f) => (
+                        <li key={f.id} className="flex items-start gap-2 rounded-lg bg-zinc-900 px-2.5 py-2 text-xs text-zinc-300">
+                          <span className="flex-1 break-words">{f.fact}</span>
+                          <button
+                            type="button"
+                            disabled={deletingFactId === f.id}
+                            onClick={() => deleteFact(f.id)}
+                            className="shrink-0 text-zinc-600 hover:text-red-400 transition disabled:opacity-40"
+                            title="Remove fact"
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      value={newFact}
+                      onChange={(e) => setNewFact(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFact(); } }}
+                      placeholder="e.g. My name is Alex, I love cats"
+                      maxLength={500}
+                      className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
+                    />
+                    <Button
+                      type="button"
+                      disabled={!newFact.trim() || savingFact}
+                      onClick={addFact}
+                      className="text-xs px-3 shrink-0"
+                    >
+                      {savingFact ? "…" : "Add"}
+                    </Button>
+                  </div>
+                </CardBody>
+              ) : null}
+            </Card>
           ) : null}
         </aside>
       </div>
