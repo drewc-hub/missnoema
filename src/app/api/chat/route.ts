@@ -224,6 +224,13 @@ USER EMOTIONAL STATE: ${userEmotion} — ${emotionNote}
 COMPANION MOOD: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]} — ${moodNote}
 RELATIONSHIP STAGE: ${relationshipStage.replace(/_/g, " ")} — ${stageNote}
 
+ANTI-REPETITION RULES
+Do not repeat the same sentence structure, pet names, emotional phrases, or closing line from recent replies.
+Always respond directly to the user's newest message.
+Introduce one fresh detail, question, action, or emotional beat each reply.
+Avoid looping on reassurance unless the user specifically asks for reassurance.
+Do not summarize the relationship every message.
+
 INSTRUCTION: ${rerunInstruction}
 `.trim();
 
@@ -277,14 +284,12 @@ async function maybeRefreshConversationSummary(args: {
     return currentSummary;
   }
 
-  const recentMessagesRaw = await prisma.chatMessage.findMany({
-  where: { conversationId: conversation.id },
-  orderBy: { createdAt: "desc" },
-  take: 12,
-  select: { role: true, content: true },
-});
-
-const recentMessages = recentMessagesRaw.reverse();
+  const recentMessages = await prisma.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+    take: 30,
+    select: { role: true, content: true },
+  });
   const summaryInput = [
     {
       role: "system" as const,
@@ -617,14 +622,6 @@ export async function POST(req: Request) {
       emotionalMemory: conversation.emotionalMemory,
       emotionalProfile: conversation.emotionalProfile,
     },
-
-    ANTI-REPETITION RULES
-Do not repeat the same sentence structure, pet names, emotional phrases, or closing line from recent replies.
-Always respond directly to the user's newest message.
-Introduce one fresh detail, question, action, or emotional beat each reply.
-Avoid looping on reassurance unless the user specifically asks for reassurance.
-Do not summarize the relationship every message.    
-
     userEmotion: delta?.emotion ?? "neutral",
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
     relationshipStage,
