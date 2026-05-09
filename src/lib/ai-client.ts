@@ -40,7 +40,7 @@ export function companionStream(
     messages,
     temperature: 0.75,
     topP: 0.9,
-    maxOutputTokens: 900,
+    maxOutputTokens: 1400,
     frequencyPenalty: 0.7,
     presencePenalty: 0.35,
   });
@@ -57,7 +57,7 @@ export async function companionGenerate(
     system: systemPrompt,
     messages,
     temperature: 0.85,
-    maxOutputTokens: 800,
+    maxOutputTokens: 1400,
     frequencyPenalty: 0.6,
     presencePenalty: 0.4,
   });
