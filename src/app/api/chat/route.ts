@@ -167,8 +167,8 @@ function buildCompanionSystemPrompt(args: {
 
   const rerunInstruction =
     mode === "variation"
-      ? "Write a fresh variation of the companion’s reply — same intent, different phrasing and rhythm."
-      : "Write the next natural reply as the companion.";
+      ? "Write a fresh variation of the companion’s reply — same intent but a completely different opening, phrasing, and emotional angle."
+      : "Write the next natural reply as the companion. Vary your tone, opening line, and emotional angle from any previous replies — never repeat the same sentence structure or greeting twice.";
 
   const isAdult = companion.contentRating === ContentRating.ADULT;
 

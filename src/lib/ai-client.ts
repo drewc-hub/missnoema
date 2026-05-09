@@ -38,8 +38,10 @@ export function companionStream(
     model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
-    temperature: 0.95,
+    temperature: 1.0,
     maxTokens: 1024,
+    frequencyPenalty: 0.5,
+    presencePenalty: 0.3,
   });
 
   return result.textStream;
@@ -53,8 +55,10 @@ export async function companionGenerate(
     model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
-    temperature: 1.05,
+    temperature: 1.1,
     maxTokens: 1024,
+    frequencyPenalty: 0.6,
+    presencePenalty: 0.4,
   });
 
   return result.text.trim() || "I'm here with you.";
