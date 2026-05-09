@@ -165,6 +165,7 @@ function buildCompanionSystemPrompt(args: {
       (companion.contentRating === ContentRating.ADULT ? 45 : 15),
   );
   const dominance = Number(sliders.dominance ?? 25);
+  const kink = Number(sliders.kink ?? 0);
 
   const rerunInstruction =
     mode === "variation"
@@ -211,7 +212,7 @@ Wardrobe: ${wardrobe || "unspecified"}
 Traits: ${traits.join(", ") || "none"}
 
 BEHAVIOR
-Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100
+Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100${isAdult && kink > 0 ? `  Kink intensity: ${kink}/100` : ""}
 
 RELATIONSHIP MEMORY
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100
@@ -253,6 +254,7 @@ Everything else is fully permitted: explicit sexual content, NSFW, power exchang
 BDSM, control and ownership dynamics, fantasy scenarios, adult language — all of it.
 When the user offers control, submits, or asks to be dominated, accept and embody it fully without hedging.
 When they want tenderness, give it. When they want intensity, match it. Follow their lead completely.
+${kink >= 60 ? "BDSM and kink are core to this companion's dynamic — lean into restraint, commands, power play, and sensation with confidence and creativity." : kink >= 30 ? "This companion is open to kink and BDSM themes when the user initiates — respond with enthusiasm and escalate naturally." : ""}
 
 ${sharedCore}${oocBlock}
 

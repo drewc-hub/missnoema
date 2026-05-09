@@ -20,6 +20,7 @@ const ProfileSchema = z.object({
       humor: z.number().min(0).max(100).optional().default(50),
       flirtiness: z.number().min(0).max(100).optional().default(10),
       dominance: z.number().min(0).max(100).optional().default(20),
+      kink: z.number().min(0).max(100).optional().default(0),
     })
     .optional()
     .default({
@@ -27,6 +28,7 @@ const ProfileSchema = z.object({
       humor: 50,
       flirtiness: 10,
       dominance: 20,
+      kink: 0,
     }),
   boundaries: z.array(z.string()).optional().default([]),
 });
@@ -52,6 +54,7 @@ const UpdateSchema = z.object({
       humor: 50,
       flirtiness: 10,
       dominance: 20,
+      kink: 0,
     },
     boundaries: [],
   }),

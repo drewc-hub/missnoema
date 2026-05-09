@@ -27,6 +27,7 @@ type CompanionProfile = {
     humor?: number;
     flirtiness?: number;
     dominance?: number;
+    kink?: number;
   };
   boundaries?: string[];
 };
@@ -186,6 +187,7 @@ export function CompanionBuilder({
     Number(sliders.flirtiness ?? (allowAdult ? 35 : 10)),
   );
   const [dominance, setDominance] = useState(Number(sliders.dominance ?? 30));
+  const [kink, setKink] = useState(Number(sliders.kink ?? 0));
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +236,7 @@ export function CompanionBuilder({
             humor,
             flirtiness,
             dominance,
+            kink,
           },
           boundaries: boundaries
             .split(",")
@@ -591,6 +594,14 @@ export function CompanionBuilder({
                 value={dominance}
                 onChange={setDominance}
               />
+              {contentRating === "ADULT" ? (
+                <RangeRow
+                  label="Kink intensity"
+                  hint="vanilla → BDSM"
+                  value={kink}
+                  onChange={setKink}
+                />
+              ) : null}
             </div>
 
             {!allowAdult && contentRating === "ADULT" ? (
