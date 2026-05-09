@@ -132,6 +132,11 @@ export function CompanionChatWorkspace({
   const [resetConfirmId, setResetConfirmId] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
+  const [oocOpen, setOocOpen] = useState(false);
+  const [oocText, setOocText] = useState("");
+  // OOC bubbles are shown in-line but never stored in DB
+  const [oocBubbles, setOocBubbles] = useState<{ id: string; text: string }[]>([]);
+
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
@@ -486,6 +491,84 @@ export function CompanionChatWorkspace({
     const el = messagesContainerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  async function sendOoc() {
+    const text = oocText.trim();
+    if (!text || !activeCompanion || sending) return;
+
+    const bubbleId = crypto.randomUUID();
+    setOocBubbles((prev) => [...prev, { id: bubbleId, text }]);
+    setOocText("");
+    setOocOpen(false);
+    setSending(true);
+    setError(null);
+
+    // Append an empty assistant placeholder
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ companionId: activeCompanion.id, ooc: text }),
+      });
+
+      if (!res.ok || !res.body) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || "OOC direction failed.");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          let event: Record<string, unknown>;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.type === "chunk") {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = { ...last, content: last.content + (event.text as string) };
+              }
+              return next;
+            });
+          } else if (event.type === "done") {
+            if (typeof event.moodTier === "number") setCompanionMood(event.moodTier as 0 | 1 | 2 | 3);
+            if (typeof event.assistantMsgId === "string") {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === "assistant") next[next.length - 1] = { ...last, id: event.assistantMsgId as string };
+                return next;
+              });
+            }
+          } else if (event.type === "error") {
+            throw new Error((event.error as string) || "OOC direction failed.");
+          }
+        }
+      }
+    } catch (err) {
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        return last?.role === "assistant" && !last.content ? prev.slice(0, -1) : prev;
+      });
+      setOocBubbles((prev) => prev.filter((b) => b.id !== bubbleId));
+      setError(err instanceof Error ? err.message : "OOC direction failed.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function requestIntro(companionId: string) {
     setMessages([{ role: "assistant", content: "" }]);
@@ -1071,6 +1154,11 @@ export function CompanionChatWorkspace({
                       </div>
                     ))
                   )}
+                  {oocBubbles.map((b) => (
+                    <div key={b.id} className="mx-4 rounded-lg border border-dashed border-zinc-700 bg-zinc-950/60 px-3 py-2 text-xs text-zinc-500 italic">
+                      <span className="not-italic font-medium text-zinc-600 mr-1">[OOC]</span>{b.text}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-2">
@@ -1125,6 +1213,38 @@ export function CompanionChatWorkspace({
                     {sending ? "Sending..." : "Send"}
                   </Button>
                 </div>
+
+                {activeCompanion ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setOocOpen((v) => !v)}
+                      className="text-[11px] text-zinc-600 hover:text-zinc-400 transition"
+                    >
+                      {oocOpen ? "▲ Hide OOC" : "▼ Out-of-character direction"}
+                    </button>
+                    {oocOpen ? (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          value={oocText}
+                          onChange={(e) => setOocText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); sendOoc(); } }}
+                          placeholder="Direct the scene — e.g. 'shift the mood to something lighter'"
+                          className="flex-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!oocText.trim() || sending}
+                          onClick={sendOoc}
+                          className="text-xs px-3 py-2 border border-dashed border-zinc-700"
+                        >
+                          Direct
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 {error ? (
                   <div className="rounded-xl border border-red-800/50 bg-red-900/20 p-3 text-sm text-red-200">

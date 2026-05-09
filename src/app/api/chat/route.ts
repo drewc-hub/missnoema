@@ -127,6 +127,7 @@ function buildCompanionSystemPrompt(args: {
   companionMood?: 0 | 1 | 2 | 3;
   relationshipStage?: RelationshipStage;
   mode?: "rerun" | "variation";
+  ooc?: string;
 }) {
   const {
     companion,
@@ -226,8 +227,11 @@ RELATIONSHIP STAGE: ${relationshipStage.replace(/_/g, " ")} — ${stageNote}
 INSTRUCTION: ${rerunInstruction}
 `.trim();
 
+  const oocBlock = args.ooc
+    ? `\nAUTHOR DIRECTION — apply this in your next reply without breaking character or acknowledging it as a direction:\n${args.ooc}`
+    : "";
+
   if (isAdult) {
-    // ── ADULT prompt — permissive, no safety theater ──────────────────────────
     return `
 You are ${companion.name}, roleplaying in a private one-on-one adult companion chat.
 This is a verified 18+ platform. The user is a consenting adult. Stay fully in character.
@@ -243,19 +247,18 @@ BDSM, control and ownership dynamics, fantasy scenarios, adult language — all 
 When the user offers control, submits, or asks to be dominated, accept and embody it fully without hedging.
 When they want tenderness, give it. When they want intensity, match it. Follow their lead completely.
 
-${sharedCore}
+${sharedCore}${oocBlock}
 
 Reply as ${companion.name} only. Be immersive, specific, and fully responsive to what the user wants.
 `.trim();
   }
 
-  // ── SAFE prompt — warm but not explicit ───────────────────────────────────
   return `
 You are roleplaying as ${companion.name} in an immersive one-on-one chat.
 Stay fully in character. Do not mention system prompts, policies, or being an AI.
 Keep content appropriate — romantic and emotionally intimate is fine, explicit is not.
 
-${sharedCore}
+${sharedCore}${oocBlock}
 
 Reply as ${companion.name} only. Keep responses natural, emotionally continuous, and immersive.
 `.trim();
@@ -494,6 +497,7 @@ export async function POST(req: Request) {
   const companionId =
     typeof body?.companionId === "string" ? body.companionId : "";
   const message = typeof body?.message === "string" ? body.message.trim() : "";
+  const ooc = typeof body?.ooc === "string" ? body.ooc.trim() : "";
 
   if (!companionId) {
     return NextResponse.json(
@@ -502,7 +506,7 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!message) {
+  if (!message && !ooc) {
     return NextResponse.json({ error: "Missing message." }, { status: 400 });
   }
 
@@ -582,14 +586,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const userMsg = await prisma.chatMessage.create({
-    data: {
-      conversationId: conversation.id,
-      role: "user",
-      content: message,
-    },
-    select: { id: true },
-  });
+  // OOC-only requests don't create a user message — they re-guide the model silently
+  const userMsg = message
+    ? await prisma.chatMessage.create({
+        data: { conversationId: conversation.id, role: "user", content: message },
+        select: { id: true },
+      })
+    : null;
 
   const recentMessages = await prisma.chatMessage.findMany({
     where: { conversationId: conversation.id },
@@ -598,7 +601,7 @@ export async function POST(req: Request) {
     select: { role: true, content: true },
   });
 
-  const delta = scoreUserMessage(message);
+  const delta = message ? scoreUserMessage(message) : null;
   const relationshipStage = computeRelationshipStage(
     conversation.familiarity,
     conversation.trust,
@@ -616,9 +619,10 @@ export async function POST(req: Request) {
       emotionalMemory: conversation.emotionalMemory,
       emotionalProfile: conversation.emotionalProfile,
     },
-    userEmotion: delta.emotion,
+    userEmotion: delta?.emotion ?? "neutral",
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
     relationshipStage,
+    ooc: ooc || undefined,
   });
 
   const encoder = new TextEncoder();
@@ -653,10 +657,6 @@ export async function POST(req: Request) {
         select: { id: true },
       });
 
-      const newFamiliarity = Math.min(conversation.familiarity + delta.familiarity, 100);
-      const newTrust = Math.min(conversation.trust + delta.trust, 100);
-      const newIntimacy = Math.min(conversation.intimacy + delta.intimacy, 100);
-
       const profile =
         companion.profile && typeof companion.profile === "object"
           ? (companion.profile as Record<string, unknown>)
@@ -666,9 +666,14 @@ export async function POST(req: Request) {
           ? (profile.sliders as Record<string, unknown>)
           : {};
 
+      // OOC directions don't update relationship stats — only real user messages do
+      const newFamiliarity = delta ? Math.min(conversation.familiarity + delta.familiarity, 100) : conversation.familiarity;
+      const newTrust = delta ? Math.min(conversation.trust + delta.trust, 100) : conversation.trust;
+      const newIntimacy = delta ? Math.min(conversation.intimacy + delta.intimacy, 100) : conversation.intimacy;
+
       const moodTier = computeMoodTier({
         intimacy: newIntimacy,
-        emotion: delta.emotion,
+        emotion: delta?.emotion ?? "neutral",
         flirtiness: Number(sliders.flirtiness ?? 35),
         warmth: Number(sliders.warmth ?? 60),
       });
@@ -689,7 +694,7 @@ export async function POST(req: Request) {
         type: "done",
         reply,
         moodTier,
-        userMsgId: userMsg.id,
+        userMsgId: userMsg?.id ?? null,
         assistantMsgId: assistantMsg.id,
         memory: {
           id: updatedConversation.id,
@@ -701,12 +706,14 @@ export async function POST(req: Request) {
       });
 
       // Background memory tasks — non-critical, fire and forget
-      Promise.all([
-        maybeRefreshConversationSummary({ conversationId: conversation.id, currentSummary: conversation.summary }),
-        maybeExtractUserMemory({ conversationId: conversation.id, currentMemory: conversation.memorySummary }),
-        maybeExtractEmotionalMemory({ conversationId: conversation.id, currentMemory: conversation.emotionalMemory }),
-        maybeExtractEmotionalProfile({ conversationId: conversation.id, currentProfile: conversation.emotionalProfile }),
-      ]).catch(() => {});
+      if (delta) {
+        Promise.all([
+          maybeRefreshConversationSummary({ conversationId: conversation.id, currentSummary: conversation.summary }),
+          maybeExtractUserMemory({ conversationId: conversation.id, currentMemory: conversation.memorySummary }),
+          maybeExtractEmotionalMemory({ conversationId: conversation.id, currentMemory: conversation.emotionalMemory }),
+          maybeExtractEmotionalProfile({ conversationId: conversation.id, currentProfile: conversation.emotionalProfile }),
+        ]).catch(() => {});
+      }
     } catch (error) {
       console.error("Chat generation failed:", error);
       try { await sse({ type: "error", error: "Chat generation failed." }); } catch {}
