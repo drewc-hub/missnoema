@@ -21,8 +21,8 @@ importers:
         specifier: ^1.52.0
         version: 1.55.1
       '@mistralai/mistralai':
-        specifier: ^2.2.1
-        version: 2.2.1
+        specifier: ^1.15.1
+        version: 1.15.1
       '@netlify/database':
         specifier: ^1.0.0
         version: 1.0.0
@@ -1273,8 +1273,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@mistralai/mistralai@2.2.1':
-    resolution: {integrity: sha512-uKU8CZmL2RzYKmplsU01hii4p3pe4HqJefpWNRWXm1Tcm0Sm4xXfwSLIy4k7ZCPlbETCGcp69E7hZs+WOJ5itQ==}
+  '@mistralai/mistralai@1.15.1':
+    resolution: {integrity: sha512-fb995eiz3r0KsBGtRjFV+/iLbX+UpfalxpF+YitT3R6ukrPD4PN+FGwwmYcRFhNAzVzDUtTVxQYnjQWEnwV5nw==}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -8589,7 +8589,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@mistralai/mistralai@2.2.1':
+  '@mistralai/mistralai@1.15.1':
     dependencies:
       ws: 8.19.0
       zod: 4.3.6
