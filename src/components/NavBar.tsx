@@ -1,11 +1,6 @@
 "use client";
-import AccountPill from "@/components/account-pill";
 import React from "react";
-import { Button } from "@/components/ui";
 import Link from "next/link";
-
-function NavLink({ href, label }: { href: string; label: string }) {
-
 
 export default function NavBar() {
   return (
@@ -21,7 +16,7 @@ export default function NavBar() {
         <Link href="/generate">Generate</Link>
         <Link href="/mission">Mission</Link>
         <Link href="/pricing">Pricing</Link>
-        <link href="/login">Login</Link>
+        <Link href="/login">Login</Link>
       </div>
 
       <div className="navRight">
