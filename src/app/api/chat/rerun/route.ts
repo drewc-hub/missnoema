@@ -134,7 +134,8 @@ ABSOLUTE LIMITS: no minors, no approving non-consent, no incest. Everything else
 
 ${coreContext}
 
-Write a fresh variation of the previous reply — same intent, different phrasing and rhythm.
+The user wants a completely different response. Do NOT repeat or rephrase the previous reply.
+Start from scratch — different opening, different angle, different energy. Same character, entirely new reply.
 Reply as ${conversation.companion.name} only.
 `.trim() : `
 You are roleplaying as ${conversation.companion.name} in an immersive one-on-one chat.
@@ -143,7 +144,8 @@ Keep content appropriate — romantic and emotionally intimate is fine, explicit
 
 ${coreContext}
 
-Write a fresh variation of the previous reply — same intent, different phrasing and rhythm.
+The user wants a completely different response. Do NOT repeat or rephrase the previous reply.
+Start from scratch — different opening, different angle, different energy. Same character, entirely new reply.
 Reply as ${conversation.companion.name} only.
 `.trim();
 
@@ -157,7 +159,7 @@ Reply as ${conversation.companion.name} only.
         })),
       ],
       max_tokens: 1024,
-      temperature: 0.95,
+      temperature: 1.05,
     });
 
     const reply = response.choices[0]?.message?.content?.trim() || "I'm here with you.";

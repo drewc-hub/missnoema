@@ -531,7 +531,7 @@ export function CompanionChatWorkspace({
     }
   }
 
-  async function rerunReply(messageId?: string) {
+  async function rerunReply(message?: ChatMessage) {
     if (sending || !memory) return;
 
     try {
@@ -540,17 +540,15 @@ export function CompanionChatWorkspace({
 
       let res: Response;
 
-      if (messageId) {
-        // Rerun from a specific message (has a DB id — loaded from session)
-        const msg = messages.find((m) => m.id === messageId);
-        if (!msg) return;
+      if (message?.role === "user" && message.id) {
+        // Re-generate the companion reply to a specific user message
         res = await fetch("/api/chat/rewrite", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messageId, content: msg.content, rerun: true }),
+          body: JSON.stringify({ messageId: message.id, content: message.content, rerun: true }),
         });
       } else {
-        // Rerun last reply using conversationId (works for optimistic messages too)
+        // Re-generate the last assistant reply (works for all assistant messages)
         res = await fetch("/api/chat/rerun", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -877,7 +875,7 @@ export function CompanionChatWorkspace({
                                   <button
                                     type="button"
                                     disabled={sending}
-                                    onClick={() => rerunReply(m.id)}
+                                    onClick={() => rerunReply(m)}
                                     className="text-[11px] text-zinc-500 hover:text-zinc-200 transition disabled:opacity-40"
                                     title="Regenerate reply"
                                   >

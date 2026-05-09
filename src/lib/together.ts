@@ -53,7 +53,7 @@ export function getChatClient(): { client: OpenAI; model: string } {
 // repetition_penalty is native to Llama — inject when using a Llama model
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function llamaExtras(model: string): any {
-  return /llama/i.test(model) ? { repetition_penalty: 1.15 } : {};
+  return /llama/i.test(model) ? { repetition_penalty: 1.25 } : {};
 }
 
 type ChatParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, "model" | "stream">;
