@@ -7,13 +7,40 @@
 }
 
 @layer base {
+  html {
+    /* Prevent iOS Safari from auto-scaling text on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply text-zinc-100 antialiased;
     background: linear-gradient(135deg, #00040a 0%, #020e21 45%, #081b3b 100%);
     min-height: 100dvh;
+    /* Prevent elastic bounce-scroll on iOS at the body level */
+    overscroll-behavior: none;
+    /* Respect the notch / home indicator on iPhones */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
+
   a {
     @apply text-zinc-100 hover:text-white;
+    /* Remove blue flash on tap (iOS Safari / Android WebView) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Smooth momentum scrolling on iOS for any overflow container */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -330,4 +357,83 @@ button {
 }
 .wide {
   width: 100%;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET  (641px – 1024px)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .createGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .createPage {
+    padding: 80px 24px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — PHONE  (≤ 640px)
+   ============================================================ */
+@media (max-width: 640px) {
+  .createPage {
+    padding: 48px 16px;
+  }
+
+  .createSection {
+    padding: 20px 16px;
+  }
+
+  .generatorPanel {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .chatBox {
+    min-height: auto;
+    padding: 10px;
+  }
+
+  /* Bottom safe-area so the send button clears the home bar */
+  .chatInputRow {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+}
+
+/* ============================================================
+   TOUCH DEVICES — pointer:coarse targets finger-driven screens
+   (phones AND tablets, regardless of width)
+   ============================================================ */
+@media (pointer: coarse) {
+  /* Larger hit targets for interactive elements */
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Keep icon-only buttons (emoji/symbol) from growing too large */
+  button.icon-btn {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* Prevent text selection during swipe gestures */
+  .no-select-touch {
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
