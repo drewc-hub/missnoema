@@ -1,7 +1,7 @@
 // file: src/app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { getOpenAI } from "@/lib/openai";
-import { chatCompletionStream } from "@/lib/together";
+import { companionStream } from "@/lib/ai-client";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -12,21 +12,6 @@ type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "fr
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
-}
-
-function getString(value: unknown, fallback = "") {
-  return typeof value === "string" ? value : fallback;
-}
-
-function getStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === "string")
-    : [];
-}
-
-function getNumber(value: unknown, fallback: number) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
 }
 
 function detectUserEmotion(lower: string): UserEmotion {
@@ -170,9 +155,6 @@ function buildCompanionSystemPrompt(args: {
   const wardrobe = typeof profile.wardrobe === "string" ? profile.wardrobe : "";
   const traits = Array.isArray(profile.traits)
     ? profile.traits.filter((v): v is string => typeof v === "string")
-    : [];
-  const boundaries = Array.isArray(profile.boundaries)
-    ? profile.boundaries.filter((v): v is string => typeof v === "string")
     : [];
 
   const warmth = Number(sliders.warmth ?? 60);
@@ -652,26 +634,19 @@ export async function POST(req: Request) {
 
   (async () => {
     try {
-      const chatStream = await chatCompletionStream({
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...recentMessages.map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
-        ],
-        max_tokens: 1024,
-        temperature: 0.95,
-      });
+      const textStream = companionStream(
+        systemPrompt,
+        recentMessages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      );
 
       let fullReply = "";
 
-      for await (const chunk of chatStream) {
-        const text = chunk.choices[0]?.delta?.content ?? "";
-        if (text) {
-          fullReply += text;
-          await sse({ type: "chunk", text });
-        }
+      for await (const text of textStream) {
+        fullReply += text;
+        await sse({ type: "chunk", text });
       }
 
       const reply = fullReply.trim() || "I'm here with you.";

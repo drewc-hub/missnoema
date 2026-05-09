@@ -1,6 +1,6 @@
 // file: src/app/api/chat/rerun/route.ts
 import { NextResponse } from "next/server";
-import { chatCompletion } from "@/lib/together";
+import { companionGenerate } from "@/lib/ai-client";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -89,15 +89,11 @@ export async function POST(req: Request) {
   const traits = Array.isArray(profile.traits)
     ? profile.traits.filter((v): v is string => typeof v === "string")
     : [];
-  const boundaries = Array.isArray(profile.boundaries)
-    ? profile.boundaries.filter((v): v is string => typeof v === "string")
-    : [];
 
   const warmth = Number(sliders.warmth ?? 60);
   const humor = Number(sliders.humor ?? 50);
   const flirtiness = Number(sliders.flirtiness ?? (conversation.companion.contentRating === ContentRating.ADULT ? 45 : 15));
   const dominance = Number(sliders.dominance ?? 25);
-  const moodLabels = ["Neutral", "Happy", "Teasing", "Blushing"];
 
   const isAdult = conversation.companion.contentRating === ContentRating.ADULT;
   const moodLabel = ["Neutral", "Happy", "Teasing", "Blushing"][conversation.companionMood ?? 0];
@@ -150,19 +146,13 @@ Reply as ${conversation.companion.name} only.
 `.trim();
 
   try {
-    const response = await chatCompletion({
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...recentMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ],
-      max_tokens: 1024,
-      temperature: 1.05,
-    });
-
-    const reply = response.choices[0]?.message?.content?.trim() || "I'm here with you.";
+    const reply = await companionGenerate(
+      systemPrompt,
+      recentMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    );
 
     await prisma.chatMessage.create({
       data: { conversationId, role: "assistant", content: reply },

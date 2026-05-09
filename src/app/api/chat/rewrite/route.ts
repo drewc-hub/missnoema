@@ -1,6 +1,6 @@
 // file: src/app/api/chat/rewrite/route.ts
 import { NextResponse } from "next/server";
-import { chatCompletion } from "@/lib/together";
+import { companionGenerate } from "@/lib/ai-client";
 import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -215,19 +215,13 @@ export async function POST(req: Request) {
       mode,
     });
 
-    const response = await chatCompletion({
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...recentMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ],
-      max_tokens: 1024,
-      temperature: 0.95,
-    });
-
-    reply = response.choices[0]?.message?.content?.trim() || "I'm here with you.";
+    reply = await companionGenerate(
+      systemPrompt,
+      recentMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    );
 
     await prisma.chatMessage.create({
       data: {

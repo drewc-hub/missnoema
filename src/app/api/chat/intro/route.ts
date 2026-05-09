@@ -1,5 +1,5 @@
 // file: src/app/api/chat/intro/route.ts
-import { chatCompletionStream } from "@/lib/together";
+import { companionStream } from "@/lib/ai-client";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
@@ -133,20 +133,16 @@ Make it feel like walking into a moment already in progress. Sound like a real p
 
   (async () => {
     try {
-      const chatStream = await chatCompletionStream({
-        messages: [{ role: "user", content: systemPrompt }],
-        max_tokens: 512,
-        temperature: 0.9,
-      });
+      const textStream = companionStream(
+        systemPrompt,
+        [{ role: "user", content: "Write your opening message." }],
+      );
 
       let fullReply = "";
 
-      for await (const chunk of chatStream) {
-        const text = chunk.choices[0]?.delta?.content ?? "";
-        if (text) {
-          fullReply += text;
-          await sse({ type: "chunk", text });
-        }
+      for await (const text of textStream) {
+        fullReply += text;
+        await sse({ type: "chunk", text });
       }
 
       const reply = fullReply.trim() || `Hey… I've been waiting for you.`;
