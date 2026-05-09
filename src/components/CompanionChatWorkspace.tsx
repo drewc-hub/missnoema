@@ -1055,7 +1055,7 @@ export function CompanionChatWorkspace({
                       >
                         <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-900">
                           {item.type === "VIDEO" ? (
-                            <video className="h-full w-full object-cover" muted preload="none">
+                            <video className="h-full w-full object-cover" muted preload="metadata">
                               <source src={item.url} />
                             </video>
                           ) : (
