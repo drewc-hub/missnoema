@@ -19,7 +19,8 @@ export async function PATCH(
   }
 
   const body = await req.json().catch(() => null);
-  const isFavorite = Boolean(body?.isFavorite);
+  const isFavorite = typeof body?.isFavorite === "boolean" ? body.isFavorite : undefined;
+  const isCover = typeof body?.isCover === "boolean" ? body.isCover : undefined;
 
   const asset = await prisma.companionAsset.findFirst({
     where: {
@@ -28,6 +29,7 @@ export async function PATCH(
     },
     select: {
       id: true,
+      companionId: true,
       contentRating: true,
     },
   });
@@ -43,12 +45,25 @@ export async function PATCH(
     );
   }
 
+  // When setting a new cover, clear the existing cover for this companion first
+  if (isCover === true) {
+    await prisma.companionAsset.updateMany({
+      where: { companionId: asset.companionId, isCover: true },
+      data: { isCover: false },
+    });
+  }
+
+  const updateData: Record<string, boolean> = {};
+  if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
+  if (isCover !== undefined) updateData.isCover = isCover;
+
   const updated = await prisma.companionAsset.update({
     where: { id },
-    data: { isFavorite },
+    data: updateData,
     select: {
       id: true,
       isFavorite: true,
+      isCover: true,
     },
   });
 

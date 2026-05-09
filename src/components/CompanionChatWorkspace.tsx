@@ -103,6 +103,7 @@ type MediaHistoryItem = {
   createdAt: string;
   url: string;
   isFavorite: boolean;
+  isCover: boolean;
 };
 
 export function CompanionChatWorkspace({
@@ -322,6 +323,31 @@ export function CompanionChatWorkspace({
       setError(
         err instanceof Error ? err.message : "Failed to update favorite.",
       );
+    }
+  }
+
+  async function setCover(item: MediaHistoryItem) {
+    try {
+      const res = await fetch(`/api/media/${encodeURIComponent(item.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isCover: true }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Failed to set cover.");
+
+      // Clear isCover from all items, then mark this one
+      setMediaHistory((prev) => prev.map((x) => ({ ...x, isCover: x.id === item.id })));
+      setLightboxItem((prev) => prev?.id === item.id ? { ...prev, isCover: true } : prev ? { ...prev, isCover: false } : prev);
+
+      // Refresh companion list so thumbnail updates immediately
+      setCompanions((prev) =>
+        prev.map((c) =>
+          c.id === activeCompanion?.id ? { ...c, thumbnailUrl: item.url } : c,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set cover.");
     }
   }
 
@@ -1013,7 +1039,7 @@ export function CompanionChatWorkspace({
                           )}
                         </div>
                         <div className="p-1.5 text-center text-[10px] text-zinc-500">
-                          {item.type} {item.isFavorite ? "★" : ""}
+                          {item.type} {item.isCover ? "🖼" : item.isFavorite ? "★" : ""}
                         </div>
                       </button>
                     ))}
@@ -1628,6 +1654,17 @@ export function CompanionChatWorkspace({
                 >
                   {lightboxItem.isFavorite ? "★ Favorited" : "☆ Favorite"}
                 </Button>
+                {lightboxItem.type === "IMAGE" ? (
+                  <Button
+                    type="button"
+                    variant={lightboxItem.isCover ? "primary" : "secondary"}
+                    className="px-3 py-1.5 text-xs"
+                    onClick={() => setCover(lightboxItem)}
+                    disabled={lightboxItem.isCover}
+                  >
+                    {lightboxItem.isCover ? "✓ Cover photo" : "Set as cover"}
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="ghost"

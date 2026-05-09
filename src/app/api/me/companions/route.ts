@@ -61,9 +61,9 @@ export async function GET(req: NextRequest) {
           type: "IMAGE",
           contentRating: { in: allowedRatings },
         },
-        orderBy: [{ contentRating: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ isCover: "desc" }, { contentRating: "asc" }, { createdAt: "desc" }],
         take: 1,
-        select: { id: true, publicUrl: true, contentRating: true },
+        select: { id: true, publicUrl: true, contentRating: true, isCover: true },
       },
     },
   });

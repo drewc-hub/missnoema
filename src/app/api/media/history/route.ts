@@ -70,6 +70,7 @@ export async function GET(req: Request) {
       storagePath: true,
       createdAt: true,
       isFavorite: true,
+      isCover: true,
     },
   });
 
@@ -80,6 +81,7 @@ export async function GET(req: Request) {
       contentRating: item.contentRating,
       createdAt: item.createdAt,
       isFavorite: item.isFavorite,
+      isCover: item.isCover,
       // Adult assets live in a private bucket — always route through /media/<id>
       // so the server can issue a signed URL. Safe assets use publicUrl directly.
       url: item.contentRating === ContentRating.ADULT
