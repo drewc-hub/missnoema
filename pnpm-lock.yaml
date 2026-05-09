@@ -11,12 +11,18 @@ importers:
       '@ai-sdk/mistral':
         specifier: ^3.0.36
         version: 3.0.36(zod@4.3.6)
+      '@ai-sdk/openai':
+        specifier: ^3.0.41
+        version: 3.0.41(zod@4.3.6)
       '@ai-sdk/togetherai':
         specifier: ^2.0.51
         version: 2.0.51(zod@4.3.6)
       '@dotenvx/dotenvx':
         specifier: ^1.52.0
         version: 1.55.1
+      '@mistralai/mistralai':
+        specifier: ^2.2.1
+        version: 2.2.1
       '@netlify/database':
         specifier: ^1.0.0
         version: 1.0.0
@@ -32,6 +38,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.49.1
         version: 2.99.2
+      ai:
+        specifier: ^6.0.92
+        version: 6.0.116(zod@4.3.6)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -87,9 +96,6 @@ importers:
         specifier: ^2.76.17
         version: 2.78.1
     devDependencies:
-      '@ai-sdk/openai':
-        specifier: ^3.0.41
-        version: 3.0.41(zod@4.3.6)
       '@eslint/js':
         specifier: ^9.39.3
         version: 9.39.4
@@ -105,9 +111,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.14)
-      ai:
-        specifier: ^6.0.92
-        version: 6.0.116(zod@4.3.6)
       autoprefixer:
         specifier: ^10.4.24
         version: 10.4.27(postcss@8.5.8)
@@ -1269,6 +1272,9 @@ packages:
     resolution: {integrity: sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg==}
     engines: {node: '>=18'}
     hasBin: true
+
+  '@mistralai/mistralai@2.2.1':
+    resolution: {integrity: sha512-uKU8CZmL2RzYKmplsU01hii4p3pe4HqJefpWNRWXm1Tcm0Sm4xXfwSLIy4k7ZCPlbETCGcp69E7hZs+WOJ5itQ==}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -7653,6 +7659,11 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
+  zod-to-json-schema@3.25.2:
+    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+    peerDependencies:
+      zod: ^3.25.28 || ^4
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
@@ -8577,6 +8588,15 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  '@mistralai/mistralai@2.2.1':
+    dependencies:
+      ws: 8.19.0
+      zod: 4.3.6
+      zod-to-json-schema: 3.25.2(zod@4.3.6)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true
@@ -15845,6 +15865,10 @@ snapshots:
       archiver-utils: 5.0.2
       compress-commons: 6.0.2
       readable-stream: 4.7.0
+
+  zod-to-json-schema@3.25.2(zod@4.3.6):
+    dependencies:
+      zod: 4.3.6
 
   zod@3.25.76: {}
 
