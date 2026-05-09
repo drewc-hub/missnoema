@@ -38,10 +38,11 @@ export function companionStream(
     model: getProvider().chat(OPENROUTER_MODEL),
     system: systemPrompt,
     messages,
-    temperature: 0.8,
-    maxTokens: 1024,
-    frequencyPenalty: 0.5,
-    presencePenalty: 0.3,
+    temperature: 0.75,
+    topP: 0.9
+    maxTokens: 450,
+    frequencyPenalty: 0.7,
+    presencePenalty: 0.35,
   });
 
   return result.textStream;

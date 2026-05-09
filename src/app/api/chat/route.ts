@@ -636,17 +636,35 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
-  (async () => {
-    try {
-      const textStream = companionStream(
-        systemPrompt,
-        recentMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      );
+ const lastAssistantReplies = recentMessages
+  .filter((m) => m.role === "assistant")
+  .slice(-3)
+  .map((m) => `- ${m.content}`)
+  .join("\n");
 
-      let fullReply = "";
+const antiRepeatSystemPrompt = `${systemPrompt}
+
+ANTI-REPETITION RULES:
+- Do not repeat recent phrases, pet names, emotional summaries, or sentence structure.
+- Always progress the interaction naturally.
+- Introduce a fresh action, observation, question, or emotional beat.
+- Avoid repeating reassurance loops.
+- Avoid repeating the same flirt wording.
+
+RECENT ASSISTANT REPLIES:
+${lastAssistantReplies || "(none)"}
+`;
+
+(async () => {
+  try {
+    const textStream = companionStream(
+      antiRepeatSystemPrompt,
+      recentMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    );
+    let fullReply = "";
 
       for await (const text of textStream) {
         fullReply += text;
