@@ -2,7 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, generateText } from "ai";
 
 const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "mistralai/Mistral-Nemo-Instruct-v1";
+  process.env.OPENROUTER_MODEL ?? "mistralai/mistral-nemo";
 
 let provider: ReturnType<typeof createOpenAI> | undefined;
 
