@@ -9,6 +9,7 @@ import {
   Input,
   Button,
   Badge,
+  SidebarCompanionSkeleton,
 } from "@/components/ui";
 import { MediaGenPanel } from "@/components/MediaGenPanel";
 
@@ -159,6 +160,7 @@ export function CompanionChatWorkspace({
   const [savingFact, setSavingFact] = useState(false);
   const [deletingFactId, setDeletingFactId] = useState<string | null>(null);
   const [levelUpNotif, setLevelUpNotif] = useState<{ level: number; nextLevel: number; coinsEarned: number } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
@@ -931,8 +933,27 @@ export function CompanionChatWorkspace({
 
   return (
     <main className="mx-auto w-full max-w-6xl">
+      {/* Mobile companion picker bar — visible only on small screens */}
+      <div className="mb-3 flex items-center gap-2 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen((o) => !o)}
+          className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-all duration-200 hover:border-zinc-500 hover:bg-zinc-800 active:scale-[0.98]"
+        >
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 4h12M2 8h8M2 12h6" strokeLinecap="round" />
+          </svg>
+          {activeCompanion ? activeCompanion.name : "Choose companion"}
+        </button>
+        {activeCompanion && (
+          <Badge tone={activeCompanion.contentRating === "ADULT" ? "adult" : "safe"}>
+            {activeCompanion.contentRating}
+          </Badge>
+        )}
+      </div>
+
       <div className="grid gap-5 lg:grid-cols-12">
-        <aside className="space-y-4 lg:col-span-3">
+        <aside className={`space-y-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
           <Card>
             <CardHeader
               title="Companions"
@@ -947,8 +968,10 @@ export function CompanionChatWorkspace({
                 />
 
                 {loadingList ? (
-                  <div className="text-sm text-zinc-400">
-                    Loading companions...
+                  <div className="space-y-2">
+                    <SidebarCompanionSkeleton />
+                    <SidebarCompanionSkeleton />
+                    <SidebarCompanionSkeleton />
                   </div>
                 ) : null}
 
@@ -964,8 +987,8 @@ export function CompanionChatWorkspace({
                   <div key={c.id} className="group relative">
                     <button
                       type="button"
-                      onClick={() => setActiveId(c.id)}
-                      className={`w-full rounded-xl border p-3 text-left transition pr-8 ${
+                      onClick={() => { setActiveId(c.id); setSidebarOpen(false); }}
+                      className={`w-full rounded-xl border p-3 text-left transition-all duration-200 pr-8 ${
                         c.id === activeId
                           ? "border-zinc-300 bg-zinc-800"
                           : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
@@ -1028,7 +1051,7 @@ export function CompanionChatWorkspace({
                         key={item.id}
                         type="button"
                         onClick={() => setLightboxItem(item)}
-                        className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition hover:border-zinc-600"
+                        className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-zinc-600 hover:shadow-md"
                       >
                         <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-900">
                           {item.type === "VIDEO" ? (
@@ -1198,8 +1221,11 @@ export function CompanionChatWorkspace({
 
                 <div ref={messagesContainerRef} className="max-h-[430px] space-y-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
                   {loadingConversation ? (
-                    <div className="text-sm text-zinc-500">
-                      Loading conversation...
+                    <div className="space-y-3 animate-pulse">
+                      <div className="ml-10 h-12 rounded-xl bg-zinc-800/60" />
+                      <div className="mr-10 h-16 rounded-xl bg-zinc-800/40" />
+                      <div className="ml-10 h-10 rounded-xl bg-zinc-800/60" />
+                      <div className="mr-10 h-20 rounded-xl bg-zinc-800/40" />
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="text-sm text-zinc-500">

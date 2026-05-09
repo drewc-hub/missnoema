@@ -63,7 +63,7 @@ export function Button({
     variant?: "primary" | "secondary" | "ghost";
 }) {
     const base =
-        "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed";
+        "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed";
     const variants = {
         primary: "bg-white text-zinc-900 hover:bg-zinc-200",
         secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
@@ -129,5 +129,47 @@ export function Badge({
         >
             {children}
         </span>
+    );
+}
+
+export function Skeleton({ className }: { className?: string }) {
+    return (
+        <div
+            className={cn(
+                "animate-pulse rounded-xl bg-zinc-800/60",
+                className,
+            )}
+        />
+    );
+}
+
+export function CompanionCardSkeleton() {
+    return (
+        <div className="overflow-hidden rounded-2xl border border-blue-900/40 bg-gradient-to-b from-blue-950/60 to-blue-950/30">
+            <Skeleton className="aspect-[3/4] w-full rounded-none" />
+            <div className="p-4 space-y-2">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-2/3" />
+                <div className="flex gap-2 pt-1">
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function SidebarCompanionSkeleton() {
+    return (
+        <div className="flex items-start gap-2 rounded-xl border border-zinc-800 p-3">
+            <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+            <div className="flex-1 space-y-2 pt-0.5">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/2" />
+            </div>
+        </div>
     );
 }

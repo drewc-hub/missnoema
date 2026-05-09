@@ -27,33 +27,39 @@ function qs(params: Record<string, string | undefined>) {
 }
 
 function CompanionCard({ c }: { c: ApiItem }) {
+  const ratingTone = c.contentRating === "ADULT" ? "adult" : "safe";
   return (
-    <a href={`/chat?companion=${encodeURIComponent(c.slug)}`} className="group">
-      <div className="overflow-hidden rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 transition hover:from-blue-950 hover:to-blue-950/70">
-        <div className="relative aspect-[4/3] w-full bg-zinc-950">
-          {c.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={c.thumbnailUrl}
-              alt={`${c.name} cover`}
-              className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
-              No cover yet
-            </div>
-          )}
-          <div className="absolute left-3 top-3">
-            <Badge tone="safe">SAFE</Badge>
+    <a
+      href={`/chat?companion=${encodeURIComponent(c.slug)}`}
+      className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700/60 hover:shadow-lg hover:shadow-blue-950/50"
+    >
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">
+        {c.thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.thumbnailUrl}
+            alt={`${c.name} cover`}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-zinc-700 select-none">
+            {c.name[0]}
           </div>
+        )}
+        {/* gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/30 to-transparent" />
+        {/* badge top-left */}
+        <div className="absolute left-3 top-3">
+          <Badge tone={ratingTone}>{c.contentRating}</Badge>
         </div>
-        <div className="p-5">
-          <div className="truncate text-lg font-semibold group-hover:text-white">{c.name}</div>
-          <div className="mt-1 line-clamp-2 text-sm text-zinc-400">{c.description}</div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {c.tags.slice(0, 6).map((t) => (
-              <span key={t} className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-800">
+        {/* name + description over image bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="truncate text-lg font-semibold text-white leading-tight">{c.name}</div>
+          <div className="mt-0.5 line-clamp-2 text-xs text-zinc-300 leading-relaxed">{c.description}</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {c.tags.slice(0, 4).map((t) => (
+              <span key={t} className="rounded-full bg-zinc-900/70 px-2 py-0.5 text-[11px] text-zinc-300 ring-1 ring-zinc-700/60 backdrop-blur-sm">
                 {t}
               </span>
             ))}
