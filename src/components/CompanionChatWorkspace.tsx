@@ -128,6 +128,10 @@ export function CompanionChatWorkspace({
   const [coinPromptMsg, setCoinPromptMsg] = useState<ChatMessage | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [resetConfirmId, setResetConfirmId] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
     [companions, activeId],
@@ -587,6 +591,47 @@ export function CompanionChatWorkspace({
     }
   }
 
+  async function confirmDeleteCompanion() {
+    if (!deleteConfirmId) return;
+    setActionPending(true);
+    try {
+      const res = await fetch(`/api/chat/session/delete?companionId=${encodeURIComponent(deleteConfirmId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Failed to remove companion.");
+        return;
+      }
+      setCompanions((prev) => prev.filter((c) => c.id !== deleteConfirmId));
+      if (activeId === deleteConfirmId) {
+        setActiveId("");
+        setMessages([]);
+        setMemory(null);
+      }
+      setDeleteConfirmId(null);
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function confirmResetConversation() {
+    if (!resetConfirmId) return;
+    setActionPending(true);
+    try {
+      const res = await fetch(`/api/chat/session/reset?companionId=${encodeURIComponent(resetConfirmId)}`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Failed to reset conversation.");
+        return;
+      }
+      setMessages([]);
+      setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, summary: null } : null);
+      setSuggestions([]);
+      setResetConfirmId(null);
+    } finally {
+      setActionPending(false);
+    }
+  }
+
   async function handleSaveMessage(m: ChatMessage, useCoin = false) {
     if (!m.id || !activeCompanion) return;
     setSavingId(m.id);
@@ -704,29 +749,38 @@ export function CompanionChatWorkspace({
                 ) : null}
 
                 {filteredCompanions.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setActiveId(c.id)}
-                    className={`w-full rounded-xl border p-3 text-left transition ${
-                      c.id === activeId
-                        ? "border-zinc-300 bg-zinc-800"
-                        : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-medium text-zinc-100">{c.name}</div>
-                      <Badge
-                        tone={c.contentRating === "ADULT" ? "adult" : "safe"}
-                      >
-                        {c.contentRating}
-                      </Badge>
-                    </div>
+                  <div key={c.id} className="group relative">
+                    <button
+                      type="button"
+                      onClick={() => setActiveId(c.id)}
+                      className={`w-full rounded-xl border p-3 text-left transition pr-8 ${
+                        c.id === activeId
+                          ? "border-zinc-300 bg-zinc-800"
+                          : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium text-zinc-100">{c.name}</div>
+                        <Badge
+                          tone={c.contentRating === "ADULT" ? "adult" : "safe"}
+                        >
+                          {c.contentRating}
+                        </Badge>
+                      </div>
 
-                    <div className="mt-1 line-clamp-2 text-xs text-zinc-400">
-                      {c.description}
-                    </div>
-                  </button>
+                      <div className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                        {c.description}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(c.id); }}
+                      className="absolute right-2 top-2 rounded p-1 text-zinc-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-900/20 transition"
+                      title="Remove companion"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 ))}
               </div>
             </CardBody>
@@ -860,6 +914,17 @@ export function CompanionChatWorkspace({
                     ? "Unlimited saves · Edit, rerun or re-speak any reply."
                     : `${saveInfo.total}/${saveInfo.limit} saves used · Edit, rerun or re-speak any reply.`
                   : "Edit messages, rerun or re-speak any reply."
+              }
+              right={
+                activeCompanion && memory ? (
+                  <button
+                    type="button"
+                    onClick={() => setResetConfirmId(activeCompanion.id)}
+                    className="rounded-lg border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400 hover:border-red-800/60 hover:bg-red-900/20 hover:text-red-300 transition"
+                  >
+                    Reset chat
+                  </button>
+                ) : undefined
               }
             />
 
@@ -1085,6 +1150,50 @@ export function CompanionChatWorkspace({
           ) : null}
         </aside>
       </div>
+
+      {deleteConfirmId ? (() => {
+        const c = companions.find((x) => x.id === deleteConfirmId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setDeleteConfirmId(null)}>
+            <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="text-base font-semibold text-zinc-100">Remove companion?</div>
+              <div className="text-sm text-zinc-400">
+                This will remove <span className="text-zinc-200 font-medium">{c?.name ?? "this companion"}</span> and your entire conversation history with them. This cannot be undone.
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="secondary" disabled={actionPending} className="bg-red-900/40 text-red-300 hover:bg-red-900/70 border-red-800/60" onClick={confirmDeleteCompanion}>
+                  {actionPending ? "Removing…" : "Remove"}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setDeleteConfirmId(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
+
+      {resetConfirmId ? (() => {
+        const c = companions.find((x) => x.id === resetConfirmId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setResetConfirmId(null)}>
+            <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="text-base font-semibold text-zinc-100">Reset conversation?</div>
+              <div className="text-sm text-zinc-400">
+                All messages and relationship progress with <span className="text-zinc-200 font-medium">{c?.name ?? "this companion"}</span> will be permanently deleted. The companion stays in your list.
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="secondary" disabled={actionPending} className="bg-red-900/40 text-red-300 hover:bg-red-900/70 border-red-800/60" onClick={confirmResetConversation}>
+                  {actionPending ? "Resetting…" : "Reset"}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setResetConfirmId(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {coinPromptMsg ? (
         <div
