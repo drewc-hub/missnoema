@@ -1,24 +1,9 @@
 import { NextResponse } from "next/server";
-import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SubscriptionPlan } from "@prisma/client";
+import { getAuthedUser } from "@/lib/auth";
+import { calcLoginReward } from "@/lib/economy";
 
 export const runtime = "nodejs";
-
-const BASE_COINS: Record<SubscriptionPlan, number> = {
-  BASIC: 5,
-  PRO: 10,
-  UNLIMITED: 20,
-};
-
-function calcReward(plan: SubscriptionPlan, streak: number): number {
-  const base = BASE_COINS[plan];
-  if (streak >= 30) return base * 5;
-  if (streak >= 14) return base * 3;
-  if (streak >= 7)  return base * 2;
-  if (streak >= 3)  return base + 5;
-  return base;
-}
 
 export async function POST() {
   const user = await getAuthedUser();
@@ -34,7 +19,7 @@ export async function POST() {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  // Already claimed today — return current streak, no coins
+  // Already claimed today
   if (dbUser.lastLoginRewardAt && dbUser.lastLoginRewardAt >= todayStart) {
     return NextResponse.json({
       alreadyClaimed: true,
@@ -44,7 +29,6 @@ export async function POST() {
     });
   }
 
-  // Determine streak: claimed yesterday = extend, otherwise reset
   const yesterdayStart = new Date(todayStart);
   yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
@@ -53,7 +37,7 @@ export async function POST() {
     dbUser.lastLoginRewardAt >= yesterdayStart;
 
   const newStreak = claimedYesterday ? dbUser.loginStreak + 1 : 1;
-  const coins = calcReward(dbUser.plan, newStreak);
+  const { total: coins, milestoneBonus, isMilestone } = calcLoginReward(dbUser.plan, newStreak);
 
   const [updatedUser] = await prisma.$transaction([
     prisma.user.update({
@@ -70,7 +54,9 @@ export async function POST() {
         userId: dbUser.id,
         amount: coins,
         kind: "daily_login",
-        description: `Day ${newStreak} login streak reward`,
+        description: isMilestone
+          ? `Day ${newStreak} streak milestone reward`
+          : `Day ${newStreak} login streak reward`,
       },
     }),
   ]);
@@ -79,6 +65,8 @@ export async function POST() {
     alreadyClaimed: false,
     streak: newStreak,
     coins,
+    milestoneBonus,
+    isMilestone,
     coinBalance: updatedUser.coinBalance,
     streakBroken: !claimedYesterday && dbUser.lastLoginRewardAt !== null,
   });

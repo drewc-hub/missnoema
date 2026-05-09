@@ -5,6 +5,10 @@ import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { ContentRating, GenerationType, JobStatus } from "@/lib/db";
 import { getMediaCost, getMediaIntensity } from "@/lib/mediaPrompt";
+import {
+  GENERATION_COOLDOWN_SECONDS,
+  DAILY_GENERATION_LIMITS,
+} from "@/lib/economy";
 
 export const runtime = "nodejs";
 
@@ -18,6 +22,49 @@ function parseRating(value: unknown): ContentRating {
   return value === "ADULT" || value === ContentRating.ADULT
     ? ContentRating.ADULT
     : ContentRating.SAFE;
+}
+
+// GET — returns quota info for the current user (cooldown remaining, daily cap)
+export async function GET() {
+  const user = await getAuthedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Login required." }, { status: 401 });
+  }
+
+  const cooldownSec = GENERATION_COOLDOWN_SECONDS[user.plan];
+  const dailyCap = DAILY_GENERATION_LIMITS[user.plan];
+
+  let retryAfterSeconds = 0;
+  if (cooldownSec > 0) {
+    const cooldownStart = new Date(Date.now() - cooldownSec * 1000);
+    const recentJob = await prisma.generationJob.findFirst({
+      where: { userId: user.id, createdAt: { gte: cooldownStart } },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (recentJob) {
+      retryAfterSeconds = Math.ceil(
+        (recentJob.createdAt.getTime() + cooldownSec * 1000 - Date.now()) / 1000,
+      );
+    }
+  }
+
+  let dailyUsed = 0;
+  if (dailyCap !== null) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    dailyUsed = await prisma.generationJob.count({
+      where: { userId: user.id, createdAt: { gte: todayStart } },
+    });
+  }
+
+  return NextResponse.json({
+    cooldownSeconds: cooldownSec,
+    retryAfterSeconds: Math.max(0, retryAfterSeconds),
+    dailyCap,
+    dailyUsed,
+    dailyRemaining: dailyCap === null ? null : Math.max(0, dailyCap - dailyUsed),
+  });
 }
 
 export async function POST(req: Request) {
@@ -35,27 +82,65 @@ export async function POST(req: Request) {
   const requestedRating = parseRating(body?.contentRating);
 
   if (!companionId) {
-    return NextResponse.json(
-      { error: "Missing companionId." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing companionId." }, { status: 400 });
   }
-
   if (!prompt) {
     return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
   }
 
-  // Allow any public companion — not just ones owned by this user.
+  // ── Cooldown check ────────────────────────────────────────────────────────
+  const cooldownSec = GENERATION_COOLDOWN_SECONDS[user.plan];
+  if (cooldownSec > 0) {
+    const cooldownStart = new Date(Date.now() - cooldownSec * 1000);
+    const recentJob = await prisma.generationJob.findFirst({
+      where: { userId: user.id, createdAt: { gte: cooldownStart } },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (recentJob) {
+      const retryAfterSeconds = Math.ceil(
+        (recentJob.createdAt.getTime() + cooldownSec * 1000 - Date.now()) / 1000,
+      );
+      return NextResponse.json(
+        {
+          error: `Please wait ${retryAfterSeconds}s before generating again.`,
+          cooldown: true,
+          retryAfterSeconds,
+        },
+        { status: 429 },
+      );
+    }
+  }
+
+  // ── Daily cap check ───────────────────────────────────────────────────────
+  const dailyCap = DAILY_GENERATION_LIMITS[user.plan];
+  let dailyUsed = 0;
+  if (dailyCap !== null) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    dailyUsed = await prisma.generationJob.count({
+      where: { userId: user.id, createdAt: { gte: todayStart } },
+    });
+    if (dailyUsed >= dailyCap) {
+      return NextResponse.json(
+        {
+          error: `Daily generation limit reached (${dailyCap}/day). Upgrade for more.`,
+          limitReached: true,
+          dailyCap,
+          dailyUsed,
+        },
+        { status: 429 },
+      );
+    }
+  }
+
+  // ── Companion lookup ──────────────────────────────────────────────────────
   const companion = await prisma.companion.findFirst({
     where: { id: companionId },
     select: { id: true, contentRating: true },
   });
-
   if (!companion) {
-    return NextResponse.json(
-      { error: "Companion not found." },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Companion not found." }, { status: 404 });
   }
 
   const effectiveRating =
@@ -71,11 +156,9 @@ export async function POST(req: Request) {
     );
   }
 
-  // Determine coin cost based on trust/intimacy level.
+  // ── Coin cost ─────────────────────────────────────────────────────────────
   const conversation = await prisma.conversation.findUnique({
-    where: {
-      userId_companionId: { userId: user.id, companionId: companion.id },
-    },
+    where: { userId_companionId: { userId: user.id, companionId: companion.id } },
     select: { trust: true, intimacy: true },
   });
 
@@ -96,10 +179,10 @@ export async function POST(req: Request) {
   });
 
   if (!dbUser || dbUser.coinBalance < cost) {
-    return NextResponse.json({ error: "Not enough coins." }, { status: 402 });
+    return NextResponse.json({ error: "Not enough coins.", coinShortfall: cost - (dbUser?.coinBalance ?? 0) }, { status: 402 });
   }
 
-  // Atomically deduct coins and create the job to prevent double-spend races.
+  // ── Atomic deduct + create job ────────────────────────────────────────────
   let jobId: string;
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -114,7 +197,7 @@ export async function POST(req: Request) {
           userId: user.id,
           amount: -cost,
           kind: "spend",
-          description: `${type === GenerationType.VIDEO ? "Video" : "Image"} generation job`,
+          description: `${type === GenerationType.VIDEO ? "Video" : "Image"} generation`,
         },
       });
 
@@ -127,16 +210,12 @@ export async function POST(req: Request) {
           contentRating: effectiveRating,
           prompt,
         },
-        select: {
-          id: true,
-          status: true,
-          type: true,
-          contentRating: true,
-          createdAt: true,
-        },
+        select: { id: true, status: true, type: true, contentRating: true, createdAt: true },
       });
     });
+
     jobId = result.id;
+    const newDailyUsed = dailyUsed + 1;
 
     return NextResponse.json({
       ok: true,
@@ -144,6 +223,11 @@ export async function POST(req: Request) {
       status: result.status,
       type: result.type,
       contentRating: result.contentRating,
+      coinCost: cost,
+      dailyCap,
+      dailyUsed: newDailyUsed,
+      dailyRemaining: dailyCap === null ? null : Math.max(0, dailyCap - newDailyUsed),
+      cooldownSeconds: cooldownSec,
     });
   } catch {
     return NextResponse.json({ error: "Not enough coins." }, { status: 402 });

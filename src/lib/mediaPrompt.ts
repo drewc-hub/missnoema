@@ -16,17 +16,13 @@ export function getMediaIntensity(args: {
   return Math.max(0, Math.min(5, Math.min(platformMax, raw))) as Intensity;
 }
 
-/**
- * Return the coin cost for a generation job.
- * Video costs more than image; higher intensity costs more.
- */
+// image: 6–16 coins  |  video: 15–40 coins
 export function getMediaCost(
   intensity: Intensity | number,
   type: "image" | "video",
 ): number {
-  const base = type === "video" ? 20 : 5;
-  const perLevel = type === "video" ? 10 : 3;
-  return base + intensity * perLevel;
+  if (type === "video") return 15 + Math.round(intensity) * 5;
+  return 6 + Math.round(intensity) * 2;
 }
 
 export function buildMediaPrompt(args: {
