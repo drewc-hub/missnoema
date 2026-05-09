@@ -59,7 +59,7 @@ export default async function HomePage() {
             </section>
 
             {/* Memory features */}
-            <section className="rounded-2xl border-2px border-zinc-600/40 bg-gradient-to-b from-blue-950/60 to-zinc-900/60 p-6 space-y-6">
+            <section className="rounded-2xl border-2px border-zinc-400/40 bg-gradient-to-b from-blue-950/60 to-zinc-900/60 p-6 space-y-6">
                 <div className="space-y-1">
                     <h2 className="text-lg font-semibold text-zinc-100">
                         Memory that actually works.
