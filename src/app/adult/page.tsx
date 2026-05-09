@@ -20,81 +20,76 @@ export default async function AdultPage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <section className="relative overflow-hidden border-b border-zinc-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(236,72,153,0.22),transparent_55%)]" />
+      <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-fuchsia-400">
+              NOEMA
+            </h1>
+            <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">
+              Adaptive Companion Ecosystem
+            </p>
+          </div>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-24">
+          <nav className="hidden items-center gap-6 text-sm text-zinc-300 md:flex">
+            <a href="/companions" className="transition hover:text-white">
+              Companions
+            </a>
+            <a href="/adult" className="transition hover:text-pink-400">
+              Adult
+            </a>
+            <a href="/create" className="transition hover:text-white">
+              Create
+            </a>
+            <a href="/about" className="transition hover:text-white">
+              About
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <section className="relative overflow-hidden border-b border-zinc-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(236,72,153,0.18),transparent_60%)]" />
+
+        <div className="relative mx-auto max-w-7xl px-6 py-28">
           <div className="max-w-4xl space-y-6">
             <div className="inline-flex rounded-full border border-pink-500/30 bg-pink-500/10 px-4 py-1 text-sm tracking-wide text-pink-300">
-              Verified 18+ Companion Ecosystem
+              Verified 18+ Ecosystem
             </div>
 
-            <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
+            <h2 className="text-6xl font-black tracking-tight">
               Noema Adult
-            </h1>
+            </h2>
 
             <p className="max-w-3xl text-lg leading-8 text-zinc-300">
               Noema is an AI companion platform focused on persistent memory,
               emotional continuity, evolving relationships, and immersive
-              conversation. Companions remember your history, adapt to your
-              personality, and grow over time through advanced relationship and
-              emotional modeling systems.
+              conversation.
             </p>
-
-            <p className="max-w-3xl text-lg leading-8 text-zinc-400">
-              Featuring dynamic AI-generated media, customizable companions, and
-              both SAFE and adult-gated experiences, Noema is designed to feel
-              less like a chatbot and more like a living digital relationship
-              ecosystem.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Link
-                href="/adult/companions"
-                className="rounded-2xl bg-pink-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-pink-400"
-              >
-                Enter Adult Library
-              </Link>
-
-              <Link
-                href="/companions"
-                className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-pink-500 hover:text-white"
-              >
-                Back to SAFE Library
-              </Link>
-            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              title: "Persistent Memory",
-              desc: "Companions remember emotional moments, preferences, relationship history, and ongoing context.",
-            },
-            {
-              title: "Adult Media Generation",
-              desc: "Create immersive companion images and videos inside a verified adult-only experience.",
-            },
-            {
-              title: "Evolving Relationship Engine",
-              desc: "Trust, familiarity, intimacy, mood, and emotional state shape every interaction over time.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl"
-            >
-              <h2 className="text-xl font-bold text-white">{item.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-zinc-400">
-                {item.desc}
-              </p>
-            </div>
-          ))}
+      <footer className="border-t border-zinc-800 bg-zinc-950">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-12 text-sm text-zinc-500 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-semibold text-zinc-300">Noema AI</p>
+            <p>Persistent memory. Adaptive relationships. Immersive AI.</p>
+          </div>
+
+          <div className="flex gap-6">
+            <a href="/about" className="transition hover:text-white">
+              About
+            </a>
+            <a href="/companions" className="transition hover:text-white">
+              Companions
+            </a>
+            <a href="/adult" className="transition hover:text-pink-400">
+              Adult
+            </a>
+          </div>
         </div>
-      </section>
+      </footer>
     </main>
   );
 }
