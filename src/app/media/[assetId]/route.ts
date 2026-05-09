@@ -29,7 +29,9 @@ export async function GET(
     }
 
     if (asset.contentRating === ContentRating.SAFE && asset.publicUrl) {
-        return NextResponse.redirect(asset.publicUrl);
+        return NextResponse.redirect(asset.publicUrl, {
+            headers: { "Cache-Control": "public, max-age=86400, immutable" },
+        });
     }
 
     const user = await getAuthedUser();
@@ -42,13 +44,20 @@ export async function GET(
         });
     }
 
+    // 1-hour signed URL — browser caches the redirect for 55 min so subsequent
+    // loads skip this route entirely (no DB query, no Supabase API call).
+    const TTL = 3600;
     const { data, error } = await createSupabaseAdminClient().storage
         .from(asset.storageBucket)
-        .createSignedUrl(asset.storagePath, 60);
+        .createSignedUrl(asset.storagePath, TTL);
 
     if (error || !data?.signedUrl) {
         return NextResponse.json({ error: "sign_failed" }, { status: 500 });
     }
 
-    return NextResponse.redirect(data.signedUrl);
+    return NextResponse.redirect(data.signedUrl, {
+        headers: {
+            "Cache-Control": `private, max-age=${TTL - 60}, immutable`,
+        },
+    });
 }

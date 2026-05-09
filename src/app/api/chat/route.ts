@@ -179,12 +179,12 @@ function buildCompanionSystemPrompt(args: {
       ? (profile.sliders as Record<string, unknown>)
       : {};
 
-  const scene = typeof profile.scene === "string" ? profile.scene : "";
-  const background =
-    typeof profile.background === "string" ? profile.background : "";
-  const personality =
-    typeof profile.personality === "string" ? profile.personality : "";
-  const wardrobe = typeof profile.wardrobe === "string" ? profile.wardrobe : "";
+  const trunc = (s: string, n: number) => s.length > n ? s.slice(0, n) + "…" : s;
+
+  const scene = typeof profile.scene === "string" ? trunc(profile.scene, 150) : "";
+  const background = typeof profile.background === "string" ? trunc(profile.background, 150) : "";
+  const personality = typeof profile.personality === "string" ? trunc(profile.personality, 200) : "";
+  const wardrobe = typeof profile.wardrobe === "string" ? trunc(profile.wardrobe, 100) : "";
   const traits = Array.isArray(profile.traits)
     ? profile.traits.filter((v): v is string => typeof v === "string")
     : [];
@@ -252,28 +252,37 @@ function buildCompanionSystemPrompt(args: {
       "Intensity is high and the scene may be reaching resolution. Read the user’s cues — offer warmth, presence, or closeness as the moment calls for it. Aftercare is welcome here.",
   };
 
+  const cappedFacts = userFacts.slice(0, 8);
+  const descTrunc = trunc(companion.description, 250);
+
+  // Only emit fields that have content — empty labels waste tokens
+  const profileLines = [
+    scene       && `Scene: ${scene}`,
+    background  && `Background: ${background}`,
+    personality && `Personality: ${personality}`,
+    wardrobe    && `Wardrobe: ${wardrobe}`,
+    traits.length && `Traits: ${traits.slice(0, 8).join(", ")}`,
+  ].filter(Boolean).join("\n");
+
+  const memoryLines = [
+    memory.summary        && `Conversation arc: ${memory.summary}`,
+    memory.memorySummary  && `Known about user: ${memory.memorySummary}`,
+    memory.emotionalMemory  && `Emotional moments: ${memory.emotionalMemory}`,
+    memory.emotionalProfile && `User emotional style: ${memory.emotionalProfile}`,
+  ].filter(Boolean).join("\n");
+
   const sharedCore = `
 COMPANION
 Name: ${companion.name}
-Description: ${companion.description}
-Tags: ${companion.tags.join(", ") || "none"}
-
-PROFILE
-Scene: ${scene || "unspecified"}
-Background: ${background || "unspecified"}
-Personality: ${personality || "unspecified"}
-Wardrobe: ${wardrobe || "unspecified"}
-Traits: ${traits.join(", ") || "none"}
-
+Description: ${descTrunc}
+Tags: ${companion.tags.slice(0, 8).join(", ") || "none"}
+${profileLines ? `\nPROFILE\n${profileLines}` : ""}
 BEHAVIOR
-Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100${isAdult && kink > 0 ? `  Kink intensity: ${kink}/100` : ""}
+Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100${isAdult && kink > 0 ? `  Kink: ${kink}/100` : ""}
 
-RELATIONSHIP MEMORY
+RELATIONSHIP
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100
-Conversation arc: ${memory.summary || "No summary yet."}${userFacts.length > 0 ? `\n\nKNOWN USER FACTS (always remember these):\n${userFacts.map((f) => `• ${f}`).join("\n")}` : ""}
-What I know about the user: ${memory.memorySummary || "Nothing noted yet."}
-Emotional moments: ${memory.emotionalMemory || "None recorded yet."}
-User emotional style: ${memory.emotionalProfile || "Still learning."}
+${memoryLines}${cappedFacts.length > 0 ? `\nUSER FACTS:\n${cappedFacts.map((f) => `• ${f}`).join("\n")}` : ""}
 
 USER EMOTIONAL STATE: ${userEmotion} — ${emotionNote}
 COMPANION MOOD: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]} — ${moodNote}
@@ -359,8 +368,8 @@ async function maybeRefreshConversationSummary(args: {
           ? `Previous summary:\n${currentSummary}`
           : "Previous summary:\n(none)",
         "Recent messages:",
-        ...recentMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`),
-      ].join("\n\n"),
+        ...recentMessages.map((m) => `${m.role.toUpperCase()}: ${m.content.slice(0, 300)}`),
+      ].join("\n"),
     },
   ];
 
@@ -420,7 +429,7 @@ async function maybeExtractUserMemory(args: {
             currentMemory
               ? `Existing memory:\n${currentMemory}`
               : "Existing memory: (none)",
-            "User messages:\n" + userMessages.map((m) => `- ${m.content}`).join("\n"),
+            "User messages:\n" + userMessages.map((m) => `- ${m.content.slice(0, 200)}`).join("\n"),
           ].join("\n\n"),
         },
       ],
@@ -474,7 +483,7 @@ async function maybeExtractEmotionalMemory(args: {
           role: "user" as const,
           content: [
             currentMemory ? `Existing log:\n${currentMemory}` : "Existing log: (none)",
-            "Conversation:\n" + messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n"),
+            "Conversation:\n" + messages.map((m) => `${m.role.toUpperCase()}: ${m.content.slice(0, 200)}`).join("\n"),
           ].join("\n\n"),
         },
       ],
@@ -527,7 +536,7 @@ async function maybeExtractEmotionalProfile(args: {
           role: "user" as const,
           content: [
             currentProfile ? `Existing profile:\n${currentProfile}` : "Existing profile: (none)",
-            "User messages:\n" + messages.map((m) => `- ${m.content}`).join("\n"),
+            "User messages:\n" + messages.map((m) => `- ${m.content.slice(0, 200)}`).join("\n"),
           ].join("\n\n"),
         },
       ],
@@ -748,7 +757,7 @@ export async function POST(req: Request) {
   .slice(-3);
 
 const lastAssistantReplies = recentAssistantReplies
-  .map((m) => `- ${m.content}`)
+  .map((m) => `- ${m.content.slice(0, 120)}${m.content.length > 120 ? "…" : ""}`)
   .join("\n");
 
 // Extract just the opening words of each recent reply to flag repeated openers

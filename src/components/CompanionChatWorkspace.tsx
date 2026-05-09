@@ -998,7 +998,7 @@ export function CompanionChatWorkspace({
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
                           {c.thumbnailUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={c.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                            <img src={c.thumbnailUrl} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-sm text-zinc-600">
                               {c.name[0]}
@@ -1055,7 +1055,7 @@ export function CompanionChatWorkspace({
                       >
                         <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-900">
                           {item.type === "VIDEO" ? (
-                            <video className="h-full w-full object-cover" muted>
+                            <video className="h-full w-full object-cover" muted preload="none">
                               <source src={item.url} />
                             </video>
                           ) : (
@@ -1064,6 +1064,8 @@ export function CompanionChatWorkspace({
                               src={item.url}
                               alt="Media history item"
                               className="h-full w-full object-cover"
+                              loading="lazy"
+                              decoding="async"
                             />
                           )}
                         </div>
