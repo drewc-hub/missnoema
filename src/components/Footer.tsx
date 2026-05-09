@@ -7,7 +7,7 @@ function cx(...parts: Array<string | undefined | false>) {
 }
 
 export function Footer({
-    brand = "NOMEA",
+    brand = "NOEMA",
     year = new Date().getFullYear(),
     className,
 }: {

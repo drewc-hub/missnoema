@@ -1,27 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#3b82f6"/>
       <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
   </defs>
+
   <!--
-    N letterform whose outer vertical edges are shaped as face profiles.
-    Left outer edge: profile facing left  (nose tip at x≈2, y≈48)
-    Right outer edge: profile facing right (nose tip at x≈98, y≈48)
-    Together the two faces frame the letter — look at the outer silhouette.
+    Face/vase illusion N:
+    Outer left edge  = right-facing face silhouette (brow, nose, chin, neck)
+    Outer right edge = left-facing mirror image
+    fill-rule="evenodd" punches the two triangular voids inside the N.
+
+    Profile landmarks going UP each outer edge (bottom → top):
+      neck base → chin protrusion → philtrum recess →
+      nose tip (most prominent) → brow → eye recess → forehead
   -->
-  <path fill="url(#g)" d="
-    M 8,100
-    C 8,78  2,62  2,50
-    C 2,38  8,22  8,0
-    L 26,0
-    L 74,100
-    L 92,100
-    C 92,78  98,62  98,50
-    C 98,38  92,22  92,0
-    L 74,0
-    L 26,100
-    Z
-  "/>
+  <path
+    fill="url(#g)"
+    fill-rule="evenodd"
+    d="
+      M 8,0
+      L 26,0
+      L 74,100
+      L 92,100
+      C 90,98 88,95 88,93
+      C 90,89 96,86 97,82
+      C 97,78 92,72 90,65
+      C 89,60 98,55 98,52
+      C 98,49 96,40 92,32
+      C 88,26 90,22 96,20
+      C 97,15 95,8 92,0
+      L 74,0
+      L 26,100
+      L 8,100
+      C 10,98 12,95 12,93
+      C 10,89 4,86 3,82
+      C 3,78 8,72 10,65
+      C 11,60 2,55 2,52
+      C 2,49 5,40 8,32
+      C 12,26 10,22 4,20
+      C 3,15 5,8 8,0
+      Z
+    "
+  />
 </svg>
