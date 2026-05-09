@@ -158,6 +158,7 @@ export function CompanionChatWorkspace({
   const [newFact, setNewFact] = useState("");
   const [savingFact, setSavingFact] = useState(false);
   const [deletingFactId, setDeletingFactId] = useState<string | null>(null);
+  const [levelUpNotif, setLevelUpNotif] = useState<{ level: number; nextLevel: number; coinsEarned: number } | null>(null);
 
   const activeCompanion = useMemo(
     () => companions.find((c) => c.id === activeId) ?? null,
@@ -576,6 +577,11 @@ export function CompanionChatWorkspace({
             }
             if (typeof event.dailyUsed === "number") setDailyUsed(event.dailyUsed);
             if (typeof event.dailyLimit === "number") setDailyLimit(event.dailyLimit);
+            if (event.levelUp && typeof event.levelUp === "object") {
+              const lu = event.levelUp as { level: number; nextLevel: number; coinsEarned: number };
+              setLevelUpNotif(lu);
+              setTimeout(() => setLevelUpNotif(null), 7000);
+            }
             // Stamp DB IDs onto the optimistic messages so they can be edited/rerun
             if (typeof event.userMsgId === "string" || typeof event.assistantMsgId === "string") {
               setMessages((prev) => {
@@ -1567,6 +1573,17 @@ export function CompanionChatWorkspace({
           </div>
         );
       })() : null}
+
+      {levelUpNotif ? (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 rounded-2xl border border-violet-500/50 bg-zinc-900/95 px-6 py-4 shadow-2xl backdrop-blur-sm text-center min-w-[260px]">
+          <div className="w-full">
+            <div className="text-base font-bold text-violet-300">Bond Level {levelUpNotif.level} Complete!</div>
+            <div className="text-sm text-zinc-300 mt-1">Your connection has deepened. Starting Level {levelUpNotif.nextLevel}.</div>
+            <div className="text-sm text-yellow-400 mt-1">+{levelUpNotif.coinsEarned} coins rewarded 🪙</div>
+          </div>
+          <button onClick={() => setLevelUpNotif(null)} className="text-zinc-600 hover:text-zinc-400 text-lg leading-none shrink-0">×</button>
+        </div>
+      ) : null}
 
       {coinPromptMsg ? (
         <div

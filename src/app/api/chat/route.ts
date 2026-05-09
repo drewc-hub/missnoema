@@ -636,6 +636,7 @@ export async function POST(req: Request) {
     emotionalMemory: true,
     emotionalProfile: true,
     lastActiveAt: true,
+    relationshipLevel: true,
   } as const;
 
   let conversation = await prisma.conversation.findUnique({
@@ -814,18 +815,42 @@ ${lastAssistantReplies || "(none yet)"}
         warmth: Number(sliders.warmth ?? 60),
       });
 
+      // Relationship level-up: familiarity + trust + intimacy all hit 100 (kink excluded)
+      const levelingUp = delta && newFamiliarity >= 100 && newTrust >= 100 && newIntimacy >= 100;
+      const currentLevel = conversation.relationshipLevel ?? 1;
+      const levelUpCoins = levelingUp ? 25 * currentLevel : 0;
+
       const updatedConversation = await prisma.conversation.update({
         where: { id: conversation.id },
         data: {
-          familiarity: newFamiliarity,
-          trust: newTrust,
-          intimacy: newIntimacy,
+          familiarity: levelingUp ? 0 : newFamiliarity,
+          trust: levelingUp ? 0 : newTrust,
+          intimacy: levelingUp ? 0 : newIntimacy,
           kinkLevel: newKinkLevel,
-          companionMood: moodTier,
+          companionMood: levelingUp ? 0 : moodTier,
           lastActiveAt: new Date(),
+          ...(levelingUp ? { relationshipLevel: currentLevel + 1 } : {}),
         },
-        select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true },
+        select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true, relationshipLevel: true },
       });
+
+      // Award level-up coins in background — non-blocking
+      if (levelingUp && levelUpCoins > 0) {
+        prisma.$transaction([
+          prisma.user.update({
+            where: { id: user.id },
+            data: { coinBalance: { increment: levelUpCoins } },
+          }),
+          prisma.coinTransaction.create({
+            data: {
+              userId: user.id,
+              amount: levelUpCoins,
+              kind: "relationship_levelup",
+              description: `Level ${currentLevel} bond completed with ${companion.name}`,
+            },
+          }),
+        ]).catch(() => {});
+      }
 
       const dailyLimit = DAILY_MESSAGE_LIMITS[user.plan];
       let dailyUsed: number | null = null;
@@ -845,12 +870,14 @@ ${lastAssistantReplies || "(none yet)"}
         assistantMsgId: assistantMsg.id,
         dailyUsed,
         dailyLimit,
+        levelUp: levelingUp ? { level: currentLevel, nextLevel: currentLevel + 1, coinsEarned: levelUpCoins } : null,
         memory: {
           id: updatedConversation.id,
           familiarity: updatedConversation.familiarity,
           trust: updatedConversation.trust,
           intimacy: updatedConversation.intimacy,
           kinkLevel: updatedConversation.kinkLevel,
+          relationshipLevel: updatedConversation.relationshipLevel,
           summary: updatedConversation.summary,
         },
       });
