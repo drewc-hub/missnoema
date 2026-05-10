@@ -16,6 +16,10 @@ export type ListCompanionsInput = {
     user: AuthedUser;
     q?: string;
     tags?: string;
+    gender?: string;
+    minAge?: number;
+    maxAge?: number;
+    hasPhoto?: boolean;
     page?: number;
     pageSize?: number;
     includeAdult?: boolean;
@@ -27,6 +31,8 @@ export type ListCompanionsResult = {
         name: string;
         slug: string;
         description: string;
+        gender: string | null;
+        age: number | null;
         tags: string[];
         contentRating: "SAFE" | "ADULT";
         featuredRank: number | null;
@@ -50,6 +56,10 @@ export async function listCompanions({
     user,
     q = "",
     tags = "",
+    gender,
+    minAge,
+    maxAge,
+    hasPhoto,
     page = 1,
     pageSize = 12,
     includeAdult = false,
@@ -87,6 +97,14 @@ export async function listCompanions({
                 }
                 : {},
             tagList.length ? { tags: { hasEvery: tagList } } : {},
+            gender ? { gender: { equals: gender, mode: "insensitive" as const } } : {},
+            minAge != null ? { age: { gte: minAge } } : {},
+            maxAge != null ? { age: { lte: maxAge } } : {},
+            hasPhoto === true
+                ? { assets: { some: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
+                : hasPhoto === false
+                ? { assets: { none: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
+                : {},
         ],
     };
 
@@ -103,6 +121,8 @@ export async function listCompanions({
                 slug: true,
                 description: true,
                 tags: true,
+                gender: true,
+                age: true,
                 contentRating: true,
                 featuredRank: true,
                 assets: {
@@ -155,6 +175,8 @@ export async function listCompanions({
             name: c.name,
             slug: c.slug,
             description: c.description,
+            gender: c.gender ?? null,
+            age: c.age ?? null,
             tags: c.tags,
             contentRating: c.contentRating,
             featuredRank: c.featuredRank ?? null,

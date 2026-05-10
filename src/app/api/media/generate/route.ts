@@ -81,6 +81,9 @@ export async function POST(req: Request) {
   const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
   const type = parseType(body?.type);
   const requestedRating = parseRating(body?.contentRating);
+  // Outfit / undress mode: pass an existing asset as Flux Redux reference image
+  const sourceAssetId = typeof body?.sourceAssetId === "string" ? body.sourceAssetId.trim() : null;
+  const mode = typeof body?.mode === "string" ? body.mode : "standard"; // "standard" | "outfit" | "undress"
 
   if (!companionId) {
     return NextResponse.json({ error: "Missing companionId." }, { status: 400 });
@@ -167,6 +170,23 @@ export async function POST(req: Request) {
     );
   }
 
+  // Undress mode requires adult content + age verification
+  if (mode === "undress" && !isAdultAllowed(user)) {
+    return NextResponse.json({ error: "Age verification required for this feature." }, { status: 403 });
+  }
+
+  // Resolve reference asset URL for outfit/undress mode
+  let imagePromptUrl: string | null = null;
+  if (sourceAssetId && (mode === "outfit" || mode === "undress")) {
+    const sourceAsset = await prisma.companionAsset.findFirst({
+      where: { id: sourceAssetId, ownerId: user.id },
+      select: { publicUrl: true, id: true },
+    });
+    if (sourceAsset) {
+      imagePromptUrl = sourceAsset.publicUrl ?? `/media/${sourceAsset.id}`;
+    }
+  }
+
   // ── Coin cost ─────────────────────────────────────────────────────────────
   const conversation = await prisma.conversation.findUnique({
     where: { userId_companionId: { userId: user.id, companionId: companion.id } },
@@ -220,6 +240,8 @@ export async function POST(req: Request) {
           status: JobStatus.PENDING,
           contentRating: effectiveRating,
           prompt,
+          requestPreset: imagePromptUrl ?? undefined,
+          requestTag: mode !== "standard" ? mode : undefined,
         },
         select: { id: true, status: true, type: true, contentRating: true, createdAt: true },
       });

@@ -19,6 +19,10 @@ type SearchParams = {
   tags?: string;
   page?: string;
   pageSize?: string;
+  gender?: string;
+  minAge?: string;
+  maxAge?: string;
+  hasPhoto?: string;
 };
 
 type ApiItem = {
@@ -115,6 +119,10 @@ export default async function AdultCompanionsPage({
 
   const q = (sp.q ?? "").trim();
   const tags = (sp.tags ?? "").trim();
+  const gender = (sp.gender ?? "").trim() || undefined;
+  const minAge = sp.minAge ? Number(sp.minAge) : undefined;
+  const maxAge = sp.maxAge ? Number(sp.maxAge) : undefined;
+  const hasPhoto = sp.hasPhoto === "1" ? true : sp.hasPhoto === "0" ? false : undefined;
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = Math.min(30, Math.max(6, Number(sp.pageSize ?? "12") || 12));
 
@@ -122,13 +130,17 @@ export default async function AdultCompanionsPage({
     user,
     q,
     tags,
+    gender,
+    minAge,
+    maxAge,
+    hasPhoto,
     page,
     pageSize,
     includeAdult: true,
   });
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-  const baseParams = { q, tags };
+  const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto };
 
   return (
     <main className="space-y-5">
@@ -150,33 +162,42 @@ export default async function AdultCompanionsPage({
           subtitle="Search within the adult library."
         />
         <CardBody className="space-y-4">
-          <form
-            method="get"
-            className="grid gap-3 md:grid-cols-12 md:items-end"
-          >
-            <div className="space-y-1 md:col-span-6">
-              <div className="text-xs text-zinc-400">Search</div>
-              <Input name="q" placeholder="Search..." defaultValue={q} />
-            </div>
-
+          <form method="get" className="grid gap-3 md:grid-cols-12 md:items-end">
             <div className="space-y-1 md:col-span-4">
-              <div className="text-xs text-zinc-400">Tags</div>
-              <Input
-                name="tags"
-                placeholder="mature, dominant, fantasy"
-                defaultValue={tags}
-              />
+              <div className="text-xs text-zinc-400">Search</div>
+              <Input name="q" placeholder="Name or description..." defaultValue={q} />
             </div>
-
-            <div className="flex gap-2 md:col-span-2 md:justify-end">
-              <Button type="submit" className="h-10">
-                Apply
-              </Button>
-              <a href="/adult/companions">
-                <Button type="button" variant="secondary" className="h-10">
-                  Clear
-                </Button>
-              </a>
+            <div className="space-y-1 md:col-span-3">
+              <div className="text-xs text-zinc-400">Tags</div>
+              <Input name="tags" placeholder="dominant, fantasy, elf" defaultValue={tags} />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <div className="text-xs text-zinc-400">Gender</div>
+              <select name="gender" defaultValue={gender ?? ""} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
+                <option value="">All genders</option>
+                {["Female","Male","Non-Binary","Trans","Bisexual","Lesbian","Gay","Androgynous"].map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <div className="text-xs text-zinc-400">Photo</div>
+              <select name="hasPhoto" defaultValue={sp.hasPhoto ?? ""} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
+                <option value="">All</option>
+                <option value="1">Has photo</option>
+                <option value="0">No photo</option>
+              </select>
+            </div>
+            <div className="space-y-1 md:col-span-1">
+              <div className="text-xs text-zinc-400">Min age</div>
+              <Input name="minAge" type="number" placeholder="18" min={18} defaultValue={sp.minAge ?? ""} />
+            </div>
+            <div className="space-y-1 md:col-span-1">
+              <div className="text-xs text-zinc-400">Max age</div>
+              <Input name="maxAge" type="number" placeholder="Any" defaultValue={sp.maxAge ?? ""} />
+            </div>
+            <div className="flex gap-2 md:col-span-12 md:justify-end pt-1">
+              <Button type="submit" className="h-10">Apply filters</Button>
+              <a href="/adult/companions"><Button type="button" variant="secondary" className="h-10">Clear</Button></a>
+              <a href="/adult/companions/media"><Button type="button" variant="secondary" className="h-10">📷 No photo</Button></a>
             </div>
           </form>
         </CardBody>

@@ -7,6 +7,7 @@ import {
   ContentRating,
 } from "@prisma/client";
 import { generateAdultVideo } from "../src/lib/gen/replicate-video.js";
+import { generateProImage } from "../src/lib/gen/replicate-image.js";
 import { createClient } from "@supabase/supabase-js";
 import Replicate from "replicate";
 
@@ -397,6 +398,14 @@ function buildEnhancedImagePrompt(args: {
 async function processJob(j: Awaited<ReturnType<typeof claimJobs>>[number]) {
   if (!j.companionId) throw new Error("Job missing companionId");
 
+  // Fetch extra metadata not returned by the raw claimJobs query
+  const jobMeta = await prisma.generationJob.findUnique({
+    where: { id: j.id },
+    select: { requestPreset: true, requestTag: true },
+  });
+  const imagePromptUrl = jobMeta?.requestPreset ?? null; // Flux Redux reference image URL
+  const mode = jobMeta?.requestTag ?? "standard";
+
   if (j.type === GenerationType.VIDEO) {
     const videoUrl = await generateAdultVideo(j.prompt);
     const { bytes, contentType } = await downloadToBytes(videoUrl);
@@ -443,9 +452,21 @@ async function processJob(j: Awaited<ReturnType<typeof claimJobs>>[number]) {
     profile: companion?.profile,
   });
 
-  console.log("[worker] enhanced prompt:", enhancedPrompt);
+  console.log("[worker] enhanced prompt:", enhancedPrompt, "| mode:", mode, "| imagePrompt:", !!imagePromptUrl);
 
-  const gen = await generateImageBytes(enhancedPrompt, j.contentRating);
+  let gen: { bytes: Uint8Array; contentType: string };
+
+  if (imagePromptUrl && (mode === "outfit" || mode === "undress")) {
+    // Flux Redux: use reference image to preserve identity while changing outfit/clothing
+    const intensity = mode === "undress" ? 5 : 2;
+    const resultUrl = await generateProImage(enhancedPrompt, {
+      imagePrompt: imagePromptUrl,
+      intensity,
+    });
+    gen = await downloadToBytes(resultUrl);
+  } else {
+    gen = await generateImageBytes(enhancedPrompt, j.contentRating);
+  }
 
   const uploaded = await uploadToSupabase({
     rating: j.contentRating,
