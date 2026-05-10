@@ -40,7 +40,7 @@ export function AdultTopNav() {
                         <NavLink href="/about" label="About Us" />
                     </li>
                     <li>
-                        <NavLink href="/media" label="Media" />
+                        <NavLink href="/adult/companions/media" label="Media" />
                     </li>
                     <li>
                         <NavLink href="/adult/chat" label="Chat" />
