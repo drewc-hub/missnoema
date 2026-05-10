@@ -125,7 +125,7 @@ async function generateImageBytes(prompt: string, contentRating: ContentRating) 
     return generateHfImageBytes(prompt, {
       provider: env("HF_PROVIDER", "fal-ai"),
       model: isAdult
-        ? env("HF_ADULT_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev")
+        ? env("HF_ADULT_IMAGE_MODEL", "xai-org/grok-2")
         : env("HF_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev"),
       intensity: isAdult ? 3 : 1,
       aspectRatio: "2:3",
