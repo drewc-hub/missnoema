@@ -295,7 +295,12 @@ model User {
   subscriptionStatus   String?
   subscriptionPriceId  String?           @unique
   subscriptionTier     String?
+  suspendedAt          DateTime?         @db.Timestamptz(6)
+  suspendedReason      String?
+  bannedAt             DateTime?         @db.Timestamptz(6)
+  bannedReason         String?
   AuditLog             AuditLog[]
+  reports              Report[]
   coinTransactions     CoinTransaction[]
   Companion            Companion[]
   CompanionAsset       CompanionAsset[]
@@ -304,6 +309,25 @@ model User {
   generationJobs       GenerationJob[]
   facts                UserFact[]
 
+  @@schema("public")
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  targetType ReportTarget
+  targetId   String
+  reason     ReportReason
+  details    String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  reviewedBy String?
+  reviewedAt DateTime?    @db.Timestamptz(6)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(6)
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterId])
   @@schema("public")
 }
 
@@ -462,6 +486,34 @@ enum CategoryType {
   OCCUPATION
   SETTING
   RELATIONSHIP
+
+  @@schema("public")
+}
+
+enum ReportTarget {
+  COMPANION
+  ASSET
+  MESSAGE
+
+  @@schema("public")
+}
+
+enum ReportReason {
+  UNDERAGE_CONTENT
+  NON_CONSENT
+  ILLEGAL_CONTENT
+  HARASSMENT
+  SPAM
+  OTHER
+
+  @@schema("public")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ACTION_TAKEN
 
   @@schema("public")
 }

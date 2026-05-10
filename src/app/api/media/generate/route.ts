@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
+import { checkBannedThemes, logAudit } from "@/lib/moderation";
 import { ContentRating, GenerationType, JobStatus } from "@/lib/db";
 import { getMediaCost, getMediaIntensity } from "@/lib/mediaPrompt";
 import {
@@ -86,6 +87,16 @@ export async function POST(req: Request) {
   }
   if (!prompt) {
     return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
+  }
+
+  if (user.suspendedAt) {
+    return NextResponse.json({ error: "Account suspended." }, { status: 403 });
+  }
+
+  const themeCheck = checkBannedThemes(prompt);
+  if (themeCheck.blocked) {
+    logAudit(user.id, "banned_theme_blocked", { category: themeCheck.category, route: "media_generate" });
+    return NextResponse.json({ error: "Prompt contains prohibited content." }, { status: 400 });
   }
 
   // ── Cooldown check ────────────────────────────────────────────────────────

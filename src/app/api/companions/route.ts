@@ -9,6 +9,7 @@ import {
   listCompanions,
   AdultVerificationRequiredError,
 } from "@/lib/companions";
+import { checkBannedThemes, logAudit } from "@/lib/moderation";
 
 export const runtime = "nodejs";
 
@@ -145,6 +146,19 @@ export async function POST(req: Request) {
       { error: "Age verification required." },
       { status: 403 },
     );
+  }
+
+  if (user.suspendedAt) {
+    return NextResponse.json({ error: "Account suspended." }, { status: 403 });
+  }
+
+  const textToCheck = [data.name, data.description, data.profile?.personality, data.profile?.background, data.profile?.scene]
+    .filter(Boolean)
+    .join(" ");
+  const themeCheck = checkBannedThemes(textToCheck);
+  if (themeCheck.blocked) {
+    logAudit(user.id, "banned_theme_blocked", { category: themeCheck.category, route: "companion_create" });
+    return NextResponse.json({ error: "Companion description contains prohibited content." }, { status: 400 });
   }
 
   const slug = await uniqueSlug(data.slug || data.name);

@@ -9,6 +9,7 @@ export type AuthedUser = {
   ageVerifiedAt: Date | null;
   plan: SubscriptionPlan;
   role: UserRole;
+  suspendedAt: Date | null;
 };
 
 export const DAILY_MESSAGE_LIMITS: Record<SubscriptionPlan, number | null> = {
@@ -46,10 +47,17 @@ export async function getAuthedUser(): Promise<AuthedUser | null> {
       ageVerifiedAt: true,
       plan: true,
       role: true,
+      suspendedAt: true,
+      bannedAt: true,
     },
   });
 
   if (!dbUser) {
+    return null;
+  }
+
+  // Permanently banned users are treated as logged out
+  if (dbUser.bannedAt) {
     return null;
   }
 
@@ -60,5 +68,6 @@ export async function getAuthedUser(): Promise<AuthedUser | null> {
     ageVerifiedAt: dbUser.ageVerifiedAt ?? null,
     plan: dbUser.plan,
     role: dbUser.role,
+    suspendedAt: dbUser.suspendedAt ?? null,
   };
 }

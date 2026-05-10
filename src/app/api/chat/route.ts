@@ -6,6 +6,7 @@ import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser, DAILY_MESSAGE_LIMITS, CONTEXT_WINDOW_SIZES } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
+import { checkBannedThemes, logAudit } from "@/lib/moderation";
 export const runtime = "nodejs";
 
 type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
@@ -629,6 +630,20 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Age verification required." },
       { status: 403 },
+    );
+  }
+
+  if (user.suspendedAt) {
+    return NextResponse.json({ error: "Account suspended." }, { status: 403 });
+  }
+
+  // Hard filter: block banned themes before any AI processing or storage
+  const themeCheck = checkBannedThemes(message);
+  if (themeCheck.blocked) {
+    logAudit(user.id, "banned_theme_blocked", { category: themeCheck.category, route: "chat" });
+    return NextResponse.json(
+      { error: "Message contains prohibited content." },
+      { status: 400 },
     );
   }
 
