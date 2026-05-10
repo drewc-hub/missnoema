@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser, DAILY_MESSAGE_LIMITS, CONTEXT_WINDOW_SIZES } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { checkBannedThemes, logAudit } from "@/lib/moderation";
+import { retrieveConversationMemories, storeConversationMemory } from "@/lib/memory-rag";
 export const runtime = "nodejs";
 
 type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
@@ -153,6 +154,7 @@ function buildCompanionSystemPrompt(args: {
     emotionalProfile: string | null;
   };
   userFacts?: string[];
+  retrievedMemories?: string[];
   pinnedMessages?: { role: string; content: string }[];
   userEmotion?: UserEmotion;
   companionMood?: 0 | 1 | 2 | 3;
@@ -164,6 +166,7 @@ function buildCompanionSystemPrompt(args: {
     companion,
     memory,
     userFacts = [],
+    retrievedMemories = [],
     userEmotion = "neutral",
     companionMood = 0,
     relationshipStage = "STRANGER",
@@ -283,7 +286,7 @@ Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Domin
 
 RELATIONSHIP
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100
-${memoryLines}${cappedFacts.length > 0 ? `\nUSER FACTS:\n${cappedFacts.map((f) => `• ${f}`).join("\n")}` : ""}
+${memoryLines}${retrievedMemories.length > 0 ? `\nRECALLED MEMORIES:\n${retrievedMemories.map((m) => `• ${m.slice(0, 200)}`).join("\n")}` : ""}${cappedFacts.length > 0 ? `\nUSER FACTS:\n${cappedFacts.map((f) => `• ${f}`).join("\n")}` : ""}
 
 USER EMOTIONAL STATE: ${userEmotion} — ${emotionNote}
 COMPANION MOOD: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]} — ${moodNote}
@@ -701,10 +704,21 @@ export async function POST(req: Request) {
       })
     : null;
 
+  if (userMsg && message) {
+    storeConversationMemory({
+      supabaseUserId: user.supabaseUserId,
+      conversationId: conversation.id,
+      companionId: companion.id,
+      content: message,
+      role: "user",
+      messageId: userMsg.id,
+    }).catch(() => {});
+  }
+
   const contextWindow = CONTEXT_WINDOW_SIZES[user.plan];
 
   // Load pinned messages (always included regardless of context window)
-  const [pinnedMessages, recentMessages, userFactRows] = await Promise.all([
+  const [pinnedMessages, recentMessages, userFactRows, retrievedMemories] = await Promise.all([
     prisma.chatMessage.findMany({
       where: { conversationId: conversation.id, isPinned: true },
       orderBy: { createdAt: "asc" },
@@ -725,6 +739,9 @@ export async function POST(req: Request) {
       orderBy: { createdAt: "asc" },
       select: { fact: true },
     }),
+    message
+      ? retrieveConversationMemories({ conversationId: conversation.id, queryText: message })
+      : Promise.resolve<string[]>([]),
   ]);
 
   // Merge pinned + recent, deduplicating by content (pinned first as anchors)
@@ -753,6 +770,7 @@ export async function POST(req: Request) {
       kinkLevel: conversation.kinkLevel,
     },
     userFacts,
+    retrievedMemories,
     userEmotion: delta?.emotion ?? "neutral",
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
     relationshipStage,
@@ -815,6 +833,15 @@ ${lastAssistantReplies || "(none yet)"}
         data: { conversationId: conversation.id, role: "assistant", content: reply },
         select: { id: true },
       });
+
+      storeConversationMemory({
+        supabaseUserId: user.supabaseUserId,
+        conversationId: conversation.id,
+        companionId: companion.id,
+        content: reply,
+        role: "assistant",
+        messageId: assistantMsg.id,
+      }).catch(() => {});
 
       const profile =
         companion.profile && typeof companion.profile === "object"
