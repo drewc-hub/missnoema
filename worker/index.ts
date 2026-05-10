@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { generateAdultVideo } from "../src/lib/gen/replicate-video.js";
 import { generateProImage } from "../src/lib/gen/replicate-image.js";
+import { generateHfImageBytes } from "../src/lib/gen/hf-image.js";
 import { createClient } from "@supabase/supabase-js";
 import Replicate from "replicate";
 
@@ -118,6 +119,18 @@ async function downloadToBytes(url: string) {
 }
 async function generateImageBytes(prompt: string, contentRating: ContentRating) {
   const isAdult = contentRating === ContentRating.ADULT;
+
+  // Use HF/fal-ai when IMAGE_PROVIDER=hf (requires HF_TOKEN env var).
+  if (env("IMAGE_PROVIDER", "replicate") === "hf") {
+    return generateHfImageBytes(prompt, {
+      provider: env("HF_PROVIDER", "fal-ai"),
+      model: isAdult
+        ? env("HF_ADULT_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev")
+        : env("HF_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev"),
+      intensity: isAdult ? 3 : 1,
+      aspectRatio: "2:3",
+    });
+  }
 
   const model = isAdult
     ? env("REPLICATE_ADULT_IMAGE_MODEL", "google/nano-banana-2:71516450bdbeafc41df33ad538bc8cc6a90f80038a563b1260531c02d694f4fd")

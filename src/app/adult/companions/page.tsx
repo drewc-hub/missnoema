@@ -122,7 +122,7 @@ export default async function AdultCompanionsPage({
   const gender = (sp.gender ?? "").trim() || undefined;
   const minAge = sp.minAge ? Number(sp.minAge) : undefined;
   const maxAge = sp.maxAge ? Number(sp.maxAge) : undefined;
-  const hasPhoto = sp.hasPhoto === "1" ? true : sp.hasPhoto === "0" ? false : undefined;
+  const hasPhoto = sp.hasPhoto === "0" ? false : sp.hasPhoto === "all" ? undefined : true;
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = Math.min(30, Math.max(6, Number(sp.pageSize ?? "12") || 12));
 
@@ -140,7 +140,7 @@ export default async function AdultCompanionsPage({
   });
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-  const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto };
+  const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto ?? "1" };
 
   return (
     <main className="space-y-5">
@@ -187,9 +187,9 @@ export default async function AdultCompanionsPage({
             </div>
             <div className="space-y-1 md:col-span-2">
               <div className="text-xs text-zinc-400">Photo</div>
-              <select name="hasPhoto" defaultValue={sp.hasPhoto ?? ""} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
-                <option value="">All</option>
+              <select name="hasPhoto" defaultValue={sp.hasPhoto ?? "1"} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
                 <option value="1">Has photo</option>
+                <option value="all">All</option>
                 <option value="0">No photo</option>
               </select>
             </div>
