@@ -36,7 +36,7 @@ export function SafeTopNav() {
                         <NavLink href="/adult" label="Adult" />
                     </li>
                     <li>
-                        <NavLink href="(safe)/companions/media" label="Media" />
+                        <NavLink href="/(safe)/companions/media" label="Media" />
                     </li>
                     <li>
                         <NavLink href="/chat" label="Chat" />
