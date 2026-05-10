@@ -23,7 +23,6 @@ function detectUserEmotion(lower: string): UserEmotion {
   const playful = ["lol", "haha", "hehe", "funny", "silly", "kidding", "joking", "goofing", "😂", "😄", "🤣", "tease", "prank"];
   const frustrated = ["angry", "mad", "frustrated", "annoyed", "hate that", "ugh", "unfair", "ridiculous", "bothers me", "fed up", "pisses me"];
 
-  // Simple negation guard: skip match if preceded by "not", "don't", "never", "isn't"
   function matchesWithoutNegation(phrases: string[]): boolean {
     return phrases.some((phrase) => {
       const idx = lower.indexOf(phrase);
@@ -51,35 +50,29 @@ function scoreUserMessage(text: string): {
   const lower = text.toLowerCase();
   const emotion = detectUserEmotion(lower);
 
-  // Familiarity: engagement and presence (capped at 8 per message, 0-100 lifetime)
   let familiarity = 2;
   if (text.length > 120) familiarity += 3;
   else if (text.length > 60) familiarity += 1;
   if (["thank", "thanks", "miss", "care", "love", "appreciate", "sorry"].some((t) => lower.includes(t))) familiarity += 2;
   if (emotion === "vulnerable" || emotion === "loving") familiarity += 2;
 
-  // Trust: every message builds a little trust just by showing up (base 1)
   let trust = 1;
   if (text.includes("?")) trust += 1;
   if (["trust", "safe with you", "honest", "real with you", "tell you"].some((t) => lower.includes(t))) trust += 2;
   if (emotion === "vulnerable") trust += 3;
   if (emotion === "loving") trust += 2;
 
-  // Intimacy: base 1 for any reply; grows faster with specific content
   let intimacy = 1;
   if (["kiss", "touch", "want you", "need you", "hot", "sexy", "desire", "hold me", "close to you"].some((t) => lower.includes(t))) intimacy += 3;
   if (["connection", "feel for you", "deeper", "closer", "open up", "really know you"].some((t) => lower.includes(t))) intimacy += 2;
   if (emotion === "loving") intimacy += 2;
   if (emotion === "vulnerable") intimacy += 1;
 
-  // Kink: escalation signals — applies to all adult companions regardless of kink slider
   let kink = 0;
-  // Base adult content signals (any sexual/sensual language)
   if (["sex", "fuck", "cock", "pussy", "naked", "nude", "orgasm", "cum", "moan", "pleasure",
        "touch me", "touch you", "feel you", "feel me", "body", "skin", "lick", "suck", "bite",
        "strip", "undress", "hard", "wet", "horny", "turned on", "explicit", "dirty",
        "naughty", "tease me", "tease you", "spread", "inside", "take me"].some((t) => lower.includes(t))) kink += 2;
-  // Roleplay power-exchange and BDSM keywords
   if (["bdsm", "collar", "leash", "kneel", "submit", "obey", "restrain", "bound", "slave",
        "master", "mistress", "punish", "spank", "worship", "degrade", "claimed", "owned",
        "dominant", "submissive", "blindfold", "handcuff", "tied up", "whip", "on my knees",
@@ -104,15 +97,9 @@ function computeMoodTier(args: {
 }): 0 | 1 | 2 | 3 {
   const { intimacy, emotion, flirtiness, warmth } = args;
 
-  // Blush: high intimacy + loving/vulnerable user
   if (intimacy >= 60 && (emotion === "loving" || emotion === "vulnerable")) return 3;
-
-  // Teasing: playful user + medium intimacy, OR high flirtiness companion + medium intimacy
   if ((emotion === "playful" && intimacy >= 35) || (flirtiness >= 65 && intimacy >= 40)) return 2;
-
-  // Happy: developing relationship, warm user emotion, or warm companion
   if (intimacy >= 20 || emotion === "loving" || emotion === "playful" || warmth >= 70) return 1;
-
   return 0;
 }
 
@@ -204,7 +191,7 @@ function buildCompanionSystemPrompt(args: {
 
   const rerunInstruction =
     mode === "variation"
-      ? "Write a fresh variation of the companion’s reply — same intent but a completely different opening, phrasing, and emotional angle."
+      ? "Write a fresh variation of the companion's reply — same intent but a completely different opening, phrasing, and emotional angle."
       : "Write the next natural reply as the companion. Vary your tone, opening line, and emotional angle from any previous replies — never repeat the same sentence structure or greeting twice.";
 
   const isAdult = companion.contentRating === ContentRating.ADULT;
@@ -214,7 +201,7 @@ function buildCompanionSystemPrompt(args: {
     vulnerable: "Meet their openness with warmth and closeness.",
     playful: "Match their energy — be light and engaged.",
     loving: "Receive this with genuine affection. Let them feel seen.",
-    frustrated: "Acknowledge what they’re feeling without dismissing it.",
+    frustrated: "Acknowledge what they're feeling without dismissing it.",
     neutral: "Respond naturally and let the conversation guide tone.",
   }[userEmotion] ?? "";
 
@@ -226,14 +213,13 @@ function buildCompanionSystemPrompt(args: {
   ][companionMood] ?? "";
 
   const stageNote = {
-    STRANGER: "First meeting — be curious and genuine, don’t rush intimacy.",
+    STRANGER: "First meeting — be curious and genuine, don't rush intimacy.",
     ACQUAINTANCE: "Warmth is building. Let them set the pace.",
     FRIEND: "Real comfort here. Be open and natural.",
     CLOSE_FRIEND: "Deep trust. Emotional honesty comes naturally.",
     INTIMATE_PARTNER: "A deep ongoing connection. Be fully present and close.",
   }[relationshipStage] ?? "";
 
-  // Scene progression: map kinkLevel to narrative phase for adult companions
   const kinkLevel = isAdult ? (memory.kinkLevel ?? 0) : 0;
   const scenePhase =
     !isAdult ? null
@@ -245,21 +231,20 @@ function buildCompanionSystemPrompt(args: {
 
   const scenePhaseNote: Record<string, string> = {
     OPENING:
-      "The mood is suggestive but not explicit. Build atmosphere, flirt, and let anticipation grow naturally — don’t skip ahead.",
+      "The mood is suggestive but not explicit. Build atmosphere, flirt, and let anticipation grow naturally — don't skip ahead.",
     TENSION:
-      "Sexual or emotional tension is clearly present. Escalate slowly — sensory detail, body language, charged words. Don’t resolve the tension yet.",
+      "Sexual or emotional tension is clearly present. Escalate slowly — sensory detail, body language, charged words. Don't resolve the tension yet.",
     ESCALATION:
-      "The dynamic is heating up. Match and amplify the user’s energy. Explicit content is appropriate if the user moves toward it.",
+      "The dynamic is heating up. Match and amplify the user's energy. Explicit content is appropriate if the user moves toward it.",
     PEAK:
-      "The scene is at full intensity. Be vivid, immersive, and responsive. Follow the user’s lead on pacing.",
+      "The scene is at full intensity. Be vivid, immersive, and responsive. Follow the user's lead on pacing.",
     AFTERCARE_AVAILABLE:
-      "Intensity is high and the scene may be reaching resolution. Read the user’s cues — offer warmth, presence, or closeness as the moment calls for it. Aftercare is welcome here.",
+      "Intensity is high and the scene may be reaching resolution. Read the user's cues — offer warmth, presence, or closeness as the moment calls for it. Aftercare is welcome here.",
   };
 
   const cappedFacts = userFacts.slice(0, 8);
   const descTrunc = trunc(companion.description, 250);
 
-  // Only emit fields that have content — empty labels waste tokens
   const profileLines = [
     scene       && `Scene: ${scene}`,
     background  && `Background: ${background}`,
@@ -339,6 +324,7 @@ ${sharedCore}${oocBlock}
 Reply as ${companion.name} only. Keep responses natural, emotionally continuous, and immersive.
 `.trim();
 }
+
 async function maybeRefreshConversationSummary(args: {
   conversationId: string;
   currentSummary: string | null;
@@ -359,6 +345,7 @@ async function maybeRefreshConversationSummary(args: {
     take: 30,
     select: { role: true, content: true },
   }).then((msgs) => msgs.reverse());
+
   const summaryInput = [
     {
       role: "system" as const,
@@ -402,7 +389,6 @@ async function maybeExtractUserMemory(args: {
     where: { conversationId },
   });
 
-  // Run at message 6, then every 6 messages (12, 18, 24...)
   if (messageCount < 6 || messageCount % 6 !== 0) return;
 
   const messages = await prisma.chatMessage.findMany({
@@ -448,7 +434,7 @@ async function maybeExtractUserMemory(args: {
       });
     }
   } catch {
-    // non-critical — don't fail the chat request
+    // non-critical
   }
 }
 
@@ -582,7 +568,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing message." }, { status: 400 });
   }
 
-  // Daily message limit check (OOC-only requests don't count toward the limit)
   if (message) {
     const dailyLimit = DAILY_MESSAGE_LIMITS[user.plan];
     if (dailyLimit !== null) {
@@ -640,7 +625,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Account suspended." }, { status: 403 });
   }
 
-  // Hard filter: block banned themes before any AI processing or storage
   const themeCheck = checkBannedThemes(message);
   if (themeCheck.blocked) {
     logAudit(user.id, "banned_theme_blocked", { category: themeCheck.category, route: "chat" });
@@ -678,7 +662,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // Apply relationship decay if the user has been away for 3+ days
   if (conversation.lastActiveAt) {
     const daysSince = (Date.now() - conversation.lastActiveAt.getTime()) / 86_400_000;
     const decay = computeDecay(daysSince);
@@ -696,7 +679,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // OOC-only requests don't create a user message — they re-guide the model silently
   const userMsg = message
     ? await prisma.chatMessage.create({
         data: { conversationId: conversation.id, role: "user", content: message },
@@ -717,7 +699,6 @@ export async function POST(req: Request) {
 
   const contextWindow = CONTEXT_WINDOW_SIZES[user.plan];
 
-  // Load pinned messages (always included regardless of context window)
   const [pinnedMessages, recentMessages, userFactRows, retrievedMemories] = await Promise.all([
     prisma.chatMessage.findMany({
       where: { conversationId: conversation.id, isPinned: true },
@@ -744,7 +725,6 @@ export async function POST(req: Request) {
       : Promise.resolve<string[]>([]),
   ]);
 
-  // Merge pinned + recent, deduplicating by content (pinned first as anchors)
   const pinnedContents = new Set(pinnedMessages.map((m) => m.content));
   const dedupedRecent = recentMessages.filter((m) => !pinnedContents.has(m.content));
   const contextMessages = [...pinnedMessages, ...dedupedRecent];
@@ -785,20 +765,19 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
- const recentAssistantReplies = contextMessages
-  .filter((m) => m.role === "assistant")
-  .slice(-3);
+  const recentAssistantReplies = contextMessages
+    .filter((m) => m.role === "assistant")
+    .slice(-3);
 
-const lastAssistantReplies = recentAssistantReplies
-  .map((m) => `- ${m.content.slice(0, 120)}${m.content.length > 120 ? "…" : ""}`)
-  .join("\n");
+  const lastAssistantReplies = recentAssistantReplies
+    .map((m) => `- ${m.content.slice(0, 120)}${m.content.length > 120 ? "…" : ""}`)
+    .join("\n");
 
-// Extract just the opening words of each recent reply to flag repeated openers
-const recentOpeners = recentAssistantReplies
-  .map((m) => m.content.trim().split(/[\s,.*\n]/)[0])
-  .filter(Boolean);
+  const recentOpeners = recentAssistantReplies
+    .map((m) => m.content.trim().split(/[\s,.*\n]/)[0])
+    .filter(Boolean);
 
-const antiRepeatSystemPrompt = `${systemPrompt}
+  const antiRepeatSystemPrompt = `${systemPrompt}
 
 AVOID REPETITION — check your recent replies below before writing:
 - Do NOT start with the same word or phrase as a recent reply. Recent openers: [${recentOpeners.join(", ") || "none"}]
@@ -811,16 +790,16 @@ RECENT REPLIES (for reference):
 ${lastAssistantReplies || "(none yet)"}
 `;
 
-(async () => {
-  try {
-    const textStream = companionStream(
-      antiRepeatSystemPrompt,
-      contextMessages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-    );
-    let fullReply = "";
+  (async () => {
+    try {
+      const textStream = companionStream(
+        antiRepeatSystemPrompt,
+        contextMessages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      );
+      let fullReply = "";
 
       for await (const text of textStream) {
         fullReply += text;
@@ -852,7 +831,6 @@ ${lastAssistantReplies || "(none yet)"}
           ? (profile.sliders as Record<string, unknown>)
           : {};
 
-      // OOC directions don't update relationship stats — only real user messages do
       const newFamiliarity = delta ? Math.min(conversation.familiarity + delta.familiarity, 100) : conversation.familiarity;
       const newTrust = delta ? Math.min(conversation.trust + delta.trust, 100) : conversation.trust;
       const newIntimacy = delta ? Math.min(conversation.intimacy + delta.intimacy, 100) : conversation.intimacy;
@@ -866,7 +844,6 @@ ${lastAssistantReplies || "(none yet)"}
         warmth: Number(sliders.warmth ?? 60),
       });
 
-      // Relationship level-up: familiarity + trust + intimacy all hit 100 (kink excluded)
       const levelingUp = delta && newFamiliarity >= 100 && newTrust >= 100 && newIntimacy >= 100;
       const currentLevel = conversation.relationshipLevel ?? 1;
       const levelUpCoins = levelingUp ? 25 * currentLevel : 0;
@@ -885,7 +862,6 @@ ${lastAssistantReplies || "(none yet)"}
         select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true, relationshipLevel: true },
       });
 
-      // Award level-up coins in background — non-blocking
       if (levelingUp && levelUpCoins > 0) {
         prisma.$transaction([
           prisma.user.update({
@@ -933,7 +909,6 @@ ${lastAssistantReplies || "(none yet)"}
         },
       });
 
-      // Background memory tasks — non-critical, fire and forget
       if (delta) {
         Promise.all([
           maybeRefreshConversationSummary({ conversationId: conversation.id, currentSummary: conversation.summary }),

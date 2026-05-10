@@ -2,11 +2,11 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, generateText } from "ai";
 
 const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "mistralai/mistral-nemo";
+  process.env.OPENROUTER_MODEL ?? "x-ai/grok-4.20-multi-agent";
 
 let provider: ReturnType<typeof createOpenAI> | undefined;
 
-function getProvider() {
+export function getProvider() {
   if (!provider) {
     if (!process.env.OPENROUTER_API_KEY) {
       throw new Error("Missing OPENROUTER_API_KEY");
