@@ -15,7 +15,7 @@
 
   body {
     @apply text-zinc-100 antialiased;
-    background: bg-zinc-950;
+    background-color: bg-zinc-950;
     min-height: 100dvh;
     /* Prevent elastic bounce-scroll on iOS at the body level */
     overscroll-behavior: none;
