@@ -89,23 +89,10 @@ export default async function AdultCompanionsMediaPage({
               className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 transition-all hover:border-rose-900/50"
             >
               {/* Placeholder */}
-              <div className="relative flex aspect-[3/4] w-full items-center justify-center bg-gradient-to-b from-zinc-800 to-zinc-900">
+              <div className="flex aspect-[3/4] w-full items-center justify-center bg-gradient-to-b from-zinc-800 to-zinc-900">
                 <div className="text-center">
                   <div className="text-5xl font-bold text-zinc-600 select-none">{c.name[0]}</div>
                   <div className="mt-2 text-xs text-zinc-600">No photo yet</div>
-                </div>
-                {c.gender && (
-                  <div className="absolute left-3 top-3 rounded-full bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-700">
-                    {c.gender}
-                  </div>
-                )}
-                {c.age != null && (
-                  <div className="absolute right-3 top-3 rounded-full bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-700">
-                    Age {c.age}
-                  </div>
-                )}
-                <div className="absolute bottom-3 left-3">
-                  <Badge tone={c.contentRating === "ADULT" ? "adult" : "safe"}>{c.contentRating}</Badge>
                 </div>
               </div>
               {/* Info */}
@@ -114,6 +101,25 @@ export default async function AdultCompanionsMediaPage({
                   <div className="font-semibold text-white">{c.name}</div>
                   <div className="mt-0.5 line-clamp-2 text-xs text-zinc-400">{c.description}</div>
                 </div>
+                {(c.gender || c.age != null || c.contentRating) && (
+                  <details className="group">
+                    <summary className="flex cursor-pointer select-none list-none items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                      <svg className="h-3 w-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 6 10" stroke="currentColor" strokeWidth="2"><path d="M1 1l4 4-4 4"/></svg>
+                      Details
+                    </summary>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {c.gender && (
+                        <span className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-700">{c.gender}</span>
+                      )}
+                      {c.age != null && (
+                        <span className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-700">Age {c.age}</span>
+                      )}
+                      {c.contentRating && (
+                        <Badge tone={c.contentRating === "ADULT" ? "adult" : "safe"}>{c.contentRating}</Badge>
+                      )}
+                    </div>
+                  </details>
+                )}
                 <div className="mt-auto flex gap-2">
                   <a
                     href={`/adult/companions/${c.slug}/edit`}

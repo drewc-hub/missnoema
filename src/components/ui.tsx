@@ -37,7 +37,7 @@ export function CardHeader({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-start justify-between gap-4 border-b border-blue-900/60 p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-blue-900/60 p-5">
             <div>
                 <div className="text-lg font-semibold">{title}</div>
                 {subtitle ? (
