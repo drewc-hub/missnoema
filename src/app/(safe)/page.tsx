@@ -1,183 +1,233 @@
-// file: src/app/page.tsx
-import React from "react";
-import { Card, CardBody, CardHeader, Button, Badge } from "@/components/ui";
-import { getAuthedUser } from "@/lib/auth";
-import { isAdultAllowed } from "@/lib/ratings";
+export default function NoemaAboutPage() {
+  return (
+    <main className="min-h-screen bg-black text-white">
+      {/* HERO */}
+      <section className="relative overflow-hidden border-b border-zinc-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]" />
 
-export const runtime = "nodejs";
+        <div className="relative mx-auto flex max-w-7xl flex-col gap-10 px-6 py-24 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl space-y-6">
+            <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-4 py-1 text-sm tracking-wide text-fuchsia-300">
+              Adaptive AI Companion Ecosystem
+            </div>
 
-export default async function HomePage() {
-    const user = await getAuthedUser();
-    const adultOk = isAdultAllowed(user);
+            <h1 className="text-5xl font-black leading-tight tracking-tight sm:text-6xl lg:text-7xl">
+              About <span className="text-fuchsia-400">Noema</span>
+            </h1>
 
-    return (
-        <main className="space-y-8">
-            {/* Hero */}
-            <section className="rounded-3xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 p-8">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge tone="safe">SAFE by default</Badge>
-                        <Badge>Web-first creator tools</Badge>
-                        <Badge>18+ gated (web-only)</Badge>
-                    </div>
+            <p className="max-w-2xl text-lg leading-8 text-zinc-300 sm:text-xl">
+              Noema is an adaptive AI companion platform built around persistent
+              memory, emotional continuity, and evolving relationships.
+              Unlike traditional chatbot apps, Noema companions remember
+              conversations, emotional moments, preferences, relationship
+              milestones, and personal details over time — creating
+              interactions that feel natural, reactive, and deeply personal.
+            </p>
 
-                    <h1 className="text-4xl font-semibold tracking-tight text-zinc-100">
-                        Your companion universe, designed your way.
-                    </h1>
+            <div className="flex flex-wrap gap-4 pt-4">
+              <a
+                href="/companions"
+                className="rounded-2xl bg-fuchsia-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+              >
+                Explore Companions
+              </a>
 
-                    <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
-                        Explore a curated library, create your own companions, and generate media on the web. SAFE content is the
-                        default experience. Adult content is opt-in, clearly labeled, and age-gated.
+              <a
+                href="/create"
+                className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
+              >
+                Create Your Own
+              </a>
+            </div>
+          </div>
+
+          <div className="grid w-full max-w-xl grid-cols-2 gap-4">
+            {[
+              "Persistent Memory",
+              "Relationship Progression",
+              "Emotional Modeling",
+              "Image Generation",
+              "Video Generation",
+              "Adult-Gated Experiences",
+              "Custom Personalities",
+              "Adaptive Conversations",
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
+              >
+                <p className="text-sm font-medium text-zinc-200">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* STORY */}
+      <section className="mx-auto max-w-7xl px-6 py-24">
+        <div className="grid gap-16 lg:grid-cols-2">
+          <div className="space-y-6">
+            <div className="inline-flex rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1 text-sm text-zinc-400">
+              The Vision
+            </div>
+
+            <h2 className="text-4xl font-bold tracking-tight">
+              More than a chatbot.
+            </h2>
+
+            <div className="space-y-5 text-lg leading-8 text-zinc-300">
+              <p>
+                Most AI chat applications reset emotionally every session.
+                Noema was designed to solve that problem.
+              </p>
+
+              <p>
+                Every companion is powered by layered memory systems that track
+                familiarity, trust, intimacy, emotional patterns, relationship
+                progression, and long-term continuity. Conversations evolve over
+                time instead of starting from zero.
+              </p>
+
+              <p>
+                Companions can adapt emotionally, remember recurring themes,
+                respond differently based on relationship history, and develop
+                unique conversational dynamics with every user.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-fuchsia-400">
+                  Core Systems
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                {[
+                  {
+                    title: "Persistent Memory",
+                    desc: "Companions retain emotional context, conversation history, and relationship milestones.",
+                  },
+                  {
+                    title: "Adaptive Personality Engines",
+                    desc: "Behavior evolves dynamically based on emotional state, intimacy, trust, and user interaction patterns.",
+                  },
+                  {
+                    title: "Immersive Media Generation",
+                    desc: "Integrated AI image and video generation designed directly into the companion experience.",
+                  },
+                  {
+                    title: "SAFE + Adult Ecosystem",
+                    desc: "Structured content separation allows SAFE experiences while supporting opt-in adult-gated interactions.",
+                  },
+                ].map((feature) => (
+                  <div
+                    key={feature.title}
+                    className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5"
+                  >
+                    <h3 className="text-lg font-semibold text-white">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-zinc-400">
+                      {feature.desc}
                     </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        <a href="/companions">
-                            <Button>Browse companions</Button>
-                        </a>
-                        <a href="/companions/new">
-                            <Button variant="secondary">Create your own</Button>
-                        </a>
-                        <a href={adultOk ? "/adult/companions" : "/adult/verify?next=/adult/companions"}>
-                            <Button variant="ghost" className="border border-zinc-800">
-                                {adultOk ? "Adult library" : "Verify for 18+"}
-                            </Button>
-                        </a>
-                    </div>
+      {/* PHILOSOPHY */}
+      <section className="border-y border-zinc-800 bg-zinc-950/70">
+        <div className="mx-auto max-w-6xl px-6 py-24 text-center">
+          <p className="text-sm uppercase tracking-[0.4em] text-fuchsia-400">
+            Platform Philosophy
+          </p>
 
-                    {user ? (
-                        <div className="pt-2 text-xs text-zinc-500">
-                            Signed in as <span className="text-zinc-300">{user.email ?? "user"}</span>
-                            {adultOk ? " • Verified 18+" : " • 18+ not verified"}
-                        </div>
-                    ) : (
-                        <div className="pt-2 text-xs text-zinc-500">
-                            You&apos;re browsing as a guest.{" "}
-                            <a className="text-zinc-200 underline" href="/login">Login</a> to generate media.
-                        </div>
-                    )}
-                </div>
-            </section>
+          <h2 className="mx-auto mt-6 max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+            Built for immersion,
+            continuity, and emotional realism.
+          </h2>
 
-            {/* Memory features */}
-            <section className="rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 p-6 space-y-6">
-                <div className="space-y-1">
-                    <h2 className="text-lg font-semibold text-zinc-100">
-                        Memory that actually works.
-                    </h2>
-                    <p className="text-sm text-zinc-400 max-w-2xl">
-                        Most AI companions forget you the moment the conversation ends. Noema is built differently — every session builds on the last, so your companions grow with you over time.
-                    </p>
-                </div>
+          <p className="mx-auto mt-8 max-w-3xl text-lg leading-8 text-zinc-400">
+            Noema is designed to feel less like a scripted assistant and more
+            like a living digital relationship ecosystem. The platform focuses
+            on long-term interaction quality rather than aggressive paywalls or
+            shallow engagement loops.
+          </p>
+        </div>
+      </section>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                    {/* Longer context window */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">📖</span>
-                            <span className="font-medium text-zinc-100">Longer context window</span>
-                        </div>
-                        <p className="text-sm text-zinc-400">
-                            Your plan determines how many recent messages stay live in the AI&apos;s awareness — up to 40 messages at a time on Unlimited. The AI always knows what was just said, not just the last two lines.
-                        </p>
-                        <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-200">Basic · 12 messages</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-200">Pro · 25 messages</span>
-                            <span className="rounded-full bg-blue-900/60 px-2.5 py-1 text-xs text-blue-300">Unlimited · 40 messages</span>
-                        </div>
-                    </div>
+      {/* STATS */}
+      <section className="mx-auto max-w-7xl px-6 py-24">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              value: "800+",
+              label: "Companion Profiles",
+            },
+            {
+              value: "Persistent",
+              label: "Relationship Memory",
+            },
+            {
+              value: "SAFE + 18+",
+              label: "Content Ecosystem",
+            },
+            {
+              value: "Realtime",
+              label: "AI Media Generation",
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8 text-center"
+            >
+              <div className="text-4xl font-black text-fuchsia-400">
+                {stat.value}
+              </div>
+              <div className="mt-3 text-sm uppercase tracking-wide text-zinc-400">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-                    {/* Saved fact list */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">🗂️</span>
-                            <span className="font-medium text-zinc-100">Saved fact list</span>
-                        </div>
-                        <p className="text-sm text-zinc-300">
-                            Tell your companion your name, your kinks, your limits, your preferences — once. Those facts are automatically injected into every conversation so you never have to repeat yourself.
-                        </p>
-                        <div className="flex gap-2 flex-wrap pt-1">
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;My name is Alex&quot;</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;I enjoy bondage&quot;</span>
-                            <span className="rounded-full bg-blue-800 px-2.5 py-1 text-xs text-zinc-300 italic">&quot;Hard limits: …&quot;</span>
-                        </div>
-                    </div>
+      {/* CTA */}
+      <section className="border-t border-zinc-800">
+        <div className="mx-auto max-w-5xl px-6 py-24 text-center">
+          <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+            Engineer your ideal companion.
+          </h2>
 
-                    {/* Pinned messages */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">📌</span>
-                            <span className="font-medium text-zinc-100">Pinned messages</span>
-                        </div>
-                        <p className="text-sm text-zinc-300">
-                            Pin any message — a confession, a promise, a defining moment — and it stays anchored in the AI&apos;s context permanently. No matter how long the conversation grows, pinned messages are never forgotten.
-                        </p>
-                    </div>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-400">
+            Explore evolving AI relationships, immersive conversations,
+            adaptive personalities, and integrated media generation — all
+            inside the Noema ecosystem.
+          </p>
 
-                    {/* Longitudinal understanding */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/25 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">🧠</span>
-                            <span className="font-medium text-zinc-100">Persistent longitudinal understanding</span>
-                        </div>
-                        <p className="text-sm text-zinc-300">
-                            Behind the scenes, Noema continuously builds an emotional profile of you — your communication style, your recurring needs, moments of vulnerability. Companions develop a genuine sense of who you are across weeks and months of conversation.
-                        </p>
-                    </div>
-                </div>
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <a
+              href="/companions"
+              className="rounded-2xl bg-fuchsia-500 px-7 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+            >
+              Enter Ecosystem
+            </a>
 
-                <div className="pt-2 flex flex-wrap gap-3 items-center">
-                    <a href="/companions">
-                        <Button>Start a conversation</Button>
-                    </a>
-                    <span className="text-xs text-zinc-300">Memory builds automatically — no setup required.</span>
-                </div>
-            </section>
-
-            {/* Feature cards — equal height, button pinned to bottom */}
-            <section className="grid gap-4 lg:grid-cols-3">
-                <Card className="flex flex-col">
-                    <CardHeader title="Library" subtitle="Search, filter, and discover." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Public SAFE companions show by default. Verified users can opt into 18+ browsing — all clearly labeled and age-gated.
-                        </p>
-                        <a href="/companions">
-                            <Button variant="secondary" className="w-full">
-                                Open library
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-
-                <Card className="flex flex-col">
-                    <CardHeader title="Creator" subtitle="Design personality + boundaries." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Build companions with structured profiles — scene, backstory, personality sliders, kink tags, and relationship styles.
-                        </p>
-                        <a href="/companions/new">
-                            <Button variant="secondary" className="w-full">
-                                Create a companion
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-
-                <Card className="flex flex-col">
-                    <CardHeader title="Generation" subtitle="Queue jobs, worker produces media." />
-                    <CardBody className="flex flex-col flex-1 gap-3">
-                        <p className="flex-1 text-sm text-zinc-300">
-                            Generate images and video server-side. Assets are stored securely — adult content stays private behind signed URLs.
-                        </p>
-                        <a href="/companions">
-                            <Button variant="secondary" className="w-full">
-                                Generate from a companion
-                            </Button>
-                        </a>
-                    </CardBody>
-                </Card>
-            </section>
-
-        </main>
-    );
+            <a
+              href="/create"
+              className="rounded-2xl border border-zinc-700 bg-zinc-900 px-7 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
+            >
+              Build Companion
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
 }
