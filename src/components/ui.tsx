@@ -18,7 +18,7 @@ export function Card({
     return (
         <div
             className={cn(
-                "rounded-2xl border border-blue-900/60 bg-gradient-to-b from-blue-950/80 to-blue-950/40 shadow-sm",
+                "rounded-2xl border border-zinc-800 bg-zinc-950 shadow-sm",
                 className,
             )}
         >
@@ -37,7 +37,7 @@ export function CardHeader({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-blue-900/60 p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-zinc-800 p-5">
             <div>
                 <div className="text-lg font-semibold">{title}</div>
                 {subtitle ? (
@@ -60,7 +60,7 @@ export function Button({
     className,
     ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: "primary" | "secondary" | "ghost";
+    variant?: "primary" | "secondary" | "ghost" | "fuchsia";
 }) {
     const base =
         "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed";
@@ -68,6 +68,7 @@ export function Button({
         primary: "bg-white text-zinc-900 hover:bg-zinc-200",
         secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
         ghost: "bg-transparent text-zinc-200 hover:bg-zinc-800",
+        fuchsia: "bg-fuchsia-500 text-white hover:bg-fuchsia-400",
     } as const;
 
     return (

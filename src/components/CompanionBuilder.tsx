@@ -142,7 +142,7 @@ function RangeRow({
         max={100}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-white"
+        className="w-full accent-fuchsia-500"
       />
       <div className="flex justify-between text-[11px] text-zinc-500">
         <span>0</span>
@@ -300,7 +300,7 @@ export function CompanionBuilder({
   }
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900/40">
+    <Card className="border-fuchsia-900/40 bg-black/90 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
       <CardHeader
         title={mode === "create" ? "Companion Builder" : "Edit Companion"}
         subtitle={
@@ -369,22 +369,37 @@ export function CompanionBuilder({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArchetype(e.target.value)}
                 placeholder="demon noble, fae trickster, trans idol…"
               />
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {ARCHETYPE_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => setArchetype(chip)}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                      archetype === chip
-                        ? "border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-200"
-                        : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                    }`}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
+              <details className="group">
+                <summary className="flex cursor-pointer select-none list-none items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-xs font-medium transition-colors hover:border-fuchsia-500/50 hover:text-fuchsia-300 text-zinc-400">
+                  <svg className="h-3 w-3 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4"/>
+                  </svg>
+                  Browse archetypes
+                  {archetype && (
+                    <span className="ml-auto rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-fuchsia-300">
+                      {archetype}
+                    </span>
+                  )}
+                </summary>
+                <div className="mt-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {ARCHETYPE_CHIPS.map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setArchetype(chip)}
+                        className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                          archetype === chip
+                            ? "border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-200"
+                            : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-fuchsia-500/40 hover:text-zinc-200"
+                        }`}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </details>
             </div>
 
             <label className="space-y-1">
@@ -550,7 +565,7 @@ export function CompanionBuilder({
                       key={t}
                       type="button"
                       onClick={() => setTraitList((prev) => prev.filter((x) => x !== t))}
-                      className="inline-flex items-center gap-1 rounded-full border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-200 hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 transition"
+                      className="inline-flex items-center gap-1 rounded-full border border-fuchsia-900/50 bg-fuchsia-950/30 px-2.5 py-1 text-xs text-fuchsia-200 hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 transition"
                     >
                       {t} ✕
                     </button>
@@ -617,7 +632,7 @@ export function CompanionBuilder({
             />
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 p-4">
+          <div className="rounded-2xl border border-fuchsia-900/40 bg-fuchsia-950/10 p-4">
             <div className="mb-3">
               <div className="text-sm font-semibold text-zinc-100">
                 Personality sliders
@@ -682,7 +697,7 @@ export function CompanionBuilder({
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" variant="fuchsia" disabled={submitting}>
               {submitting
                 ? "Saving..."
                 : mode === "create"

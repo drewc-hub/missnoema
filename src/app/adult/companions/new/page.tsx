@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { CompanionBuilder } from "@/components/CompanionBuilder";
-import { Card, CardBody, Badge } from "@/components/ui";
+import { Card, CardBody } from "@/components/ui";
 
 export default async function NewAdultCompanionPage() {
     const user = await getAuthedUser();
@@ -54,14 +54,16 @@ export default async function NewAdultCompanionPage() {
             <section className="space-y-4 lg:col-span-7">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            Create adult companion
+                        <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs tracking-wide text-fuchsia-300 mb-2">
+                            18+ verified access
+                        </div>
+                        <h1 className="text-3xl font-black tracking-tight">
+                            Create <span className="text-fuchsia-400">adult companion</span>
                         </h1>
-                        <p className="text-sm text-zinc-400">
-                            Build an 18+ companion profile, then save it to unlock media generation.
+                        <p className="mt-1 text-sm text-zinc-400">
+                            Build an 18+ companion profile, then save to unlock the full media studio.
                         </p>
                     </div>
-                    <Badge tone="adult">18+ verified</Badge>
                 </div>
 
                 <CompanionBuilder
@@ -74,31 +76,27 @@ export default async function NewAdultCompanionPage() {
 
             <aside className="lg:col-span-5">
                 <div className="sticky top-6 space-y-4">
-                    <div>
-                        <h2 className="text-2xl font-semibold tracking-tight">
-                            Create adult images and videos
-                        </h2>
-                        <p className="mt-1 text-sm text-zinc-400">
-                            Generate NSFW photos and videos exclusive to subscribers.
-                        </p>
-                    </div>
+                    <h2 className="text-xl font-bold tracking-tight">
+                        AI images &amp; videos <span className="text-fuchsia-400">unlocked</span> after saving
+                    </h2>
+                    <p className="text-sm text-zinc-400">
+                        Fill out the profile on the left, then hit <span className="text-zinc-200 font-medium">Create companion</span> to access the full studio.
+                    </p>
 
-                    <Card className="h-full min-h-[520px]">
-                        <CardBody className="flex h-full flex-col items-center justify-center gap-4 py-16 text-center">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-900/50 bg-rose-950/40 text-3xl">
+                    <Card className="border-fuchsia-900/30 bg-black/80 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
+                        <CardBody className="flex flex-col items-center justify-center gap-5 py-14 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-fuchsia-900/50 bg-fuchsia-950/40 text-3xl">
                                 🔞
                             </div>
-                            <div>
-                                <p className="font-semibold text-zinc-100">Media generation unlocks after saving</p>
-                                <p className="mt-1 text-sm text-zinc-400">
-                                    Fill out your companion profile on the left, then hit <span className="text-zinc-200">Create companion</span> to unlock the full studio.
-                                </p>
+                            <div className="space-y-1">
+                                <p className="font-semibold text-zinc-100">Studio unlocks on save</p>
+                                <p className="text-sm text-zinc-500">Generate NSFW photos and videos exclusive to subscribers.</p>
                             </div>
-                            <div className="mt-2 flex flex-wrap justify-center gap-2">
-                                {["AI photos", "AI videos", "Custom scenes", "Wardrobe control"].map((f) => (
+                            <div className="flex flex-wrap justify-center gap-2">
+                                {["AI photos", "AI videos", "Custom scenes", "Wardrobe control", "Outfit swap", "Adult-gated"].map((f) => (
                                     <span
                                         key={f}
-                                        className="rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-400"
+                                        className="rounded-full border border-fuchsia-900/40 bg-fuchsia-950/20 px-3 py-1 text-xs text-fuchsia-300"
                                     >
                                         {f}
                                     </span>
