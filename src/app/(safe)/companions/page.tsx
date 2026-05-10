@@ -84,13 +84,14 @@ export default async function SafeCompanionsPage({
   const gender = (sp.gender ?? "").trim() || undefined;
   const minAge = sp.minAge ? Number(sp.minAge) : undefined;
   const maxAge = sp.maxAge ? Number(sp.maxAge) : undefined;
-  const hasPhoto = sp.hasPhoto === "1" ? true : sp.hasPhoto === "0" ? false : undefined;
+  // Default to "has photo" so no-photo companions live on /companions/media instead
+  const hasPhoto = sp.hasPhoto === "0" ? false : sp.hasPhoto === "all" ? undefined : true;
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = 12;
 
   const data = await listCompanions({ user, q, tags, gender, minAge, maxAge, hasPhoto, page, pageSize, includeAdult: false });
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-  const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto };
+  const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto ?? "1" };
 
   return (
     <main className="space-y-5">
@@ -125,9 +126,9 @@ export default async function SafeCompanionsPage({
             </div>
             <div className="space-y-1 md:col-span-2">
               <div className="text-xs text-zinc-400">Photo</div>
-              <select name="hasPhoto" defaultValue={sp.hasPhoto ?? ""} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
-                <option value="">All</option>
+              <select name="hasPhoto" defaultValue={sp.hasPhoto ?? "1"} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
                 <option value="1">Has photo</option>
+                <option value="all">All</option>
                 <option value="0">No photo</option>
               </select>
             </div>
@@ -142,7 +143,7 @@ export default async function SafeCompanionsPage({
             <div className="flex gap-2 md:col-span-12 md:justify-end pt-1">
               <Button type="submit" className="h-10">Apply filters</Button>
               <a href="/companions"><Button type="button" variant="secondary" className="h-10">Clear</Button></a>
-              <a href="/companions/media"><Button type="button" variant="secondary" className="h-10">📷 No photo</Button></a>
+              <a href="/companions/media"><Button type="button" variant="secondary" className="h-10">No photo →</Button></a>
             </div>
           </form>
         </CardBody>
