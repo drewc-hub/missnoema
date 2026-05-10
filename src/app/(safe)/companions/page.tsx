@@ -2,6 +2,7 @@ import React from "react";
 import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
 import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
+import { Pagination } from "@/components/Pagination";
 
 type SearchParams = { q?: string; tags?: string; page?: string };
 
@@ -123,19 +124,15 @@ export default async function SafeCompanionsPage({
         {data.items.map((c) => <CompanionCard key={c.id} c={c} />)}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-zinc-500">
-          Page <span className="text-zinc-200">{data.page}</span> of{" "}
-          <span className="text-zinc-200">{totalPages}</span>
-        </div>
-        <div className="flex gap-2">
-          <a className={page <= 1 ? "pointer-events-none opacity-40" : ""} href={`/companions${qs({ ...baseParams, page: String(page - 1) })}`}>
-            <Button variant="secondary">Prev</Button>
-          </a>
-          <a className={page >= totalPages ? "pointer-events-none opacity-40" : ""} href={`/companions${qs({ ...baseParams, page: String(page + 1) })}`}>
-            <Button variant="secondary">Next</Button>
-          </a>
-        </div>
+      <div className="space-y-1">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          buildHref={(p) => `/companions${qs({ ...baseParams, page: String(p) })}`}
+        />
+        <p className="text-center text-xs text-zinc-600">
+          Page {data.page} of {totalPages} &middot; {data.total} companions
+        </p>
       </div>
     </main>
   );
