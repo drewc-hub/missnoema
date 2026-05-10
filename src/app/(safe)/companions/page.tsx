@@ -106,9 +106,18 @@ export default async function SafeCompanionsPage({
       </div>
 
       <Card>
-        <CardHeader title="Filter" />
+        <CardHeader
+          title="Filter"
+          right={
+            <div className="flex items-center gap-2">
+              <Button type="submit" form="companion-safe-filter" className="h-9">Apply</Button>
+              <a href="/companions"><Button type="button" variant="secondary" className="h-9">Clear</Button></a>
+              <a href="/companions/media"><Button type="button" variant="secondary" className="h-9">No photo →</Button></a>
+            </div>
+          }
+        />
         <CardBody>
-          <form method="get" className="grid gap-3 md:grid-cols-12 md:items-end">
+          <form id="companion-safe-filter" method="get" className="grid gap-3 md:grid-cols-12 md:items-end">
             <div className="space-y-1 md:col-span-4">
               <div className="text-xs text-zinc-400">Search</div>
               <Input name="q" placeholder="Name or description..." defaultValue={q} />
@@ -139,11 +148,6 @@ export default async function SafeCompanionsPage({
             <div className="space-y-1 md:col-span-1">
               <div className="text-xs text-zinc-400">Max age</div>
               <Input name="maxAge" type="number" placeholder="Any" defaultValue={sp.maxAge ?? ""} />
-            </div>
-            <div className="flex gap-2 md:col-span-12 md:justify-end pt-1">
-              <Button type="submit" className="h-10">Apply filters</Button>
-              <a href="/companions"><Button type="button" variant="secondary" className="h-10">Clear</Button></a>
-              <a href="/companions/media"><Button type="button" variant="secondary" className="h-10">No photo →</Button></a>
             </div>
           </form>
         </CardBody>

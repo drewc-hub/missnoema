@@ -44,7 +44,7 @@ export function CardHeader({
                     <div className="mt-1 text-sm text-zinc-400">{subtitle}</div>
                 ) : null}
             </div>
-            {right ? <div className="shrink-0">{right}</div> : null}
+            {right ? <div className="relative shrink-0">{right}</div> : null}
         </div>
     );
 }

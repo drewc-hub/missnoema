@@ -15,7 +15,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 export function AdultTopNav() {
     return (
-        <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/90 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.10)_0%,transparent_60%)] backdrop-blur-xl">
             <div className="mx-auto flex w-full max-w-7xl items-center px-6 py-4">
                 <a href="/" className="mr-6 flex shrink-0 items-center gap-3">
                     <img src="/logo-icon.svg" alt="" className="h-8 w-8" />

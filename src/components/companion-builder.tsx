@@ -86,11 +86,18 @@ export function CompanionBuilder({
         title="Companion Builder"
         subtitle="Edit the companion basics + personality knobs."
         right={
-          userEmail ? (
-            <Badge tone="safe">{userEmail}</Badge>
-          ) : (
-            <Badge>Guest</Badge>
-          )
+          <details className="group">
+            <summary className="flex cursor-pointer select-none list-none items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white">
+              Profile
+              <svg className="h-3 w-3 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4"/>
+              </svg>
+            </summary>
+            <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[180px] flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3 shadow-xl">
+              {userEmail ? <Badge tone="safe">{userEmail}</Badge> : <Badge>Guest</Badge>}
+              <Badge tone={defaults.contentRating === "ADULT" ? "adult" : "safe"}>{defaults.contentRating}</Badge>
+            </div>
+          </details>
         }
       />
       <CardBody className="space-y-4">
@@ -171,20 +178,13 @@ export function CompanionBuilder({
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-zinc-100">
-                  Personality sliders
-                </div>
-                <div className="text-xs text-zinc-500">
-                  These help generation + chat tone.
-                </div>
+            <div className="mb-3">
+              <div className="text-sm font-semibold text-zinc-100">
+                Personality sliders
               </div>
-              <Badge
-                tone={defaults.contentRating === "ADULT" ? "adult" : "safe"}
-              >
-                {defaults.contentRating}
-              </Badge>
+              <div className="text-xs text-zinc-500">
+                These help generation + chat tone.
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
