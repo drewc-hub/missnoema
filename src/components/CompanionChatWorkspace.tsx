@@ -989,8 +989,8 @@ export function CompanionChatWorkspace({
                                             type="button"
                                             onClick={() => { setActiveId(c.id); setSidebarOpen(false); }}
                                             className={`w-full rounded-xl border p-3 text-left transition-all duration-200 pr-8 ${c.id === activeId
-                                                    ? "border-zinc-300 bg-zinc-800"
-                                                    : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
+                                                ? "border-zinc-300 bg-zinc-800"
+                                                : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70"
                                                 }`}
                                         >
                                             <div className="flex items-start gap-2">
@@ -1237,8 +1237,8 @@ export function CompanionChatWorkspace({
                                             <div
                                                 key={m.id ?? i}
                                                 className={`rounded-xl p-3 text-sm ${m.role === "user"
-                                                        ? "ml-10 bg-zinc-800 text-zinc-100"
-                                                        : "mr-10 bg-zinc-900 text-zinc-300"
+                                                    ? "ml-10 bg-zinc-800 text-zinc-100"
+                                                    : "mr-10 bg-zinc-900 text-zinc-300"
                                                     }`}
                                             >
                                                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -1274,8 +1274,8 @@ export function CompanionChatWorkspace({
                                                                             disabled={savingId === m.id}
                                                                             onClick={() => handleSaveMessage(m)}
                                                                             className={`text-[11px] transition disabled:opacity-40 ${savedIds.has(m.id)
-                                                                                    ? "text-amber-400 hover:text-amber-200"
-                                                                                    : "text-zinc-500 hover:text-zinc-200"
+                                                                                ? "text-amber-400 hover:text-amber-200"
+                                                                                : "text-zinc-500 hover:text-zinc-200"
                                                                                 }`}
                                                                             title={savedIds.has(m.id) ? "Unsave" : saveInfo && saveInfo.limit !== null && saveInfo.total >= saveInfo.limit ? `Save (${saveInfo.coinCost} coins)` : "Save"}
                                                                         >
@@ -1612,7 +1612,7 @@ export function CompanionChatWorkspace({
             })() : null}
 
             {levelUpNotif ? (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 rounded-2xl border border-violet-500/50 bg-zinc-900/95 px-6 py-4 shadow-2xl backdrop-blur-sm text-center min-w-[260px]">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 rounded-2xl border border-violet-500/50 absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% px-6 py-4 shadow-2xl backdrop-blur-sm text-center min-w-[260px]">
                     <div className="w-full">
                         <div className="text-base font-bold text-violet-300">Bond Level {levelUpNotif.level} Complete!</div>
                         <div className="text-sm text-zinc-300 mt-1">Your connection has deepened. Starting Level {levelUpNotif.nextLevel}.</div>

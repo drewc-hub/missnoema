@@ -251,18 +251,7 @@ button {
   font-family: inherit;
 }
 
-@media (max-width: 980px) {
-  .contentGrid {
-    grid-template-columns: 1fr;
-  }
-  .sideCard {
-    position: relative;
-    top: 0;
-  }
-  .sidebar {
-    display: flex;
-  } /* later we’ll add a mobile drawer */
-}
+
 
 @keyframes floatSlow {
   0% {
