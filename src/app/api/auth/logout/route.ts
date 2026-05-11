@@ -3,12 +3,21 @@ import {
   applySupabaseCookies,
   createSupabaseServerClientRoute,
 } from "@/lib/supabase/server";
+import { getOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
-  const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
+  try {
+    const { supabase, cookiesToSet } = createSupabaseServerClientRoute(req);
 
-  await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-  const res = NextResponse.redirect(new URL("/", req.url));
-  return applySupabaseCookies(res, cookiesToSet);
+    const origin = getOrigin(req);
+    const res = NextResponse.redirect(new URL("/", origin));
+    return applySupabaseCookies(res, cookiesToSet);
+  } catch (error) {
+    console.error("Logout error:", error);
+    const origin = getOrigin(req);
+    const res = NextResponse.redirect(new URL("/", origin));
+    return applySupabaseCookies(res, cookiesToSet);
+  }
 }

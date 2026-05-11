@@ -1,100 +1,100 @@
 export default function AdultPage() {
     return (
-        <main className="min-h-screen bg-black text-white">
+        <main className="min-h-screen overflow-hidden rounded-2xl border border-zinc-900 bg-black text-white">
             {/* HERO */}
             <section className="relative overflow-hidden border-b border-zinc-800">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]" />
+                <div className="rounded-lg absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]" />
 
                 <div className="relative mx-auto flex max-w-7xl flex-col gap-10 px-6 py-24 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="max-w-3xl space-y-6">
+                    <div className="max-w-3xl space-y-6">
                         <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-4 py-1 text-sm tracking-wide text-fuchsia-300">
-                              Adaptive AI Companion Ecosystem
-                            </div>
+                            Adaptive AI Companion Ecosystem
+                        </div>
 
                         <h1 className="text-5xl font-black leading-tight tracking-tight sm:text-6xl lg:text-7xl">
-                              Noema AI<span className="text-fuchsia-400">Companion</span>
-                            </h1>
+                            Noema AI<span className="text-fuchsia-400">Companion</span>
+                        </h1>
 
                         <p className="max-w-2xl text-lg leading-8 text-zinc-300 sm:text-xl">
-                              Noema is an adaptive AI companion platform built around RAG, persistent, and LTM
-                                memory, emotional continuity, and evolving relationships.
-                                  Unlike traditional chatbot apps, Noema companions remember
-                                    conversations, emotional moments, preferences, relationship
+                            Noema is an adaptive AI companion platform built around RAG, persistent, and LTM
+                            memory, emotional continuity, and evolving relationships.
+                            Unlike traditional chatbot apps, Noema companions remember
+                            conversations, emotional moments, preferences, relationship
                             milestones, and personal details over time — creating
-                                    interactions that feel natural, reactive, and deeply personal.
-                                  </p>
+                            interactions that feel natural, reactive, and deeply personal.
+                        </p>
 
-                                      <div className="flex flex-wrap gap-4 pt-4">
-                                        <a
+                        <div className="flex flex-wrap gap-4 pt-4">
+                            <a
                                 href="/companions"
-                                            className="rounded-2xl bg-fuchsia-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
-                                          >
-                                            Explore Companions
+                                className="rounded-2xl bg-fuchsia-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+                            >
+                                Explore Companions
                             </a>
 
-                                          <a
-                                              href="/companions/true"
-                                              className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
-                                          >
-                                              Create Your Own
-                                        </a>
+                            <a
+                                href="/companions/true"
+                                className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
+                            >
+                                Create Your Own
+                            </a>
                         </div>
-                                </div>
+                    </div>
 
-                                  <div className="grid w-full max-w-xl grid-cols-2 gap-4">
-                                      {[
-                                          "Persistent Memory",
-                                        "Relationship Progression",
+                    <div className="grid w-full max-w-xl grid-cols-2 gap-4">
+                        {[
+                            "Persistent Memory",
+                            "Relationship Progression",
                             "Emotional Modeling",
-                                        "RAG VectorAI DB",
-                                          "Media Generation",
-                                            "Adult-Gated Experiences",
-                                            "Custom Personalities",
-                                          "Adaptive Conversations",
-                                        ].map((item) => (
-                                          <div
+                            "RAG VectorAI DB",
+                            "Media Generation",
+                            "Adult-Gated Experiences",
+                            "Custom Personalities",
+                            "Adaptive Conversations",
+                        ].map((item) => (
+                            <div
                                 key={item}
-                                              className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
-                                            >
-                                                <p className="text-sm font-medium text-zinc-200">{item}</p>
-                                          </div>
-                                        ))}
-                                  </div>
+                                className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
+                            >
+                                <p className="text-sm font-medium text-zinc-200">{item}</p>
                             </div>
-                      </section>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
-                  {/* STORY */}
+            {/* STORY */}
             <section className="mx-auto max-w-7xl px-6 py-24">
-                      <div className="grid gap-16 lg:grid-cols-2">
-                            <div className="space-y-6">
-                                  <div className="inline-flex rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1 text-sm text-zinc-400">
-                                        The Vision
-                                      </div>
+                <div className="grid gap-16 lg:grid-cols-2">
+                    <div className="space-y-6">
+                        <div className="inline-flex rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1 text-sm text-zinc-400">
+                            The Vision
+                        </div>
 
-                                    <h2 className="text-4xl font-bold tracking-tight">
-                                        More than a chatbot.
-                                      </h2>
+                        <h2 className="text-4xl font-bold tracking-tight">
+                            More than a chatbot.
+                        </h2>
 
-                                    <div className="space-y-5 text-lg leading-8 text-zinc-300">
-                                        <p>
-                                              Most AI chat applications reset emotionally every session.
-                                              Noema was designed to solve that problem.
-                                        </p>
+                        <div className="space-y-5 text-lg leading-8 text-zinc-300">
+                            <p>
+                                Most AI chat applications reset emotionally every session.
+                                Noema was designed to solve that problem.
+                            </p>
 
-                                        <p>
-                                              Every companion is powered by layered memory systems that track
-                                              familiarity, trust, intimacy, emotional patterns, relationship
-                                            progression, and long-term continuity. Conversations evolve over
-                                              time instead of starting from zero.
-                                          </p>
+                            <p>
+                                Every companion is powered by layered memory systems that track
+                                familiarity, trust, intimacy, emotional patterns, relationship
+                                progression, and long-term continuity. Conversations evolve over
+                                time instead of starting from zero.
+                            </p>
 
-                                          <p>
-                                            Companions can adapt emotionally, remember recurring themes,
-                                          respond differently based on relationship history, and develop
-                                        unique conversational dynamics with every user.
-                                  </p>
-                            </div>
-                      </div>
+                            <p>
+                                Companions can adapt emotionally, remember recurring themes,
+                                respond differently based on relationship history, and develop
+                                unique conversational dynamics with every user.
+                            </p>
+                        </div>
+                    </div>
 
                     <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
                         <div className="space-y-6">
@@ -142,7 +142,7 @@ export default function AdultPage() {
             </section>
 
             {/* PHILOSOPHY */}
-            <section className="border-y border-zinc-800 bg-zinc-950/70">
+            <section className="border-y border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]">
                 <div className="mx-auto max-w-6xl px-6 py-24 text-center">
                     <p className="text-sm uppercase tracking-[0.4em] text-fuchsia-400">
                         Platform Philosophy

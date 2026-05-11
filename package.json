@@ -12,7 +12,7 @@
     "lint": "next lint",
     "prisma:seed:all": "pnpm prisma:migrate && pnpm prisma:seed && pnpm prisma:seed:assets",
     "prisma:generate": "dotenv -e .env -- prisma generate --schema prisma/schema.prisma",
-    "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema prisma/app/schema.prisma",
+    "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema prisma/schema.prisma",
     "prisma:seed": "dotenv -e .env -- prisma db seed",
     "prisma:seed:assets": "dotenv -e .env -- tsx prisma/seed-assets.ts",
     "prisma:seed:categories": "dotenv -e .env -- tsx prisma/seed-categories.ts",
@@ -25,6 +25,7 @@
     "check:tree": "bash scripts/check-tree.sh",
     "sync:assets": "dotenv -e .env -- node scripts/sync-assets.mjs",
     "nsfw:worker": "dotenv -e .env -- node scripts/nsfw-worker.mjs",
+    "test:diversity": "vitest run tests/seed-companions.diversity.test.ts",
     "gen:thumbnails": "dotenv -e .env -- tsx scripts/generate-companion-thumbnails.ts"
   },
   "dependencies": {
@@ -59,7 +60,8 @@
     "redis": "^5.11.0",
     "replicate": "^1.4.0",
     "stripe": "^22.0.1",
-    "supabase": "^2.76.17"
+    "supabase": "^2.76.17",
+    "supabase-cli": "^0.0.21"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",

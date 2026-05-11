@@ -895,7 +895,7 @@ model webauthn_credentials {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model companion_memories {
+model companionMemories {
   id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id         String
   companion_id    String
@@ -903,7 +903,7 @@ model companion_memories {
   kind            String                 @default("fact")
   content         String
   importance      Int                    @default(3)
-  embedding       Unsupported("vector")?
+  embedding       Unsupported("vector(1536)")?
   metadata        Json?                  @default("{}")
   created_at      DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at      DateTime?              @default(now()) @db.Timestamptz(6)
@@ -939,6 +939,48 @@ model rag_documents {
   users                 auth_users              @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([owner_id])
+  @@schema("public")
+}
+
+model CompanionMemory {
+  id            String      @id @default(cuid())
+  userId        String
+  companionId   String
+  scope         MemoryScope
+  type          MemoryType
+  content       String      @db.Text
+  importance    Int         @default(50)
+  confidence    Float       @default(1.0)
+  bucket        ContentBucket
+  tags          String[]
+  embeddingId   String?
+  expiresAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId, companionId, scope])
+  @@index([bucket])
+  @@index([type])
+  @@schema("public")
+}
+
+model RelationshipState {
+  id              String   @id @default(cuid())
+  userId          String
+  companionId     String
+
+  affection        Int     @default(0)
+  trust            Int     @default(0)
+  tension          Int     @default(0)
+  jealousy         Int     @default(0)
+  intimacy         Int     @default(0)
+  familiarity      Int     @default(0)
+
+  mood             String  @default("neutral")
+  lastInteraction  DateTime?
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, companionId])
   @@schema("public")
 }
 
@@ -1122,4 +1164,35 @@ enum one_time_token_type {
   phone_change_token
 
   @@schema("auth")
+}
+
+enum MemoryType {
+  FACT
+  PREFERENCE
+  RELATIONSHIP
+  EVENT
+  EMOTIONAL
+  BOUNDARY
+  LORE
+
+  @@schema("public")
+}
+
+enum MemoryScope {
+  STM
+  LTM
+  RAG
+
+  @@schema("public")
+}
+
+enum ContentBucket {
+  PROFILE
+  PREFERENCE
+  FACT
+  HISTORY
+  RELATIONSHIP
+  OTHER
+
+  @@schema("public")
 }

@@ -17,7 +17,7 @@ export function Footer({
     return (
         <footer
             className={cx(
-                "mt-14 border-t  bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]bg-zinc-950 py-10 text-sm",
+                "mt-14 border-t border-l border-r border-zinc-900 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]  py-10 text-sm",
                 className,
             )}
         >

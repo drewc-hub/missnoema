@@ -1,6 +1,6 @@
 export default function SafePage() {
     return (
-        <main className="min-h-screen bg-black text-white">
+        <main className="min-h-screen overflow-hidden rounded-2xl border border-zinc-900 bg-black text-white">
             {/* HERO */}
             <section className="relative overflow-hidden border-b border-zinc-800">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]" />
@@ -142,7 +142,7 @@ export default function SafePage() {
             </section>
 
             {/* PHILOSOPHY */}
-            <section className="border-y border-zinc-800 bg-zinc-950/70">
+            <section className="border-y border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]">
                 <div className="mx-auto max-w-6xl px-6 py-24 text-center">
                     <p className="text-sm uppercase tracking-[0.4em] text-fuchsia-400">
                         Platform Philosophy
