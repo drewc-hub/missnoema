@@ -15,6 +15,73 @@
   }
 }
 
+/* ============================================================
+ *   RESPONSIVE — TABLET  (641px – 1024px)
+ *   ============================================================ */
+@media (max-width: 1024px) {
+  .createGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .createPage {
+    padding: 80px 24px;
+  }
+}
+
+/* ============================================================
+ *   RESPONSIVE — PHONE  (≤ 640px)
+ *   ============================================================ */
+@media (max-width: 640px) {
+  .createPage {
+    padding: 48px 16px;
+  }
+
+  .createSection {
+    padding: 20px 16px;
+  }
+
+  .generatorPanel {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .chatBox {
+    min-height: auto;
+    padding: 10px;
+  }
+
+  /* Bottom safe-area so the send button clears the home bar */
+  .chatInputRow {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+}
+
+/* ============================================================
+ *   TOUCH DEVICES — pointer:coarse targets finger-driven screens
+ *   (phones AND tablets, regardless of width)
+ *   ============================================================ */
+@media (pointer: coarse) {
+  /* Larger hit targets for interactive elements */
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+
 .createPage {
   padding: 120px 40px;
   max-width: 1400px;

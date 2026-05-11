@@ -1,4 +1,4 @@
-export default function NoemaAboutPage() {
+export default function SafePage() {
     return (
         <main className="min-h-screen bg-black text-white">
             {/* HERO */}
@@ -33,7 +33,7 @@ export default function NoemaAboutPage() {
                             </a>
 
                             <a
-                                href="/create"
+                                href="/companions/true"
                                 className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
                             >
                                 Create Your Own
