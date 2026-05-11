@@ -37,7 +37,7 @@ export function CardHeader({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-zinc-800 p-5">
             <div>
                 <div className="text-lg font-semibold">{title}</div>
                 {subtitle ? (
@@ -116,7 +116,7 @@ export function Badge({
     tone?: "neutral" | "safe" | "adult";
 }) {
     const map = {
-        neutral: "border-zinc-700 absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% text-zinc-200",
+        neutral: "border-zinc-700 bg-zinc-900 text-zinc-200",
         safe: "border-emerald-900/60 bg-emerald-950/50 text-emerald-200",
         adult: "border-rose-900/60 bg-rose-950/50 text-rose-200",
     } as const;
