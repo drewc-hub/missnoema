@@ -33,8 +33,9 @@ export function createSupabaseServerClientRoute(req: NextRequest) {
           return req.cookies.getAll();
         },
         setAll(incoming: SetCookieItem[]) {
-          incoming.forEach(({ name, value }) => req.cookies.set(name, value));
-          cookiesToSet.push(...incoming);
+          incoming.forEach(({ name, value, options }) => {
+            cookiesToSet.push({ name, value, options });
+          });
         },
       },
     },

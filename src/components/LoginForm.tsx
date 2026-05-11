@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
+import { Card, CardBody, CardHeader, Input, Button, Badge } from "./ui";
 
 type AuthMethod = "magic-link" | "password";
 type PasswordMode = "signin" | "signup";
@@ -45,17 +45,15 @@ export function LoginForm({ next }: { next: string }) {
   const [recoverStatus, setRecoverStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [recoverError, setRecoverError] = useState<string | null>(null);
 
-  // ── Magic link submit ──────────────────────────────────────────────────────
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setMlStatus("loading");
-    setMlError(null);
+   // ── Magic link submit ──────────────────────────────────────────────────────
+   async function handleMagicLink(e: React.FormEvent) {
+     e.preventDefault();
+     setMlStatus("loading");
+     setMlError(null);
 
+     const safeNext = next && next.startsWith("/") ? next : "/companions";
 
-
-const safeNext = next && next.startsWith("/") ? next : "/companions";
-
-console.log("Sending magic link with next:", safeNext);
+     console.log("Sending magic link with next:", safeNext);
 
     try {
       const res = await fetch("/auth/magic-link", {
