@@ -18,7 +18,7 @@ export function AdultFooter({
     return (
         <footer
             className={cx(
-                "mt-14 border-t border-zinc-800 bg-zinc-950 py-10 text-sm",
+                "mt-14 border-t border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] py-10 text-sm",
                 className,
             )}
         >
