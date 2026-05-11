@@ -167,7 +167,7 @@ export default function NoemaAboutPage() {
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                         {
-                            value: "800+",
+                            value: "1000+",
                             label: "Companion Profiles",
                         },
                         {
@@ -220,7 +220,7 @@ export default function NoemaAboutPage() {
                         </a>
 
                         <a
-                            href="/create"
+                            href="/create/new"
                             className="rounded-2xl border border-zinc-700 bg-zinc-900 px-7 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
                         >
                             Build Companion
