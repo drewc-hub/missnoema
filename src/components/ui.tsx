@@ -18,7 +18,7 @@ export function Card({
     return (
         <div
             className={cn(
-                "rounded-2xl border border-zinc-800 bg-blue-700/40 shadow-sm",
+                "rounded-2xl border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] shadow-sm",
                 className,
             )}
         >

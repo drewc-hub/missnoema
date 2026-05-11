@@ -220,7 +220,7 @@ export default function NoemaAboutPage() {
                         </a>
 
                         <a
-                            href="/create/new"
+                            href="/companions/new"
                             className="rounded-2xl border border-zinc-700 bg-zinc-900 px-7 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
                         >
                             Build Companion
