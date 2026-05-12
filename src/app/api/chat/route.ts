@@ -179,6 +179,58 @@ function buildCompanionSystemPrompt(args: {
   const traits = Array.isArray(profile.traits)
     ? profile.traits.filter((v): v is string => typeof v === "string")
     : [];
+  const lore = typeof profile.lore === "string" ? trunc(profile.lore, 300) : "";
+  const orientation = typeof profile.orientation === "string" ? profile.orientation : "";
+  const promptProfile =
+    typeof profile.promptProfile === "string" ? trunc(profile.promptProfile, 500) : "";
+  const aiPersonalityPrompt =
+    typeof profile.aiPersonalityPrompt === "string"
+      ? trunc(profile.aiPersonalityPrompt, 800)
+      : "";
+  const nsfwPreferenceTags = Array.isArray(profile.nsfwPreferenceTags)
+    ? profile.nsfwPreferenceTags.filter((v): v is string => typeof v === "string").slice(0, 12)
+    : [];
+  const proceduralLoreObj =
+    profile.proceduralLore && typeof profile.proceduralLore === "object"
+      ? (profile.proceduralLore as Record<string, unknown>)
+      : {};
+  const proceduralLoreGenerated = Array.isArray(proceduralLoreObj.generated)
+    ? proceduralLoreObj.generated
+        .filter((v): v is string => typeof v === "string")
+        .slice(0, 3)
+    : [];
+  const statsObj =
+    profile.stats && typeof profile.stats === "object"
+      ? (profile.stats as Record<string, unknown>)
+      : {};
+  const statsLine = Object.entries(statsObj)
+    .filter(([, value]) => typeof value === "number")
+    .slice(0, 8)
+    .map(([key, value]) => `${key}:${Math.round(Number(value))}`)
+    .join(", ");
+  const voiceMeta =
+    profile.voiceMeta && typeof profile.voiceMeta === "object"
+      ? (profile.voiceMeta as Record<string, unknown>)
+      : {};
+  const voiceLabel =
+    typeof profile.voice === "string" && profile.voice.trim().length > 0
+      ? profile.voice.trim()
+      : "";
+  const accentLabel =
+    typeof voiceMeta.accent === "string" && voiceMeta.accent.trim().length > 0
+      ? voiceMeta.accent.trim()
+      : "";
+  const dialogueTree =
+    profile.dialogueTree && typeof profile.dialogueTree === "object"
+      ? (profile.dialogueTree as Record<string, unknown>)
+      : {};
+  const dialogueNodes = Array.isArray(dialogueTree.nodes)
+    ? dialogueTree.nodes.filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
+    : [];
+  const dialogueOpener =
+    dialogueNodes.length > 0 && typeof dialogueNodes[0].text === "string"
+      ? trunc(dialogueNodes[0].text, 180)
+      : "";
 
   const warmth = Number(sliders.warmth ?? 60);
   const humor = Number(sliders.humor ?? 50);
@@ -251,6 +303,16 @@ function buildCompanionSystemPrompt(args: {
     personality && `Personality: ${personality}`,
     wardrobe    && `Wardrobe: ${wardrobe}`,
     traits.length && `Traits: ${traits.slice(0, 8).join(", ")}`,
+    lore && `Lore: ${lore}`,
+    orientation && `Orientation: ${orientation}`,
+    promptProfile && `Prompt profile: ${promptProfile}`,
+    aiPersonalityPrompt && `Personality directive: ${aiPersonalityPrompt}`,
+    statsLine && `Stats: ${statsLine}`,
+    voiceLabel && `Voice preset: ${voiceLabel}`,
+    accentLabel && `Accent: ${accentLabel}`,
+    nsfwPreferenceTags.length && `NSFW preference tags: ${nsfwPreferenceTags.join(", ")}`,
+    dialogueOpener && `Dialogue opener: ${dialogueOpener}`,
+    proceduralLoreGenerated.length && `Recent generated lore: ${proceduralLoreGenerated.join(" | ")}`,
   ].filter(Boolean).join("\n");
 
   const memoryLines = [
@@ -861,6 +923,29 @@ ${lastAssistantReplies || "(none yet)"}
         },
         select: { id: true, familiarity: true, trust: true, intimacy: true, kinkLevel: true, summary: true, relationshipLevel: true },
       });
+
+      if (delta) {
+        prisma.relationshipProgressEvent
+          .create({
+            data: {
+              conversationId: conversation.id,
+              userId: user.id,
+              companionId: companion.id,
+              eventType: levelingUp ? "LEVEL_UP" : "MESSAGE_PROGRESS",
+              oldLevel: currentLevel,
+              newLevel: levelingUp ? currentLevel + 1 : currentLevel,
+              familiarity: updatedConversation.familiarity,
+              trust: updatedConversation.trust,
+              intimacy: updatedConversation.intimacy,
+              kinkLevel: updatedConversation.kinkLevel,
+              metadata: {
+                moodTier,
+                emotion: delta.emotion,
+              },
+            },
+          })
+          .catch(() => {});
+      }
 
       if (levelingUp && levelUpCoins > 0) {
         prisma.$transaction([

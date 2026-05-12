@@ -88,7 +88,19 @@ export default async function SafeCompanionDetailPage({
     companion.User?.email?.split("@")[0] ||
     (companion.ownerId ? "Creator" : "Noema");
   const primaryAsset = companion.assets[0];
-  const primaryUrl = primaryAsset ? primaryAsset.publicUrl ?? `/media/${primaryAsset.id}` : null;
+  const avatarImageUrl =
+    typeof profile.avatarImageUrl === "string" && profile.avatarImageUrl.trim().length > 0
+      ? profile.avatarImageUrl.trim()
+      : null;
+  const primaryUrl = primaryAsset
+    ? primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`
+    : avatarImageUrl;
+  const stats =
+    profile.stats && typeof profile.stats === "object"
+      ? Object.entries(profile.stats as Record<string, unknown>)
+          .filter(([, value]) => typeof value === "number")
+          .slice(0, 6)
+      : [];
   const isOwner = Boolean(user && user.id === companion.ownerId);
 
   if (companion.ownerId && !companion.User && !isOwner) {
@@ -187,6 +199,19 @@ export default async function SafeCompanionDetailPage({
                 <div>
                   <div className="text-xs uppercase text-zinc-600">Background</div>
                   <p className="mt-1">{profile.background}</p>
+                </div>
+              ) : null}
+              {stats.length ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Stats</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {stats.map(([label, value]) => (
+                      <div key={label} className="rounded-md border border-zinc-800 bg-black px-2 py-1.5 text-xs">
+                        <div className="text-zinc-500">{label}</div>
+                        <div className="font-semibold text-zinc-200">{Math.round(Number(value))}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>

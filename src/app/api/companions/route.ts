@@ -10,32 +10,9 @@ import {
   AdultVerificationRequiredError,
 } from "@/lib/companions";
 import { checkBannedThemes, logAudit } from "@/lib/moderation";
+import { CompanionProfileSchema } from "@/lib/companion-profile";
 
 export const runtime = "nodejs";
-
-const ProfileSchema = z.object({
-  scene: z.string().optional().default(""),
-  background: z.string().optional().default(""),
-  personality: z.string().optional().default(""),
-  wardrobe: z.string().optional().default(""),
-  traits: z.array(z.string()).optional().default([]),
-  voice: z.string().optional().nullable(),
-  sliders: z
-    .object({
-      warmth: z.number().min(0).max(100).optional().default(50),
-      humor: z.number().min(0).max(100).optional().default(50),
-      flirtiness: z.number().min(0).max(100).optional().default(10),
-      dominance: z.number().min(0).max(100).optional().default(20),
-    })
-    .optional()
-    .default({
-      warmth: 50,
-      humor: 50,
-      flirtiness: 10,
-      dominance: 20,
-    }),
-  boundaries: z.array(z.string()).optional().default([]),
-});
 
 const CreateSchema = z.object({
   name: z.string().min(2).max(80),
@@ -52,20 +29,7 @@ const CreateSchema = z.object({
     .optional()
     .default("UNLISTED"),
   contentRating: z.enum(["SAFE", "ADULT"]).optional().default("SAFE"),
-  profile: ProfileSchema.optional().default({
-    scene: "",
-    background: "",
-    personality: "",
-    wardrobe: "",
-    traits: [],
-    sliders: {
-      warmth: 50,
-      humor: 50,
-      flirtiness: 10,
-      dominance: 20,
-    },
-    boundaries: [],
-  }),
+  profile: CompanionProfileSchema.optional(),
 });
 
 function normalizeSlug(input: string) {
@@ -138,6 +102,7 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
+  const profile = CompanionProfileSchema.parse(data.profile ?? {});
   const contentRating =
     data.contentRating === "ADULT" ? ContentRating.ADULT : ContentRating.SAFE;
 
@@ -152,7 +117,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Account suspended." }, { status: 403 });
   }
 
-  const textToCheck = [data.name, data.description, data.profile?.personality, data.profile?.background, data.profile?.scene]
+  const textToCheck = [data.name, data.description, profile.personality, profile.background, profile.scene]
     .filter(Boolean)
     .join(" ");
   const themeCheck = checkBannedThemes(textToCheck);
@@ -173,7 +138,7 @@ export async function POST(req: Request) {
       archetype: data.archetype ?? null,
       visibility: data.visibility as Visibility,
       contentRating,
-      profile: data.profile,
+      profile: profile as any,
     },
     select: {
       id: true,

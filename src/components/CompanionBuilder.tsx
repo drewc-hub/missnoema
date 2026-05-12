@@ -23,6 +23,18 @@ type CompanionProfile = {
   traits?: string[];
   voice?: string;
   sexuality?: string;
+  voiceMeta?: {
+    accent?: string;
+    voiceId?: string;
+  };
+  nsfwPreferenceTags?: string[];
+  aiPersonalityPrompt?: string;
+  stats?: Record<string, number>;
+  avatarImageUrl?: string;
+  lore?: string;
+  orientation?: string;
+  bucket?: string;
+  promptProfile?: string;
   sliders?: {
     warmth?: number;
     humor?: number;
@@ -119,6 +131,25 @@ function slugify(value: string) {
     .slice(0, 70);
 }
 
+function statsToInput(stats: Record<string, number> | undefined) {
+  if (!stats) return "";
+  return Object.entries(stats)
+    .map(([k, v]) => `${k}:${Math.round(v)}`)
+    .join(", ");
+}
+
+function parseStatsInput(input: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const part of input.split(",")) {
+    const [rawKey, rawValue] = part.split(":").map((x) => x?.trim() ?? "");
+    if (!rawKey || !rawValue) continue;
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) continue;
+    out[rawKey] = Math.max(0, Math.min(100, Math.round(value)));
+  }
+  return out;
+}
+
 function RangeRow({
   label,
   hint,
@@ -170,6 +201,19 @@ export function CompanionBuilder({
   const [gender, setGender] = useState(companion.gender ?? "");
   const [sexuality, setSexuality] = useState((companion.profile as CompanionProfile | null)?.sexuality ?? "");
   const [voice, setVoice] = useState((companion.profile as CompanionProfile | null)?.voice ?? "");
+  const [voiceAccent, setVoiceAccent] = useState((companion.profile as CompanionProfile | null)?.voiceMeta?.accent ?? "");
+  const [avatarImageUrl, setAvatarImageUrl] = useState((companion.profile as CompanionProfile | null)?.avatarImageUrl ?? "");
+  const [lore, setLore] = useState((companion.profile as CompanionProfile | null)?.lore ?? "");
+  const [orientation, setOrientation] = useState((companion.profile as CompanionProfile | null)?.orientation ?? "");
+  const [bucket, setBucket] = useState((companion.profile as CompanionProfile | null)?.bucket ?? "");
+  const [promptProfile, setPromptProfile] = useState((companion.profile as CompanionProfile | null)?.promptProfile ?? "");
+  const [aiPersonalityPrompt, setAiPersonalityPrompt] = useState((companion.profile as CompanionProfile | null)?.aiPersonalityPrompt ?? "");
+  const [nsfwPreferenceTags, setNsfwPreferenceTags] = useState(
+    ((companion.profile as CompanionProfile | null)?.nsfwPreferenceTags ?? []).join(", "),
+  );
+  const [statsInput, setStatsInput] = useState(
+    statsToInput((companion.profile as CompanionProfile | null)?.stats),
+  );
   const [visibility, setVisibility] = useState<Visibility>(
     companion.visibility ?? "UNLISTED",
   );
@@ -252,6 +296,21 @@ export function CompanionBuilder({
           traits: traitList,
           voice: voice || null,
           sexuality: sexuality.trim() || null,
+          voiceMeta: {
+            accent: voiceAccent.trim(),
+            voiceId: voice || "",
+          },
+          avatarImageUrl: avatarImageUrl.trim(),
+          lore: lore.trim(),
+          orientation: orientation.trim(),
+          bucket: bucket.trim(),
+          promptProfile: promptProfile.trim(),
+          aiPersonalityPrompt: aiPersonalityPrompt.trim(),
+          nsfwPreferenceTags: nsfwPreferenceTags
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
+          stats: parseStatsInput(statsInput),
           sliders: {
             warmth,
             humor,
@@ -451,6 +510,44 @@ export function CompanionBuilder({
             </label>
           </div>
 
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Voice / accent</div>
+              <Input
+                value={voiceAccent}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceAccent(e.target.value)}
+                placeholder="British, Southern US, Tokyo..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Avatar image URL</div>
+              <Input
+                value={avatarImageUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarImageUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Orientation</div>
+              <Input
+                value={orientation}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrientation(e.target.value)}
+                placeholder="bisexual, pansexual..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Bucket</div>
+              <Input
+                value={bucket}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBucket(e.target.value)}
+                placeholder="SAFE or ADULT"
+              />
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1">
               <div className="text-xs text-zinc-400">Visibility</div>
@@ -617,6 +714,59 @@ export function CompanionBuilder({
                 placeholder="Example: Your next-door neighbor has had a crush on you for months..."
               />
             </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Lore</div>
+              <Textarea
+                rows={5}
+                value={lore}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLore(e.target.value)}
+                placeholder="World history, factions, past wars, titles..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">AI personality prompt</div>
+              <Textarea
+                rows={5}
+                value={aiPersonalityPrompt}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPersonalityPrompt(e.target.value)}
+                placeholder="Hard prompt rules for behavior, tone, and pacing..."
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">Prompt profile</div>
+              <Textarea
+                rows={4}
+                value={promptProfile}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromptProfile(e.target.value)}
+                placeholder="Roleplay style, cadence, scene framing..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-zinc-400">NSFW preference tags (comma-separated)</div>
+              <Input
+                value={nsfwPreferenceTags}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNsfwPreferenceTags(e.target.value)}
+                placeholder="dominance, praise, teasing..."
+              />
+              <div className="text-xs text-zinc-500">Only used for adult companions.</div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs text-zinc-400">Companion stats (key:value, comma-separated)</div>
+            <Input
+              value={statsInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStatsInput(e.target.value)}
+              placeholder="intellect:90, charm:75, empathy:68"
+            />
           </div>
 
           <div className="space-y-2">

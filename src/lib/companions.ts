@@ -125,6 +125,7 @@ export async function listCompanions({
                 age: true,
                 contentRating: true,
                 featuredRank: true,
+                profile: true,
                 assets: {
                     where: {
                         type: "IMAGE",
@@ -169,6 +170,10 @@ export async function listCompanions({
     const items = rows.map((c) => {
         const counts = countsBy.get(c.id) ?? { images: 0, videos: 0 };
         const asset = c.assets[0];
+        const avatarFromProfile =
+            c.profile && typeof c.profile === "object" && typeof (c.profile as Record<string, unknown>).avatarImageUrl === "string"
+                ? String((c.profile as Record<string, unknown>).avatarImageUrl)
+                : null;
 
         return {
             id: c.id,
@@ -184,7 +189,7 @@ export async function listCompanions({
                 ? asset.contentRating === ContentRating.ADULT
                     ? `/media/${asset.id}`
                     : (asset.publicUrl ?? `/media/${asset.id}`)
-                : null,
+                : avatarFromProfile,
             imagesCount: counts.images,
             videosCount: counts.videos,
         };
