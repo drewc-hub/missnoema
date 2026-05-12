@@ -11,6 +11,7 @@ type DiscoveryCompanion = {
   tags: string[];
   thumbnailUrl: string | null;
   saved: boolean;
+  contentRating?: "SAFE" | "ADULT";
 };
 
 async function recordReaction(
@@ -27,9 +28,13 @@ async function recordReaction(
 export function DiscoveryDeck({
   initialCompanions,
   signedIn,
+  mode = "discovery",
+  includeAdult = false,
 }: {
   initialCompanions: DiscoveryCompanion[];
   signedIn: boolean;
+  mode?: "discovery" | "matchmaking";
+  includeAdult?: boolean;
 }) {
   const [companions, setCompanions] = useState(initialCompanions);
   const [index, setIndex] = useState(0);
@@ -83,7 +88,10 @@ export function DiscoveryDeck({
     if (signedIn) {
       await recordReaction(active.id, "start").catch(() => undefined);
     }
-    window.location.href = `/chat?companion=${encodeURIComponent(active.slug)}`;
+    const isAdult = active.contentRating === "ADULT";
+    window.location.href = isAdult
+      ? `/adult/chat?companion=${encodeURIComponent(active.slug)}`
+      : `/chat?companion=${encodeURIComponent(active.slug)}`;
   }
 
   function resetDeck() {
@@ -99,8 +107,16 @@ export function DiscoveryDeck({
 
     try {
       const exclude = companions.map((companion) => companion.id).join(",");
+      const query = new URLSearchParams({
+        limit: "20",
+        exclude,
+        mode,
+      });
+      if (includeAdult) {
+        query.set("includeAdult", "1");
+      }
       const res = await fetch(
-        `/api/discovery/next?limit=20&exclude=${encodeURIComponent(exclude)}`,
+        `/api/discovery/next?${query.toString()}`,
       );
       const data = await res.json().catch(() => null);
       const nextItems = Array.isArray(data?.items)

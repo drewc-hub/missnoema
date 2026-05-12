@@ -195,7 +195,7 @@ export default async function TavernPage() {
 
     return (
         <main className="space-y-6 text-zinc-100">
-            <section className="overflow-hidden rounded-lg border border-zinc-800 bg-black">
+            <section className="overflow-hidden rounded-[1rem] border border-zinc-800 bg-black">
                 <div className="relative min-h-[360px]">
                     <div className="absolute inset-0">
                         <div className="grid h-full grid-cols-3 opacity-50">
@@ -217,7 +217,7 @@ export default async function TavernPage() {
                     </div>
 
                     <div className="relative flex min-h-[360px] max-w-3xl flex-col justify-center px-5 py-10 sm:px-8">
-                        <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs font-medium text-fuchsia-200">
+                        <div className="inline-flex w-fit items-center gap-2 rounded-3x1 border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs font-medium text-fuchsia-200">
                             <Sparkles className="h-3.5 w-3.5" />
                             AI Tavern
                         </div>
@@ -287,7 +287,7 @@ export default async function TavernPage() {
                 </div>
 
                 <aside className="space-y-4">
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                    <div className="rounded-[1rem] border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-lg font-semibold text-white">Recent tables</h2>
@@ -333,7 +333,7 @@ export default async function TavernPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                    <div className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <h2 className="text-lg font-semibold text-white">Quick actions</h2>
                         <div className="mt-4 grid gap-3">
                             <ActionLink href="/companions/media" label="Media Gallery" icon={ImageIcon} />

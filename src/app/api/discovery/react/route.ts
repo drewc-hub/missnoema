@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ContentRating, DiscoveryAction, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 
 export const runtime = "nodejs";
 
@@ -42,9 +43,13 @@ export async function POST(req: Request) {
     where: {
       id: companionId,
       visibility: Visibility.PUBLIC,
-      contentRating: ContentRating.SAFE,
+      contentRating: {
+        in: isAdultAllowed(user)
+          ? [ContentRating.SAFE, ContentRating.ADULT]
+          : [ContentRating.SAFE],
+      },
     },
-    select: { id: true },
+    select: { id: true, contentRating: true },
   });
 
   if (!companion) {

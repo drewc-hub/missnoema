@@ -9,6 +9,7 @@ import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 import { WorldJoinButton } from "@/components/WorldJoinButton";
 import { WorldRoomClient } from "@/components/WorldRoomClient";
 import { WorldMemberRoleControl } from "@/components/WorldMemberRoleControl";
+import { WorldFactionPanel } from "@/components/WorldFactionPanel";
 
 export default async function WorldRoomPage({
   params,
@@ -215,6 +216,22 @@ export default async function WorldRoomPage({
             <div className="mt-2">Turns: {world._count.messages}</div>
             <div className="mt-1">Last activity: {new Date(world.lastActivityAt).toLocaleString()}</div>
           </div>
+
+          <WorldFactionPanel
+            worldId={world.id}
+            canView={isMember}
+            canManage={canManageRoles}
+            canAdjust={canPost}
+            meUserId={user.id}
+            members={world.members.map((member) => ({
+              userId: member.userId,
+              name:
+                member.displayName ||
+                member.user.displayName ||
+                member.user.email?.split("@")[0] ||
+                "Player",
+            }))}
+          />
 
           {isHost ? <WorldInviteManager worldId={world.id} initialInvites={invites} /> : null}
         </aside>

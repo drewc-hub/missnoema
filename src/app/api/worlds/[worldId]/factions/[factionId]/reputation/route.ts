@@ -21,6 +21,33 @@ function repToLevel(reputation: number) {
   return 1;
 }
 
+type RepHistoryEntry = {
+  at: string;
+  delta: number;
+  from: number;
+  to: number;
+  reason: string;
+  updatedByUserId: string;
+};
+
+function parseHistory(metadata: unknown): RepHistoryEntry[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const raw = (metadata as Record<string, unknown>).history;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
+    .map((entry) => ({
+      at: typeof entry.at === "string" ? entry.at : "",
+      delta: typeof entry.delta === "number" ? Math.round(entry.delta) : 0,
+      from: typeof entry.from === "number" ? Math.round(entry.from) : 0,
+      to: typeof entry.to === "number" ? Math.round(entry.to) : 0,
+      reason: typeof entry.reason === "string" ? entry.reason : "manual_adjustment",
+      updatedByUserId:
+        typeof entry.updatedByUserId === "string" ? entry.updatedByUserId : "unknown",
+    }))
+    .filter((entry) => entry.at);
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ worldId: string; factionId: string }> },
@@ -96,31 +123,41 @@ export async function POST(
 
   const existing = await prisma.userFactionReputation.findUnique({
     where: { userId_factionId: { userId: targetUserId, factionId } },
-    select: { reputation: true },
+    select: { reputation: true, metadata: true },
   });
 
-  const nextReputation = Math.max(0, Math.min(100, (existing?.reputation ?? 50) + parsed.data.delta));
+  const prevReputation = existing?.reputation ?? 50;
+  const nextReputation = Math.max(0, Math.min(100, prevReputation + parsed.data.delta));
   const nextLevel = repToLevel(nextReputation);
+  const nextHistoryEntry: RepHistoryEntry = {
+    at: new Date().toISOString(),
+    delta: parsed.data.delta,
+    from: prevReputation,
+    to: nextReputation,
+    reason: parsed.data.reason,
+    updatedByUserId: user.id,
+  };
+  const priorHistory = parseHistory(existing?.metadata);
+  const history = [nextHistoryEntry, ...priorHistory].slice(0, 12);
+  const metadata = {
+    reason: parsed.data.reason,
+    updatedByUserId: user.id,
+    history,
+  };
 
   const reputation = await prisma.userFactionReputation.upsert({
     where: { userId_factionId: { userId: targetUserId, factionId } },
     update: {
       reputation: nextReputation,
       level: nextLevel,
-      metadata: {
-        reason: parsed.data.reason,
-        updatedByUserId: user.id,
-      },
+      metadata,
     },
     create: {
       userId: targetUserId,
       factionId,
       reputation: nextReputation,
       level: nextLevel,
-      metadata: {
-        reason: parsed.data.reason,
-        updatedByUserId: user.id,
-      },
+      metadata,
     },
     select: {
       reputation: true,

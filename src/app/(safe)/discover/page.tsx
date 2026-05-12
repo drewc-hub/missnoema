@@ -1,13 +1,23 @@
 import { Compass, Sparkles } from "lucide-react";
 import { getAuthedUser } from "@/lib/auth";
-import { getDiscoveryDeck } from "@/lib/discovery";
+import { getMatchmakingDeck } from "@/lib/matchmaking";
 import { DiscoveryDeck } from "@/components/DiscoveryDeck";
+import { isAdultAllowed } from "@/lib/ratings";
 
-export default async function DiscoverPage() {
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ includeAdult?: string }>;
+}) {
   const user = await getAuthedUser();
-  const deck = await getDiscoveryDeck({
+  const params = await searchParams;
+  const adultAllowed = isAdultAllowed(user);
+  const includeAdult = adultAllowed && params.includeAdult === "1";
+
+  const deck = await getMatchmakingDeck({
     user,
     limit: 20,
+    includeAdult,
   });
 
   return (
@@ -35,9 +45,45 @@ export default async function DiscoverPage() {
             Tavern
           </a>
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <a
+            href="/discover"
+            className={`inline-flex h-9 items-center rounded-lg border px-3 text-xs font-semibold transition ${
+              !includeAdult
+                ? "border-fuchsia-500/60 bg-fuchsia-500/20 text-fuchsia-100"
+                : "border-zinc-800 bg-black text-zinc-300 hover:border-fuchsia-500/50 hover:text-white"
+            }`}
+          >
+            Safe Matches
+          </a>
+          {adultAllowed ? (
+            <a
+              href="/discover?includeAdult=1"
+              className={`inline-flex h-9 items-center rounded-lg border px-3 text-xs font-semibold transition ${
+                includeAdult
+                  ? "border-fuchsia-500/60 bg-fuchsia-500/20 text-fuchsia-100"
+                  : "border-zinc-800 bg-black text-zinc-300 hover:border-fuchsia-500/50 hover:text-white"
+              }`}
+            >
+              Safe + Adult Matches
+            </a>
+          ) : (
+            <a
+              href="/adult/verify?next=%2Fdiscover%3FincludeAdult%3D1"
+              className="inline-flex h-9 items-center rounded-lg border border-zinc-800 bg-black px-3 text-xs font-semibold text-zinc-300 transition hover:border-fuchsia-500/50 hover:text-white"
+            >
+              Unlock Adult Matches
+            </a>
+          )}
+        </div>
       </section>
 
-      <DiscoveryDeck initialCompanions={deck.items} signedIn={Boolean(user)} />
+      <DiscoveryDeck
+        initialCompanions={deck.items}
+        signedIn={Boolean(user)}
+        mode="matchmaking"
+        includeAdult={includeAdult}
+      />
     </main>
   );
 }
