@@ -80,6 +80,11 @@ export function AdultFooter({
                                 </a>
                             </li>
                             <li>
+                                <a className="hover:text-white" href="/marketplace">
+                                    Marketplace
+                                </a>
+                            </li>
+                            <li>
                                 <a className="hover:text-white" href="/adult/companions">
                                     Library
                                 </a>
@@ -102,6 +107,11 @@ export function AdultFooter({
                             <li>
                                 <a className="hover:text-white" href="/about">
                                     About Us
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/account/billing">
+                                    Billing
                                 </a>
                             </li>
                         </ul>

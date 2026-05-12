@@ -13,39 +13,7 @@ import { ContentRating, Visibility } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-type Readiness = {
-  score: number;
-  missing: string[];
-};
-
-function getReadiness(companion: {
-  description: string;
-  tags: string[];
-  profile: unknown;
-  assets: { id: string }[];
-}) {
-  const profile =
-    companion.profile && typeof companion.profile === "object"
-      ? (companion.profile as Record<string, unknown>)
-      : {};
-
-  const missing: string[] = [];
-  if (companion.description.trim().length < 80) missing.push("richer description");
-  if (companion.tags.length < 3) missing.push("3+ tags");
-  if (typeof profile.personality !== "string" || profile.personality.trim().length < 80) {
-    missing.push("personality");
-  }
-  if (typeof profile.scene !== "string" || profile.scene.trim().length < 20) {
-    missing.push("opening scene");
-  }
-  if (companion.assets.length === 0) missing.push("cover image");
-
-  return {
-    score: Math.max(0, 5 - missing.length),
-    missing,
-  };
-}
+import { getMarketplaceReadiness, getMarketplaceState } from "@/lib/marketplace-readiness";
 
 function StatusPill({
   children,
@@ -66,12 +34,6 @@ function StatusPill({
       {children}
     </span>
   );
-}
-
-function readinessLabel(readiness: Readiness) {
-  if (readiness.score >= 5) return "Marketplace ready";
-  if (readiness.score >= 3) return "Almost ready";
-  return "Draft";
 }
 
 export default async function CreatorPage() {
@@ -182,7 +144,8 @@ export default async function CreatorPage() {
                 ? `/media/${asset.id}`
                 : asset.publicUrl ?? `/media/${asset.id}`
               : null;
-            const readiness = getReadiness(companion);
+            const readiness = getMarketplaceReadiness(companion);
+            const listingState = getMarketplaceState(companion.visibility);
             const isAdult = companion.contentRating === ContentRating.ADULT;
             const editHref = isAdult
               ? `/adult/companions/${companion.slug}/edit`
@@ -262,7 +225,7 @@ export default async function CreatorPage() {
                   <aside className="rounded-lg border border-zinc-800 bg-black p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm font-semibold text-white">
-                        {readinessLabel(readiness)}
+                        {readiness.label}
                       </div>
                       <div className="text-xs text-zinc-500">{readiness.score}/5</div>
                     </div>
@@ -282,6 +245,9 @@ export default async function CreatorPage() {
                         Ready for discovery
                       </div>
                     )}
+                    <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-400">
+                      {listingState.label}: {listingState.description}
+                    </div>
 
                     <div className="mt-4 grid gap-2">
                       <a

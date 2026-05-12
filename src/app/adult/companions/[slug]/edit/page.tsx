@@ -7,6 +7,7 @@ import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { CompanionBuilder } from "@/components/CompanionBuilder";
 import { MediaGenPanel } from "@/components/MediaGenPanel";
+import { MarketplaceListingPanel } from "@/components/MarketplaceListingPanel";
 import { Card, CardBody, CardHeader, Badge } from "@/components/ui";
 
 export default async function EditAdultCompanionPage({
@@ -43,6 +44,12 @@ export default async function EditAdultCompanionPage({
       profile: true,
       contentRating: true,
       visibility: true,
+      assets: {
+        where: { type: "IMAGE" },
+        orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+        take: 1,
+        select: { id: true },
+      },
     },
   });
 
@@ -101,6 +108,18 @@ export default async function EditAdultCompanionPage({
         </section>
 
         <aside className="space-y-4 lg:col-span-5">
+          <MarketplaceListingPanel
+            companion={{
+              slug: companion.slug,
+              description: companion.description,
+              tags: companion.tags,
+              profile: companion.profile,
+              assets: companion.assets,
+              visibility: companion.visibility,
+              contentRating: companion.contentRating,
+            }}
+          />
+
           <Card>
             <CardHeader
               title="Media generation"

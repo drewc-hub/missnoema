@@ -79,6 +79,11 @@ export function Footer({
                                 </a>
                             </li>
                             <li>
+                                <a className="hover:text-white" href="/marketplace">
+                                    Marketplace
+                                </a>
+                            </li>
+                            <li>
                                 <a className="hover:text-white" href="/companions">
                                     Library
                                 </a>
@@ -101,6 +106,11 @@ export function Footer({
                             <li>
                                 <a className="hover:text-white" href="/about">
                                     About Us
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/account/billing">
+                                    Billing
                                 </a>
                             </li>
                         </ul>
