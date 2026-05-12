@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { PremiumFeature, getUserEntitlementsMap, hasPremiumFeature } from "@/lib/premium";
+import { formatBehaviorMetaForPrompt } from "@/lib/companion-profile";
 
 export const runtime = "nodejs";
 
@@ -49,6 +50,7 @@ function buildCompanionSystemPrompt(args: {
   const humor = Number(sliders.humor ?? 50);
   const flirtiness = Number(sliders.flirtiness ?? (companion.contentRating === ContentRating.ADULT ? 45 : 15));
   const dominance = Number(sliders.dominance ?? 25);
+  const behaviorMetaLines = formatBehaviorMetaForPrompt(profile);
 
   const instruction = mode === "variation"
     ? "Write a fresh variation of the companion’s reply — same intent, different phrasing and rhythm."
@@ -71,6 +73,7 @@ Traits: ${traits.join(", ") || "none"}
 
 BEHAVIOR
 Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100
+${behaviorMetaLines}
 
 RELATIONSHIP MEMORY
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100

@@ -27,6 +27,18 @@ type CompanionProfile = {
         accent?: string;
         voiceId?: string;
     };
+    behaviorMeta?: {
+        voiceStyle?: string;
+        speechPattern?: string;
+        emojiUsage?: string;
+        attachmentStyle?: string;
+        temperament?: string;
+        traumaProfile?: string;
+        humorStyle?: string;
+        jealousyLevel?: number;
+        dominanceLevel?: number;
+        affectionLevel?: number;
+    };
     nsfwPreferenceTags?: string[];
     aiPersonalityPrompt?: string;
     stats?: Record<string, number>;
@@ -192,6 +204,7 @@ export function CompanionBuilder({
 }: CompanionBuilderProps) {
     const profile = companion.profile ?? {};
     const sliders = profile.sliders ?? {};
+    const behaviorMeta = (profile as CompanionProfile).behaviorMeta ?? {};
 
     const [name, setName] = useState(companion.name ?? "");
     const [slug, setSlug] = useState(companion.slug ?? "");
@@ -202,6 +215,16 @@ export function CompanionBuilder({
     const [sexuality, setSexuality] = useState((companion.profile as CompanionProfile | null)?.sexuality ?? "");
     const [voice, setVoice] = useState((companion.profile as CompanionProfile | null)?.voice ?? "");
     const [voiceAccent, setVoiceAccent] = useState((companion.profile as CompanionProfile | null)?.voiceMeta?.accent ?? "");
+    const [voiceStyle, setVoiceStyle] = useState(behaviorMeta.voiceStyle ?? "");
+    const [speechPattern, setSpeechPattern] = useState(behaviorMeta.speechPattern ?? "");
+    const [emojiUsage, setEmojiUsage] = useState(behaviorMeta.emojiUsage ?? "");
+    const [attachmentStyle, setAttachmentStyle] = useState(behaviorMeta.attachmentStyle ?? "");
+    const [temperament, setTemperament] = useState(behaviorMeta.temperament ?? "");
+    const [traumaProfile, setTraumaProfile] = useState(behaviorMeta.traumaProfile ?? "");
+    const [humorStyle, setHumorStyle] = useState(behaviorMeta.humorStyle ?? "");
+    const [jealousyLevel, setJealousyLevel] = useState(Number(behaviorMeta.jealousyLevel ?? 20));
+    const [dominanceLevel, setDominanceLevel] = useState(Number(behaviorMeta.dominanceLevel ?? sliders.dominance ?? 30));
+    const [affectionLevel, setAffectionLevel] = useState(Number(behaviorMeta.affectionLevel ?? sliders.warmth ?? 60));
     const [avatarImageUrl, setAvatarImageUrl] = useState((companion.profile as CompanionProfile | null)?.avatarImageUrl ?? "");
     const [lore, setLore] = useState((companion.profile as CompanionProfile | null)?.lore ?? "");
     const [orientation, setOrientation] = useState((companion.profile as CompanionProfile | null)?.orientation ?? "");
@@ -299,6 +322,18 @@ export function CompanionBuilder({
                     voiceMeta: {
                         accent: voiceAccent.trim(),
                         voiceId: voice || "",
+                    },
+                    behaviorMeta: {
+                        voiceStyle: voiceStyle.trim(),
+                        speechPattern: speechPattern.trim(),
+                        emojiUsage: emojiUsage.trim(),
+                        attachmentStyle: attachmentStyle.trim(),
+                        temperament: temperament.trim(),
+                        traumaProfile: traumaProfile.trim(),
+                        humorStyle: humorStyle.trim(),
+                        jealousyLevel,
+                        dominanceLevel,
+                        affectionLevel,
                     },
                     avatarImageUrl: avatarImageUrl.trim(),
                     lore: lore.trim(),
@@ -756,6 +791,80 @@ export function CompanionBuilder({
                                 placeholder="dominance, praise, teasing..."
                             />
                             <div className="text-xs text-zinc-500">Only used for adult companions.</div>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                        <div className="mb-3">
+                            <div className="text-sm font-semibold text-zinc-100">
+                                Behavior metadata
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                                These tune voice, attachment, humor, and relationship reactions.
+                            </div>
+                        </div>
+
+                        <div className="grid gap-3 lg:grid-cols-2">
+                            <Input
+                                value={voiceStyle}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceStyle(e.target.value)}
+                                placeholder="voice style: low, warm, aristocratic..."
+                            />
+                            <Input
+                                value={speechPattern}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeechPattern(e.target.value)}
+                                placeholder="speech pattern: direct, poetic, teasing..."
+                            />
+                            <Input
+                                value={emojiUsage}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmojiUsage(e.target.value)}
+                                placeholder="emoji usage: none, rare, playful..."
+                            />
+                            <Input
+                                value={attachmentStyle}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAttachmentStyle(e.target.value)}
+                                placeholder="attachment style: secure, anxious, avoidant..."
+                            />
+                            <Input
+                                value={temperament}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTemperament(e.target.value)}
+                                placeholder="temperament: calm, fiery, guarded..."
+                            />
+                            <Input
+                                value={humorStyle}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHumorStyle(e.target.value)}
+                                placeholder="humor style: dry wit, banter, absurd..."
+                            />
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                            <Textarea
+                                rows={3}
+                                value={traumaProfile}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTraumaProfile(e.target.value)}
+                                placeholder="trauma profile: abandonment fears, betrayal history, guarded trust..."
+                            />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                            <RangeRow
+                                label="Jealousy"
+                                hint="trusting -> possessive"
+                                value={jealousyLevel}
+                                onChange={setJealousyLevel}
+                            />
+                            <RangeRow
+                                label="Dominance style"
+                                hint="yielding -> commanding"
+                                value={dominanceLevel}
+                                onChange={setDominanceLevel}
+                            />
+                            <RangeRow
+                                label="Affection style"
+                                hint="reserved -> expressive"
+                                value={affectionLevel}
+                                onChange={setAffectionLevel}
+                            />
                         </div>
                     </div>
 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { PremiumFeature, getUserEntitlementsMap, hasPremiumFeature } from "@/lib/premium";
+import { formatBehaviorMetaForPrompt } from "@/lib/companion-profile";
 
 export const runtime = "nodejs";
 
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
   const flirtiness = Number(
     sliders.flirtiness ?? (companion.contentRating === ContentRating.ADULT ? 45 : 15),
   );
+  const behaviorMetaLines = formatBehaviorMetaForPrompt(profile);
   const isAdult = companion.contentRating === ContentRating.ADULT;
 
   const profileContext = `
@@ -118,6 +120,7 @@ Personality: ${personality || "unspecified"}
 Wardrobe: ${wardrobe || "unspecified"}
 Traits: ${traits || "none"}
 Warmth: ${warmth}/100  Flirtiness: ${flirtiness}/100
+${behaviorMetaLines}
 `.trim();
 
   const systemPrompt = isAdult ? `

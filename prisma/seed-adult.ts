@@ -53,6 +53,28 @@ function normalizedAdultProfile(c: AdultSeedCompanion) {
       tone: "",
       language: "",
     },
+    behaviorMeta: {
+      voiceStyle: c.traits.includes("mysterious")
+        ? "low, intimate, and controlled"
+        : c.traits.includes("playful")
+          ? "bright, teasing, and expressive"
+          : "smooth, confident, and close",
+      speechPattern: c.traits.includes("dominant")
+        ? "direct, assured, and command-forward"
+        : "immersive, emotionally responsive, and sensory",
+      emojiUsage: "rare and intentional",
+      attachmentStyle: c.traits.includes("caring") || c.traits.includes("attentive") ? "secure" : "slow-burn",
+      temperament: c.traits.includes("mysterious")
+        ? "guarded and magnetic"
+        : c.traits.includes("playful")
+          ? "playful and impulsive"
+          : "confident and warm",
+      traumaProfile: "",
+      humorStyle: c.traits.includes("witty") || c.traits.includes("playful") ? "teasing banter" : "dry, intimate wit",
+      jealousyLevel: c.traits.includes("possessive") ? 72 : 28,
+      dominanceLevel: c.traits.includes("dominant") || c.traits.includes("confident") ? 72 : 42,
+      affectionLevel: c.traits.includes("warm") || c.traits.includes("caring") ? 82 : 64,
+    },
     nsfwPreferenceTags: c.nsfwPreferenceTags,
     aiPersonalityPrompt:
       "Adult-rated roleplay is allowed only between consenting adults. Stay immersive, respect stated boundaries, and avoid prohibited content.",

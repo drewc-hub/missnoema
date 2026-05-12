@@ -15,6 +15,7 @@ import {
   hasPremiumFeature,
   relationshipBoostMultiplier,
 } from "@/lib/premium";
+import { formatBehaviorMetaForPrompt } from "@/lib/companion-profile";
 export const runtime = "nodejs";
 
 type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
@@ -238,6 +239,7 @@ function buildCompanionSystemPrompt(args: {
     dialogueNodes.length > 0 && typeof dialogueNodes[0].text === "string"
       ? trunc(dialogueNodes[0].text, 180)
       : "";
+  const behaviorMetaLines = formatBehaviorMetaForPrompt(profile);
 
   const warmth = Number(sliders.warmth ?? 60);
   const humor = Number(sliders.humor ?? 50);
@@ -337,6 +339,7 @@ Tags: ${companion.tags.slice(0, 8).join(", ") || "none"}
 ${profileLines ? `\nPROFILE\n${profileLines}` : ""}
 BEHAVIOR
 Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100${isAdult && kink > 0 ? `  Kink: ${kink}/100` : ""}
+${behaviorMetaLines}
 
 RELATIONSHIP
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100

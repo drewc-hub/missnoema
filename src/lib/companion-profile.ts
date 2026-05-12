@@ -32,6 +32,33 @@ export const VoiceMetaSchema = z
     language: "",
   });
 
+export const BehaviorMetaSchema = z
+  .object({
+    voiceStyle: z.string().optional().default(""),
+    speechPattern: z.string().optional().default(""),
+    emojiUsage: z.string().optional().default(""),
+    attachmentStyle: z.string().optional().default(""),
+    temperament: z.string().optional().default(""),
+    traumaProfile: z.string().optional().default(""),
+    humorStyle: z.string().optional().default(""),
+    jealousyLevel: z.number().min(0).max(100).optional().default(20),
+    dominanceLevel: z.number().min(0).max(100).optional().default(20),
+    affectionLevel: z.number().min(0).max(100).optional().default(60),
+  })
+  .optional()
+  .default({
+    voiceStyle: "",
+    speechPattern: "",
+    emojiUsage: "",
+    attachmentStyle: "",
+    temperament: "",
+    traumaProfile: "",
+    humorStyle: "",
+    jealousyLevel: 20,
+    dominanceLevel: 20,
+    affectionLevel: 60,
+  });
+
 export const RelationshipProgressionSchema = z
   .object({
     stage: z.string().optional().default("STRANGER"),
@@ -140,6 +167,7 @@ export const CompanionProfileSchema = z.object({
   voice: z.string().optional().nullable(),
   sexuality: z.string().optional().nullable(),
   voiceMeta: VoiceMetaSchema,
+  behaviorMeta: BehaviorMetaSchema,
   nsfwPreferenceTags: z.array(z.string()).optional().default([]),
   aiPersonalityPrompt: z.string().max(6000).optional().default(""),
   stats: z.record(z.string(), z.number().min(0).max(100)).optional().default({}),
@@ -167,3 +195,60 @@ export const CompanionProfileSchema = z.object({
 });
 
 export type CompanionProfile = z.infer<typeof CompanionProfileSchema>;
+export type CompanionBehaviorMeta = z.infer<typeof BehaviorMetaSchema>;
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function numberValue(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+export function getCompanionBehaviorMeta(profile: unknown): CompanionBehaviorMeta {
+  const profileRecord = asRecord(profile);
+  const behaviorRecord = asRecord(profileRecord.behaviorMeta);
+  const sliders = asRecord(profileRecord.sliders);
+  const voiceMeta = asRecord(profileRecord.voiceMeta);
+
+  const parsed = BehaviorMetaSchema.parse(behaviorRecord);
+  const voiceStyle =
+    parsed.voiceStyle ||
+    stringValue(profileRecord.voice) ||
+    stringValue(voiceMeta.tone);
+
+  return {
+    ...parsed,
+    voiceStyle,
+    dominanceLevel: clampPercent(
+      numberValue(behaviorRecord.dominanceLevel, numberValue(sliders.dominance, parsed.dominanceLevel)),
+    ),
+    affectionLevel: clampPercent(
+      numberValue(behaviorRecord.affectionLevel, numberValue(sliders.warmth, parsed.affectionLevel)),
+    ),
+  };
+}
+
+export function formatBehaviorMetaForPrompt(profile: unknown) {
+  const meta = getCompanionBehaviorMeta(profile);
+  return [
+    meta.voiceStyle && `Voice style: ${meta.voiceStyle}`,
+    meta.speechPattern && `Speech pattern: ${meta.speechPattern}`,
+    meta.emojiUsage && `Emoji usage: ${meta.emojiUsage}`,
+    meta.attachmentStyle && `Attachment style: ${meta.attachmentStyle}`,
+    meta.temperament && `Temperament: ${meta.temperament}`,
+    meta.traumaProfile && `Trauma profile: ${meta.traumaProfile}`,
+    meta.humorStyle && `Humor style: ${meta.humorStyle}`,
+    `Jealousy: ${meta.jealousyLevel}/100`,
+    `Dominance style: ${meta.dominanceLevel}/100`,
+    `Affection style: ${meta.affectionLevel}/100`,
+  ].filter(Boolean).join("\n");
+}

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { PremiumFeature, getUserEntitlementsMap, hasPremiumFeature } from "@/lib/premium";
+import { formatBehaviorMetaForPrompt } from "@/lib/companion-profile";
 
 export const runtime = "nodejs";
 
@@ -117,6 +118,7 @@ export async function POST(req: Request) {
   const humor = Number(sliders.humor ?? 50);
   const flirtiness = Number(sliders.flirtiness ?? (conversation.companion.contentRating === ContentRating.ADULT ? 45 : 15));
   const dominance = Number(sliders.dominance ?? 25);
+  const behaviorMetaLines = formatBehaviorMetaForPrompt(profile);
 
   const isAdult = conversation.companion.contentRating === ContentRating.ADULT;
   const moodLabel = ["Neutral", "Happy", "Teasing", "Blushing"][conversation.companionMood ?? 0];
@@ -134,6 +136,7 @@ Traits: ${traits.join(", ") || "none"}
 
 BEHAVIOR
 Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100
+${behaviorMetaLines}
 
 RELATIONSHIP MEMORY
 Familiarity: ${conversation.familiarity}/100  Trust: ${conversation.trust}/100  Intimacy: ${conversation.intimacy}/100

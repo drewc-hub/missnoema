@@ -439,7 +439,7 @@ model GenerationJob {
   requestPreset     String?
   requestTag        String?
   requestUserPrompt String?
-  companion   Companion? @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  companion         Companion?     @relation(fields: [companionId], references: [id], onDelete: Cascade)
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([status, createdAt])
@@ -1160,24 +1160,26 @@ model rag_documents {
 }
 
 model CompanionMemory {
-  id          String        @id @default(cuid())
+  id          String                 @id @default(cuid())
   userId      String
   companionId String
   scope       MemoryScope
   type        MemoryType
-  content     String
-  importance  Int           @default(50)
-  confidence  Float         @default(1.0)
+  content     String                 @default("@dbText")
+  importance  Int                    @default(50)
+  confidence  Float                  @default(1.0)
   bucket      ContentBucket
   tags        String[]
   embeddingId String?
   expiresAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  embedding   Unsupported("vector")?
 
   @@index([userId, companionId, scope])
   @@index([bucket])
   @@index([type])
+  @@index([embedding])
   @@schema("public")
 }
 
