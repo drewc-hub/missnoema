@@ -87,10 +87,22 @@ export async function POST(
 
   const world = await prisma.world.findUnique({
     where: { id: worldId },
-    select: { id: true, ownerId: true },
+    select: {
+      id: true,
+      ownerId: true,
+      members: {
+        where: {
+          userId: user.id,
+          role: WorldRole.HOST,
+        },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
   if (!world) return NextResponse.json({ error: "World not found." }, { status: 404 });
-  if (world.ownerId !== user.id) {
+  const isHost = world.ownerId === user.id || world.members.length > 0;
+  if (!isHost) {
     return NextResponse.json({ error: "Only world hosts can create invites." }, { status: 403 });
   }
 

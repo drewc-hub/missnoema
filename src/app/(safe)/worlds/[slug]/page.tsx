@@ -8,6 +8,7 @@ import { WorldInviteManager } from "@/components/WorldInviteManager";
 import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 import { WorldJoinButton } from "@/components/WorldJoinButton";
 import { WorldRoomClient } from "@/components/WorldRoomClient";
+import { WorldMemberRoleControl } from "@/components/WorldMemberRoleControl";
 
 export default async function WorldRoomPage({
   params,
@@ -80,6 +81,7 @@ export default async function WorldRoomPage({
   const eligible = isRpWorldEligible(user.plan);
   const canJoin = eligible && world.isPublic && !isMember && world._count.members < world.maxMembers;
   const canPost = eligible && isMember;
+  const canManageRoles = eligible && isHost;
 
   const initialMessages = isMember
     ? await prisma.worldMessage.findMany({
@@ -176,20 +178,32 @@ export default async function WorldRoomPage({
                   member.user.displayName ||
                   member.user.email?.split("@")[0] ||
                   "Player";
+                const isOwnerMember = member.userId === world.ownerId;
+                const canEditMemberRole =
+                  canManageRoles && member.userId !== user.id && !isOwnerMember;
                 return (
                   <div
                     key={member.userId}
                     className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-black px-3 py-2 text-sm"
                   >
-                    <span className="truncate text-zinc-200">{name}</span>
-                    {member.role === WorldRole.HOST ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-fuchsia-300">
-                        <Crown className="h-3.5 w-3.5" />
-                        Host
-                      </span>
-                    ) : (
-                      <span className="text-xs text-zinc-500">Player</span>
-                    )}
+                    <div className="min-w-0">
+                      <span className="block truncate text-zinc-200">{name}</span>
+                      {member.role === WorldRole.HOST ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-fuchsia-300">
+                          <Crown className="h-3.5 w-3.5" />
+                          {isOwnerMember ? "Host (Owner)" : "Co-host"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-zinc-500">Player</span>
+                      )}
+                    </div>
+                    {canEditMemberRole ? (
+                      <WorldMemberRoleControl
+                        worldId={world.id}
+                        memberUserId={member.userId}
+                        role={member.role}
+                      />
+                    ) : null}
                   </div>
                 );
               })}

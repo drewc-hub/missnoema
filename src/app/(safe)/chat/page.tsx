@@ -1,10 +1,10 @@
 import React from "react";
 import { redirect } from "next/navigation";
+import { ContentRating, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { prisma } from "@/lib/prisma";
 import { CompanionChatWorkspace } from "@/components/CompanionChatWorkspace";
-import { Visibility } from "@prisma/client";
 
 type SearchParams = { companion?: string };
 
@@ -27,8 +27,17 @@ export default async function SafeChatPage({
   if (requestedSlug) {
     const companion = await prisma.companion.findFirst({
       where: { slug: requestedSlug, visibility: Visibility.PUBLIC },
-      select: { id: true },
+      select: { id: true, contentRating: true },
     });
+
+    if (companion?.contentRating === ContentRating.ADULT) {
+      const adultChatPath = `/adult/chat?companion=${encodeURIComponent(requestedSlug)}`;
+      if (allowAdult) {
+        redirect(adultChatPath);
+      }
+      redirect(`/adult/verify?next=${encodeURIComponent(adultChatPath)}`);
+    }
+
     initialCompanionId = companion?.id;
   }
 

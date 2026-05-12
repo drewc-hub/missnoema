@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 
 type InviteItem = {
   id: string;
@@ -24,17 +24,22 @@ export function WorldInviteManager({
   const [expiresHours, setExpiresHours] = useState(72);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [linkCopiedCode, setLinkCopiedCode] = useState<string | null>(null);
 
-  async function createInvite(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function createInvite(options?: { forceSingleUse?: boolean }) {
     if (creating) return;
     setCreating(true);
     setError(null);
 
+    const payload = options?.forceSingleUse
+      ? { maxUses: 1, expiresHours }
+      : { maxUses, expiresHours };
+
     const res = await fetch(`/api/worlds/${worldId}/invites`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ maxUses, expiresHours }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
@@ -49,13 +54,31 @@ export function WorldInviteManager({
 
   async function copyCode(code: string) {
     await navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode((current) => (current === code ? null : current)), 1500);
+  }
+
+  async function copyDirectLink(code: string) {
+    const link = `${window.location.origin}/worlds/join?code=${encodeURIComponent(code)}`;
+    await navigator.clipboard.writeText(link);
+    setLinkCopiedCode(code);
+    setTimeout(
+      () => setLinkCopiedCode((current) => (current === code ? null : current)),
+      1500,
+    );
   }
 
   return (
     <section className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
       <h2 className="text-sm font-semibold text-white">Invite codes</h2>
 
-      <form onSubmit={createInvite} className="grid gap-2 sm:grid-cols-[120px_120px_1fr]">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          createInvite();
+        }}
+        className="grid gap-2 sm:grid-cols-[120px_120px_1fr]"
+      >
         <input
           type="number"
           min={1}
@@ -82,6 +105,14 @@ export function WorldInviteManager({
           {creating ? "Creating..." : "Create invite"}
         </button>
       </form>
+      <button
+        type="button"
+        onClick={() => createInvite({ forceSingleUse: true })}
+        disabled={creating}
+        className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {creating ? "Creating..." : "Create single-use invite link"}
+      </button>
 
       {error ? <p className="text-xs text-rose-300">{error}</p> : null}
 
@@ -99,13 +130,22 @@ export function WorldInviteManager({
                   {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "never"}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => copyCode(invite.code)}
-                className="inline-flex h-8 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
-              >
-                Copy code
-              </button>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => copyCode(invite.code)}
+                  className="inline-flex h-8 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                >
+                  {copiedCode === invite.code ? "Copied" : "Copy code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copyDirectLink(invite.code)}
+                  className="inline-flex h-8 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                >
+                  {linkCopiedCode === invite.code ? "Link copied" : "Copy link"}
+                </button>
+              </div>
             </div>
           ))
         ) : (
