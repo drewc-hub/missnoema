@@ -142,7 +142,7 @@ export default function SafePage() {
             </section>
 
             {/* PHILOSOPHY */}
-            <section className="border-y border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]">
+            <section className="border-y border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]">
                 <div className="mx-auto max-w-6xl px-6 py-24 text-center">
                     <p className="text-sm uppercase tracking-[0.4em] text-fuchsia-400">
                         Platform Philosophy
@@ -199,7 +199,7 @@ export default function SafePage() {
             </section>
 
             {/* CTA */}
-            <section className="border-t border-zinc-800">
+            <section className="border-t border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]">
                 <div className="mx-auto max-w-5xl px-6 py-24 text-center">
                     <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
                         Engineer your ideal companion.

@@ -1,0 +1,17 @@
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+async function main() {
+  const myAssistant = await openai.beta.assistants.create({
+    instructions:
+      "You are a personal assistant when your'e sent a message, write and run Python code to answer the question.",
+    name: "Noema Assistant",
+    CustomToolInputFormat: [{ type: "text" }],
+    ChatModel: "gpt-5.4",
+  });
+
+  console.log(myAssistant);
+}
+
+main();domain_pk_6a02b7fcf584819099af858bb01767b60db0d72b82fa0e6e

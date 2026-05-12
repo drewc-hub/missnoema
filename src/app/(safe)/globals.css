@@ -15,7 +15,9 @@
 
   body {
     @apply text-zinc-100 antialiased;
-    background: linear-gradient(135deg, #000000 0%, #080810 40%, #0b011a 70%, #05000d 100%);
+    background:
+      radial-gradient(circle at top, rgba(168, 85, 247, 0.14), transparent 48%),
+      linear-gradient(180deg, #060913 0%, #03060f 44%, #010204 100%);
     background-attachment: fixed;
     min-height: 100dvh;
     /* Prevent elastic bounce-scroll on iOS at the body level */
