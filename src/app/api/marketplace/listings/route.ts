@@ -9,7 +9,7 @@ import {
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdultAllowed } from "@/lib/ratings";
-import { PremiumFeature, hasUserFeature } from "@/lib/premium";
+import { PremiumFeature, hasUserFeature, isPremiumOnlyProfile } from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -50,9 +50,6 @@ export async function GET(req: Request) {
         is: {
           visibility: Visibility.PUBLIC,
           contentRating: { in: allowedRatings },
-          ...(hasPremiumCompanions
-            ? {}
-            : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
         },
       },
       ...(q
@@ -67,7 +64,7 @@ export async function GET(req: Request) {
         : {}),
     },
     orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
-    take: limit,
+    take: hasPremiumCompanions ? limit : limit * 5,
     select: {
       id: true,
       title: true,
@@ -82,6 +79,7 @@ export async function GET(req: Request) {
           slug: true,
           name: true,
           description: true,
+          profile: true,
           views: true,
           saves: true,
           likes: true,
@@ -108,7 +106,11 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.json({ listings });
+  const visibleListings = hasPremiumCompanions
+    ? listings
+    : listings.filter((listing) => !isPremiumOnlyProfile(listing.companion?.profile));
+
+  return NextResponse.json({ listings: visibleListings.slice(0, limit) });
 }
 
 export async function POST(req: Request) {

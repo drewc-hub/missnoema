@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ContentRating, Visibility } from "@prisma/client";
 import { parseCsv } from "@/lib/validate";
 import { isAdultAllowed } from "@/lib/ratings";
-import { PremiumFeature, hasUserFeature } from "@/lib/premium";
+import { PremiumFeature, hasUserFeature, isPremiumOnlyProfile } from "@/lib/premium";
 
 type AuthedUser = {
     id: string;
@@ -109,19 +109,12 @@ export async function listCompanions({
                 : hasPhoto === false
                 ? { assets: { none: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
                 : {},
-            hasPremiumCompanions
-                ? {}
-                : { NOT: { profile: { path: ["premiumOnly"], equals: true } } },
         ],
     };
 
-    const [total, rows] = await Promise.all([
-        prisma.companion.count({ where }),
-        prisma.companion.findMany({
+    const allRows = await prisma.companion.findMany({
             where,
             orderBy: { createdAt: "desc" },
-            skip,
-            take: safePageSize,
             select: {
                 id: true,
                 name: true,
@@ -148,8 +141,13 @@ export async function listCompanions({
                     select: { id: true, publicUrl: true, contentRating: true },
                 },
             },
-        }),
-    ]);
+        });
+
+    const visibleRows = hasPremiumCompanions
+        ? allRows
+        : allRows.filter((companion) => !isPremiumOnlyProfile(companion.profile));
+    const total = visibleRows.length;
+    const rows = visibleRows.slice(skip, skip + safePageSize);
 
     const ids = rows.map((c) => c.id);
 

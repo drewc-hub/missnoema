@@ -3,7 +3,7 @@ import "server-only";
 import { ContentRating, DiscoveryAction, Visibility } from "@prisma/client";
 import type { AuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PremiumFeature, hasUserFeature } from "@/lib/premium";
+import { PremiumFeature, hasUserFeature, isPremiumOnlyProfile } from "@/lib/premium";
 
 export type DiscoveryDeckItem = {
   id: string;
@@ -53,9 +53,6 @@ export async function getDiscoveryDeck({
     where: {
       visibility: Visibility.PUBLIC,
       contentRating: ContentRating.SAFE,
-      ...(hasPremiumCompanions
-        ? {}
-        : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
       id: blockedIds.size > 0 ? { notIn: Array.from(blockedIds) } : undefined,
       assets: {
         some: {
@@ -70,13 +67,14 @@ export async function getDiscoveryDeck({
       { views: "desc" },
       { createdAt: "desc" },
     ],
-    take: safeLimit,
+    take: hasPremiumCompanions ? safeLimit : safeLimit * 5,
     select: {
       id: true,
       slug: true,
       name: true,
       description: true,
       tags: true,
+      profile: true,
       assets: {
         where: {
           type: "IMAGE",
@@ -89,11 +87,16 @@ export async function getDiscoveryDeck({
     },
   });
 
+  const visibleCompanions = (hasPremiumCompanions
+    ? companions
+    : companions.filter((companion) => !isPremiumOnlyProfile(companion.profile))
+  ).slice(0, safeLimit);
+
   const savedReactions = user
     ? await prisma.companionReaction.findMany({
         where: {
           userId: user.id,
-          companionId: { in: companions.map((companion) => companion.id) },
+          companionId: { in: visibleCompanions.map((companion) => companion.id) },
           saved: true,
         },
         select: { companionId: true },
@@ -102,7 +105,7 @@ export async function getDiscoveryDeck({
 
   const savedIds = new Set(savedReactions.map((reaction) => reaction.companionId));
 
-  const items: DiscoveryDeckItem[] = companions.map((companion) => {
+  const items: DiscoveryDeckItem[] = visibleCompanions.map((companion) => {
     const asset = companion.assets[0];
 
     return {

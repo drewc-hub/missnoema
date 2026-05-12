@@ -70,12 +70,12 @@ export function AdultFooter({
                         </div>
                         <ul className="mt-3 space-y-2 text-zinc-400">
                             <li>
-                                <a className="hover:text-white" href="/adult">
+                                <a className="hover:text-white" href="/tavern">
                                     Tavern
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/adult/companions">
+                                <a className="hover:text-white" href="/discover?includeAdult=1">
                                     Discover
                                 </a>
                             </li>

@@ -209,3 +209,11 @@ export function additionalMemoryWindowForPlan(
 export function relationshipBoostMultiplier(hasBoost: boolean) {
   return hasBoost ? 1.5 : 1;
 }
+
+export function isPremiumOnlyProfile(profile: unknown) {
+  return (
+    !!profile &&
+    typeof profile === "object" &&
+    (profile as Record<string, unknown>).premiumOnly === true
+  );
+}

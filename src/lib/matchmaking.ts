@@ -4,7 +4,7 @@ import { ContentRating, DiscoveryAction, Visibility } from "@prisma/client";
 import type { AuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { prisma } from "@/lib/prisma";
-import { PremiumFeature, hasUserFeature } from "@/lib/premium";
+import { PremiumFeature, hasUserFeature, isPremiumOnlyProfile } from "@/lib/premium";
 
 type MatchmakingProfile = {
   seekingTags?: string[];
@@ -241,9 +241,6 @@ export async function getMatchmakingDeck(args: {
     where: {
       visibility: Visibility.PUBLIC,
       contentRating: { in: allowedRatings },
-      ...(hasPremiumCompanions
-        ? {}
-        : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
       id: blockedIds.size > 0 ? { notIn: Array.from(blockedIds) } : undefined,
     },
     orderBy: [{ updatedAt: "desc" }],
@@ -266,13 +263,17 @@ export async function getMatchmakingDeck(args: {
     },
   });
 
+  const visibleCandidates = hasPremiumCompanions
+    ? candidates
+    : candidates.filter((candidate) => !isPremiumOnlyProfile(candidate.profile));
+
   const savedIds = user
     ? new Set(
         (
           await prisma.companionReaction.findMany({
             where: {
               userId: user.id,
-              companionId: { in: candidates.map((candidate) => candidate.id) },
+              companionId: { in: visibleCandidates.map((candidate) => candidate.id) },
               saved: true,
             },
             select: { companionId: true },
@@ -281,7 +282,7 @@ export async function getMatchmakingDeck(args: {
       )
     : new Set<string>();
 
-  const scored: MatchmakingItem[] = candidates.map((candidate) => {
+  const scored: MatchmakingItem[] = visibleCandidates.map((candidate) => {
     const { score, reasons } = scoreCompanionMatch({
       preferredTags,
       preferredArchetypes,

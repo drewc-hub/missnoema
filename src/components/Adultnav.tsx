@@ -28,10 +28,10 @@ export function AdultTopNav() {
 
                 <ul className="flex items-center space-x-1">
                     <li>
-                        <NavLink href="/adult" label="Tavern" />
+                        <NavLink href="/tavern" label="Tavern" />
                     </li>
                     <li>
-                        <NavLink href="/adult/companions" label="Discover" />
+                        <NavLink href="/discover?includeAdult=1" label="Discover" />
                     </li>
                     <li>
                         <NavLink href="/marketplace" label="Market" />
