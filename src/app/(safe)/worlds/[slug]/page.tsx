@@ -4,6 +4,8 @@ import { WorldRole } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isRpWorldEligible } from "@/lib/rp-world";
+import { WorldInviteManager } from "@/components/WorldInviteManager";
+import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 import { WorldJoinButton } from "@/components/WorldJoinButton";
 import { WorldRoomClient } from "@/components/WorldRoomClient";
 
@@ -62,12 +64,15 @@ export default async function WorldRoomPage({
 
   if (!world) notFound();
 
-  const isMember = world.members.some((m) => m.userId === user.id);
+  const myMembership = world.members.find((m) => m.userId === user.id) ?? null;
+  const isMember = !!myMembership;
+  const isHost = world.ownerId === user.id || myMembership?.role === WorldRole.HOST;
   if (!world.isPublic && !isMember) {
     return (
       <main className="space-y-4 rounded-lg border border-zinc-800 bg-zinc-950 p-6 text-zinc-100">
         <h1 className="text-2xl font-semibold text-white">Private world</h1>
         <p className="text-sm text-zinc-400">You need an invite from the host to access this room.</p>
+        <WorldJoinByCodeForm />
       </main>
     );
   }
@@ -93,6 +98,22 @@ export default async function WorldRoomPage({
               email: true,
             },
           },
+        },
+      })
+    : [];
+  const invites = isHost
+    ? await prisma.worldInvite.findMany({
+        where: { worldId: world.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          code: true,
+          maxUses: true,
+          usedCount: true,
+          expiresAt: true,
+          revokedAt: true,
+          createdAt: true,
         },
       })
     : [];
@@ -180,6 +201,8 @@ export default async function WorldRoomPage({
             <div className="mt-2">Turns: {world._count.messages}</div>
             <div className="mt-1">Last activity: {new Date(world.lastActivityAt).toLocaleString()}</div>
           </div>
+
+          {isHost ? <WorldInviteManager worldId={world.id} initialInvites={invites} /> : null}
         </aside>
       </section>
     </main>

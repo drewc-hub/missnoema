@@ -1,6 +1,7 @@
 import React from "react";
 import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
+import { isAdultAllowed } from "@/lib/ratings";
 import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
 import { Pagination } from "@/components/Pagination";
 
@@ -29,9 +30,13 @@ function qs(params: Record<string, string | undefined>) {
 
 function CompanionCard({ c }: { c: ApiItem }) {
   const ratingTone = c.contentRating === "ADULT" ? "adult" : "safe";
+  const chatHref =
+    c.contentRating === "ADULT"
+      ? `/adult/chat?companion=${encodeURIComponent(c.slug)}`
+      : `/chat?companion=${encodeURIComponent(c.slug)}`;
   return (
     <a
-      href={`/chat?companion=${encodeURIComponent(c.slug)}`}
+      href={chatHref}
       className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700/60 hover:shadow-lg hover:shadow-blue-950/50"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">
@@ -78,6 +83,7 @@ export default async function SafeCompanionsPage({
 }) {
   const sp = await searchParams;
   const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
 
   const q = (sp.q ?? "").trim();
   const tags = (sp.tags ?? "").trim();
@@ -89,7 +95,18 @@ export default async function SafeCompanionsPage({
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = 12;
 
-  const data = await listCompanions({ user, q, tags, gender, minAge, maxAge, hasPhoto, page, pageSize, includeAdult: false });
+  const data = await listCompanions({
+    user,
+    q,
+    tags,
+    gender,
+    minAge,
+    maxAge,
+    hasPhoto,
+    page,
+    pageSize,
+    includeAdult: allowAdult,
+  });
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
   const baseParams = { q, tags, gender, minAge: minAge?.toString(), maxAge: maxAge?.toString(), hasPhoto: sp.hasPhoto ?? "1" };
 
@@ -98,7 +115,11 @@ export default async function SafeCompanionsPage({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Companion library</h1>
-          <p className="text-sm text-zinc-400">Safe-for-work companions. Click to start a chat.</p>
+          <p className="text-sm text-zinc-400">
+            {allowAdult
+              ? "Verified mode active. SAFE + ADULT companions are visible."
+              : "Safe-for-work companions. Click to start a chat."}
+          </p>
         </div>
         <a href="/adult/companions">
           <Badge tone="adult">18+ section →</Badge>

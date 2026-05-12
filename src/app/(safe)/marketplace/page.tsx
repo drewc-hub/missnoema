@@ -17,6 +17,8 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMarketplaceReadiness } from "@/lib/marketplace-readiness";
+import { getAuthedUser } from "@/lib/auth";
+import { isAdultAllowed } from "@/lib/ratings";
 
 type SearchParams = { q?: string; page?: string };
 
@@ -35,6 +37,11 @@ export default async function MarketplacePage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
   const q = (sp.q ?? "").trim();
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = 12;
@@ -42,11 +49,11 @@ export default async function MarketplacePage({
   const where = {
     listingType: MarketplaceListingType.COMPANION,
     status: MarketplaceListingStatus.PUBLISHED,
-    contentRating: ContentRating.SAFE,
+    contentRating: { in: allowedRatings },
     companion: {
       is: {
         visibility: Visibility.PUBLIC,
-        contentRating: ContentRating.SAFE,
+        contentRating: { in: allowedRatings },
       },
     },
     ...(q
@@ -96,13 +103,14 @@ export default async function MarketplacePage({
             tags: true,
             profile: true,
             ownerId: true,
+            contentRating: true,
             views: true,
             saves: true,
             likes: true,
             assets: {
               where: {
                 type: "IMAGE",
-                contentRating: ContentRating.SAFE,
+                contentRating: { in: allowedRatings },
               },
               orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
               take: 1,
@@ -167,7 +175,9 @@ export default async function MarketplacePage({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-zinc-500">Rating</span>
-                <span className="font-semibold text-emerald-300">SAFE</span>
+                <span className="font-semibold text-zinc-100">
+                  {allowAdult ? "SAFE + ADULT" : "SAFE"}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-zinc-500">Mode</span>
@@ -212,7 +222,11 @@ export default async function MarketplacePage({
                 const companion = listing.companion;
                 if (!companion) return null;
                 const asset = companion.assets[0];
-                const thumbnailUrl = asset ? asset.publicUrl ?? `/media/${asset.id}` : null;
+                const thumbnailUrl = asset
+                  ? companion.contentRating === ContentRating.ADULT
+                    ? `/media/${asset.id}`
+                    : asset.publicUrl ?? `/media/${asset.id}`
+                  : null;
                 const readiness = getMarketplaceReadiness(companion);
                 const creatorName =
                   listing.creator?.displayName ||
@@ -227,13 +241,20 @@ export default async function MarketplacePage({
                     : listing.priceCoins > 0
                       ? `${listing.priceCoins.toLocaleString()} coins`
                       : "Free";
+                const isAdult = companion.contentRating === ContentRating.ADULT;
+                const chatHref = isAdult
+                  ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
+                  : `/chat?companion=${encodeURIComponent(companion.slug)}`;
+                const viewHref = isAdult
+                  ? `/adult/companions/${companion.slug}`
+                  : `/companions/${companion.slug}`;
 
                 return (
                   <article
                     key={listing.id}
                     className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
                   >
-                    <a href={`/companions/${companion.slug}`} className="group block">
+                    <a href={viewHref} className="group block">
                       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
                         {thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -249,8 +270,14 @@ export default async function MarketplacePage({
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                        <div className="absolute left-3 top-3 rounded-full border border-emerald-900/60 bg-emerald-950/60 px-2.5 py-1 text-xs text-emerald-200">
-                          SAFE
+                        <div
+                          className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-xs ${
+                            isAdult
+                              ? "border-rose-900/60 bg-rose-950/60 text-rose-200"
+                              : "border-emerald-900/60 bg-emerald-950/60 text-emerald-200"
+                          }`}
+                        >
+                          {companion.contentRating}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <div className="text-lg font-semibold text-white">{listing.title}</div>
@@ -290,14 +317,14 @@ export default async function MarketplacePage({
 
                       <div className="grid grid-cols-2 gap-2">
                         <a
-                          href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
+                          href={chatHref}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                         >
                           <MessageCircle className="h-4 w-4" />
                           Chat
                         </a>
                         <a
-                          href={`/companions/${companion.slug}`}
+                          href={viewHref}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-black px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
                         >
                           <Eye className="h-4 w-4" />

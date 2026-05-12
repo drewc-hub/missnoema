@@ -4,6 +4,7 @@ import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isRpWorldEligible } from "@/lib/rp-world";
 import { WorldCreateForm } from "@/components/WorldCreateForm";
+import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 
 export default async function WorldsLobbyPage() {
   const user = await getAuthedUser();
@@ -117,6 +118,10 @@ export default async function WorldsLobbyPage() {
             <div className="mt-3 text-2xl font-semibold text-white">{user.plan}</div>
           </div>
         </div>
+      </section>
+
+      <section>
+        <WorldJoinByCodeForm />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">

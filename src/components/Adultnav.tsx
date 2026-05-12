@@ -37,6 +37,9 @@ export function AdultTopNav() {
                         <NavLink href="/marketplace" label="Market" />
                     </li>
                     <li>
+                        <NavLink href="/worlds" label="Worlds" />
+                    </li>
+                    <li>
                         <NavLink href="/creator" label="Creator" />
                     </li>
                     <li>

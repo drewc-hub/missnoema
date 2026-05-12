@@ -1,6 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
+import { isAdultAllowed } from "@/lib/ratings";
 import { prisma } from "@/lib/prisma";
 import { CompanionChatWorkspace } from "@/components/CompanionChatWorkspace";
 import { Visibility } from "@prisma/client";
@@ -18,6 +19,7 @@ export default async function SafeChatPage({
   if (!user) {
     redirect(`/login?next=/chat`);
   }
+  const allowAdult = isAdultAllowed(user);
 
   const requestedSlug = (sp.companion ?? "").trim();
   let initialCompanionId: string | undefined;
@@ -32,7 +34,7 @@ export default async function SafeChatPage({
 
   return (
     <CompanionChatWorkspace
-      allowAdult={false}
+      allowAdult={allowAdult}
       initialCompanionId={initialCompanionId}
     />
   );

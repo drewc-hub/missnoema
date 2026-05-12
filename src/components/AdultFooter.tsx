@@ -85,6 +85,11 @@ export function AdultFooter({
                                 </a>
                             </li>
                             <li>
+                                <a className="hover:text-white" href="/worlds">
+                                    Worlds
+                                </a>
+                            </li>
+                            <li>
                                 <a className="hover:text-white" href="/adult/companions">
                                     Library
                                 </a>

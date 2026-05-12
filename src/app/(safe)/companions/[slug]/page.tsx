@@ -3,6 +3,7 @@ import { ContentRating, Visibility } from "@prisma/client";
 import { BadgeCheck, Compass, ImageIcon, MessageCircle, Shield, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
+import { isAdultAllowed } from "@/lib/ratings";
 
 export default async function SafeCompanionDetailPage({
   params,
@@ -55,6 +56,26 @@ export default async function SafeCompanionDetailPage({
   });
 
   if (!companion) {
+    const adultCompanion = await prisma.companion.findFirst({
+      where: {
+        slug,
+        visibility: Visibility.PUBLIC,
+        contentRating: ContentRating.ADULT,
+      },
+      select: { slug: true },
+    });
+
+    if (adultCompanion) {
+      const adultProfilePath = `/adult/companions/${adultCompanion.slug}`;
+      if (user && isAdultAllowed(user)) {
+        redirect(adultProfilePath);
+      }
+      if (user) {
+        redirect(`/adult/verify?next=${encodeURIComponent(adultProfilePath)}`);
+      }
+      redirect(`/login?next=${encodeURIComponent(adultProfilePath)}`);
+    }
+
     return <main className="p-6 text-zinc-400">Companion not found.</main>;
   }
 

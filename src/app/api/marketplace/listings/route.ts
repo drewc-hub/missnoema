@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,11 @@ function statusFromVisibility(visibility: Visibility) {
 }
 
 export async function GET(req: Request) {
+  const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
@@ -35,11 +41,11 @@ export async function GET(req: Request) {
     where: {
       listingType: MarketplaceListingType.COMPANION,
       status: MarketplaceListingStatus.PUBLISHED,
-      contentRating: ContentRating.SAFE,
+      contentRating: { in: allowedRatings },
       companion: {
         is: {
           visibility: Visibility.PUBLIC,
-          contentRating: ContentRating.SAFE,
+          contentRating: { in: allowedRatings },
         },
       },
       ...(q
@@ -75,7 +81,7 @@ export async function GET(req: Request) {
           assets: {
             where: {
               type: "IMAGE",
-              contentRating: ContentRating.SAFE,
+              contentRating: { in: allowedRatings },
             },
             orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
             take: 1,

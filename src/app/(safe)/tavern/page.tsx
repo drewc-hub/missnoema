@@ -15,6 +15,7 @@ import { ContentRating, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 
 type TavernCompanion = {
   id: string;
@@ -22,6 +23,7 @@ type TavernCompanion = {
   name: string;
   description: string;
   tags: string[];
+  contentRating: "SAFE" | "ADULT";
   thumbnailUrl: string | null;
 };
 
@@ -52,9 +54,14 @@ function ActionLink({
 }
 
 function CompanionTile({ companion }: { companion: TavernCompanion }) {
+  const chatHref =
+    companion.contentRating === "ADULT"
+      ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
+      : `/chat?companion=${encodeURIComponent(companion.slug)}`;
+
   return (
     <a
-      href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
+      href={chatHref}
       className="group block overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition hover:-translate-y-0.5 hover:border-fuchsia-500/60"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
@@ -115,14 +122,18 @@ function Metric({
 
 export default async function TavernPage() {
   const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
 
-  const [companions, account, recentConversations, totalSafeCompanions] =
+  const [companions, account, recentConversations, totalCompanions] =
     await Promise.all([
       listCompanions({
         user,
         page: 1,
         pageSize: 6,
-        includeAdult: false,
+        includeAdult: allowAdult,
         hasPhoto: true,
       }),
       user
@@ -139,7 +150,7 @@ export default async function TavernPage() {
         ? prisma.conversation.findMany({
             where: {
               userId: user.id,
-              companion: { contentRating: ContentRating.SAFE },
+              companion: { contentRating: { in: allowedRatings } },
             },
             orderBy: { updatedAt: "desc" },
             take: 4,
@@ -167,7 +178,7 @@ export default async function TavernPage() {
       prisma.companion.count({
         where: {
           visibility: Visibility.PUBLIC,
-          contentRating: ContentRating.SAFE,
+          contentRating: { in: allowedRatings },
         },
       }),
     ]);
@@ -178,6 +189,7 @@ export default async function TavernPage() {
     name: companion.name,
     description: companion.description,
     tags: companion.tags,
+    contentRating: companion.contentRating,
     thumbnailUrl: companion.thumbnailUrl,
   }));
 
@@ -230,8 +242,8 @@ export default async function TavernPage() {
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
-          label="Safe companions"
-          value={totalSafeCompanions.toLocaleString()}
+          label={allowAdult ? "All companions" : "Safe companions"}
+          value={totalCompanions.toLocaleString()}
           icon={Compass}
         />
         <Metric
