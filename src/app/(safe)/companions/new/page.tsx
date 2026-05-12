@@ -57,6 +57,9 @@ export default async function NewSafeCompanionPage() {
             <aside className="lg:col-span-5">
                 <div className="sticky top-6 space-y-4">
                     <div>
+                        <div className="mb-2 inline-flex items-center rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs tracking-wide text-zinc-300">
+                            Creator studio
+                        </div>
                         <h2 className="text-2xl font-semibold tracking-tight">
                             Media generation
                         </h2>

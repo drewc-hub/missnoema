@@ -76,6 +76,9 @@ export default async function NewAdultCompanionPage() {
 
             <aside className="lg:col-span-5">
                 <div className="sticky top-6 space-y-4">
+                    <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs tracking-wide text-fuchsia-300">
+                        18+ verified access
+                    </div>
                     <h2 className="text-xl font-bold tracking-tight">
                         AI images &amp; videos <span className="text-fuchsia-400">unlocked</span> after saving
                     </h2>
