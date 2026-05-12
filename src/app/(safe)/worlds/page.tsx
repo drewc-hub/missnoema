@@ -78,7 +78,7 @@ export default async function WorldsLobbyPage() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                <div className="rounded-lg border border-zinc-800  bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]p-4">
                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                         <PlusCircle className="h-4 w-4 text-fuchsia-300" />
                         Create world
@@ -96,21 +96,21 @@ export default async function WorldsLobbyPage() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                    <div className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <div className="flex items-center gap-2 text-xs uppercase text-zinc-500">
                             <Globe2 className="h-4 w-4 text-fuchsia-300" />
                             Joined worlds
                         </div>
                         <div className="mt-3 text-2xl font-semibold text-white">{myWorlds.length}</div>
                     </div>
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                    <div className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <div className="flex items-center gap-2 text-xs uppercase text-zinc-500">
                             <Users className="h-4 w-4 text-fuchsia-300" />
                             Public worlds
                         </div>
                         <div className="mt-3 text-2xl font-semibold text-white">{publicWorlds.length}</div>
                     </div>
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                    <div className="rounded-lg border border-zinc-800  bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]p-4">
                         <div className="flex items-center gap-2 text-xs uppercase text-zinc-500">
                             <Lock className="h-4 w-4 text-fuchsia-300" />
                             Plan
