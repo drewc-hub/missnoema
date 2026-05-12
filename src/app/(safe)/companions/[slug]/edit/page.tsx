@@ -42,7 +42,6 @@ export default async function EditSafeCompanionPage({
         select: { id: true },
       },
       marketplaceListings: {
-        take: 1,
         select: {
           id: true,
           status: true,
@@ -118,7 +117,7 @@ export default async function EditSafeCompanionPage({
               visibility: companion.visibility,
               contentRating: companion.contentRating,
             }}
-            listing={companion.marketplaceListings[0] ?? null}
+            listing={companion.marketplaceListings ?? null}
           />
 
           <Card>

@@ -71,7 +71,6 @@ export default async function CreatorPage() {
         },
       },
       marketplaceListings: {
-        take: 1,
         select: {
           status: true,
           priceCoins: true,
@@ -85,7 +84,7 @@ export default async function CreatorPage() {
   const publicCount = companions.filter((c) => c.visibility === Visibility.PUBLIC).length;
   const draftCount = companions.length - publicCount;
   const listedCount = companions.filter(
-    (c) => c.marketplaceListings[0]?.status === MarketplaceListingStatus.PUBLISHED,
+    (c) => c.marketplaceListings?.status === MarketplaceListingStatus.PUBLISHED,
   ).length;
 
   return (
@@ -157,7 +156,7 @@ export default async function CreatorPage() {
               : null;
             const readiness = getMarketplaceReadiness(companion);
             const listingState = getMarketplaceState(companion.visibility);
-            const listing = companion.marketplaceListings[0] ?? null;
+            const listing = companion.marketplaceListings ?? null;
             const isAdult = companion.contentRating === ContentRating.ADULT;
             const priceLabel = listing
               ? listing.priceUsdCents > 0
