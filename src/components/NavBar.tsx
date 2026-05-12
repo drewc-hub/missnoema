@@ -10,17 +10,17 @@ export default function NavBar() {
       </div>
 
       <div className="navCenter">
-        <Link href="/landing">Home</Link>
-        <Link href="/library">Library</Link>
-        <Link href="/create">Create</Link>
-        <Link href="/generate">Generate</Link>
-        <Link href="/mission">Mission</Link>
-        <Link href="/pricing">Pricing</Link>
+        <Link href="/tavern">Home</Link>
+        <Link href="/companions">Library</Link>
+        <Link href="/companions/new">Create</Link>
+        <Link href="/companions/media">Generate</Link>
+        <Link href="/about">Mission</Link>
+        <Link href="/account/billing">Pricing</Link>
         <Link href="/login">Login</Link>
       </div>
 
       <div className="navRight">
-        <Link href="/subscribe" className="primaryBtn">
+        <Link href="/account/billing" className="primaryBtn">
           Subscribe
         </Link>
       </div>

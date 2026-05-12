@@ -44,7 +44,7 @@ export function AdultFooter({
                             Browse companions
                         </a>
                         <a
-                            href="/companions/new"
+                            href="/adult/companions/new"
                             className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-900"
                         >
                             Create one
@@ -70,12 +70,12 @@ export function AdultFooter({
                         </div>
                         <ul className="mt-3 space-y-2 text-zinc-400">
                             <li>
-                                <a className="hover:text-white" href="/tavern">
+                                <a className="hover:text-white" href="/adult">
                                     Tavern
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/discover">
+                                <a className="hover:text-white" href="/adult/companions">
                                     Discover
                                 </a>
                             </li>
@@ -95,12 +95,12 @@ export function AdultFooter({
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/companions/new">
+                                <a className="hover:text-white" href="/adult/companions/new">
                                     Creator tools
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/creator">
+                                <a className="hover:text-white" href="/adult/companions/new">
                                     Creator studio
                                 </a>
                             </li>
@@ -161,9 +161,11 @@ export function AdultFooter({
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/auth/signout">
-                                    Sign out
-                                </a>
+                                <form action="/api/auth/logout" method="POST">
+                                    <button className="hover:text-white" type="submit">
+                                        Sign out
+                                    </button>
+                                </form>
                             </li>
                             <li>
                                 <a className="hover:text-white" href="/terms">

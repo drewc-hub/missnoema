@@ -26,14 +26,14 @@ export default function AdultPage() {
 
                         <div className="flex flex-wrap gap-4 pt-4">
                             <a
-                                href="/companions"
+                                href="/adult/companions"
                                 className="rounded-2xl bg-fuchsia-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                             >
                                 Explore Companions
                             </a>
 
                             <a
-                                href="/companions/true"
+                                href="/adult/companions/new"
                                 className="rounded-2xl border border-zinc-700 bg-zinc-900/70 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
                             >
                                 Create Your Own
@@ -213,14 +213,14 @@ export default function AdultPage() {
 
                     <div className="mt-10 flex flex-wrap justify-center gap-4">
                         <a
-                            href="/companions"
+                            href="/adult/companions"
                             className="rounded-2xl bg-fuchsia-500 px-7 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                         >
                             Enter Ecosystem
                         </a>
 
                         <a
-                            href="/companions/new"
+                            href="/adult/companions/new"
                             className="rounded-2xl border border-zinc-700 bg-zinc-900 px-7 py-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
                         >
                             Build Companion

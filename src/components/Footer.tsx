@@ -37,7 +37,7 @@ export function Footer({
 
                     <div className="mt-4 flex flex-wrap gap-2">
                         <a
-                            href="/adult/companions"
+                            href="/companions"
                             className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
                         >
                             Browse companions
@@ -160,9 +160,11 @@ export function Footer({
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/auth/signout">
-                                    Sign out
-                                </a>
+                                <form action="/api/auth/logout" method="POST">
+                                    <button className="hover:text-white" type="submit">
+                                        Sign out
+                                    </button>
+                                </form>
                             </li>
                             <li>
                                 <a className="hover:text-white" href="/terms">
