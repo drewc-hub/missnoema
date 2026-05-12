@@ -54,12 +54,6 @@ export async function getDiscoveryDeck({
       visibility: Visibility.PUBLIC,
       contentRating: ContentRating.SAFE,
       id: blockedIds.size > 0 ? { notIn: Array.from(blockedIds) } : undefined,
-      assets: {
-        some: {
-          type: "IMAGE",
-          contentRating: ContentRating.SAFE,
-        },
-      },
     },
     orderBy: [
       { saves: "desc" },
@@ -87,10 +81,20 @@ export async function getDiscoveryDeck({
     },
   });
 
-  const visibleCompanions = (hasPremiumCompanions
+  const entitlementVisibleCompanions = hasPremiumCompanions
     ? companions
-    : companions.filter((companion) => !isPremiumOnlyProfile(companion.profile))
-  ).slice(0, safeLimit);
+    : companions.filter((companion) => !isPremiumOnlyProfile(companion.profile));
+  const visibleCompanions = entitlementVisibleCompanions
+    .filter((companion) => {
+      if (companion.assets.length > 0) return true;
+      return (
+        companion.profile &&
+        typeof companion.profile === "object" &&
+        typeof (companion.profile as Record<string, unknown>).avatarImageUrl === "string" &&
+        String((companion.profile as Record<string, unknown>).avatarImageUrl).trim().length > 0
+      );
+    })
+    .slice(0, safeLimit);
 
   const savedReactions = user
     ? await prisma.companionReaction.findMany({
@@ -114,7 +118,13 @@ export async function getDiscoveryDeck({
       name: companion.name,
       description: companion.description,
       tags: companion.tags,
-      thumbnailUrl: asset ? asset.publicUrl ?? `/media/${asset.id}` : null,
+      thumbnailUrl: asset
+        ? asset.publicUrl ?? `/media/${asset.id}`
+        : companion.profile &&
+            typeof companion.profile === "object" &&
+            typeof (companion.profile as Record<string, unknown>).avatarImageUrl === "string"
+          ? String((companion.profile as Record<string, unknown>).avatarImageUrl)
+          : null,
       saved: savedIds.has(companion.id),
     };
   });

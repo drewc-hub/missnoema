@@ -24,6 +24,83 @@ function uniqueSlugs(items: SeedCompanion[]): SeedCompanion[] {
   });
 }
 
+function normalizedProfile(c: SeedCompanion) {
+  const source = c.profile;
+  const traits = Array.isArray(source.traits)
+    ? source.traits.filter((value): value is string => typeof value === "string")
+    : [];
+  const boundaries = Array.isArray(source.boundaries)
+    ? source.boundaries.filter((value): value is string => typeof value === "string")
+    : ["no minors", "no explicit sexual content"];
+  const style = typeof source.style === "string" ? source.style : "romantic";
+  const openingLine =
+    typeof source.openingLine === "string" ? source.openingLine : c.description;
+
+  return {
+    premiumOnly: false,
+    scene: openingLine,
+    background: c.description,
+    personality: `${style}. ${traits.join(", ") || "warm, respectful"}.`,
+    wardrobe: "",
+    traits,
+    boundaries,
+    voice: null,
+    sexuality: null,
+    voiceMeta: {
+      voiceId: "",
+      accent: "",
+      tone: "",
+      language: "",
+    },
+    nsfwPreferenceTags: [],
+    aiPersonalityPrompt: "",
+    stats: {},
+    avatarImageUrl: `https://api.dicebear.com/9.x/personas/svg?seed=${encodeURIComponent(c.slug)}`,
+    lore: "",
+    orientation: "",
+    bucket: "SAFE",
+    identity: {
+      archetype: c.archetype ?? null,
+    },
+    promptProfile: openingLine,
+    factionAffiliations: [],
+    relationshipProgression: {
+      stage: "STRANGER",
+      points: 0,
+      milestones: [],
+    },
+    proceduralLore: {
+      seed: c.slug,
+      worldHint: "",
+      tone: style,
+      factions: [],
+      generated: [],
+    },
+    dialogueTree: {
+      startNodeId: "",
+      nodes: [],
+    },
+    matchmaking: {
+      seekingTags: c.tags,
+      avoidTags: [],
+      weights: {
+        personality: 1.2,
+        tags: 1.4,
+        affinity: 1,
+      },
+    },
+    sliders: {
+      warmth: 70,
+      humor: traits.includes("witty") || traits.includes("silly") ? 68 : 45,
+      flirtiness: c.tags.includes("flirty") ? 45 : 20,
+      dominance: traits.includes("confident") || traits.includes("protective") ? 45 : 25,
+      kink: 0,
+    },
+    openingLine,
+    style,
+  };
+}
+
 function safeTemplates(): SeedCompanion[] {
   const templates: SeedCompanion[] = [
     {
@@ -344,7 +421,7 @@ async function main() {
           description: c.description,
           tags: c.tags,
           archetype: c.archetype ?? null,
-          profile: c.profile,
+          profile: normalizedProfile(c),
           visibility: Visibility.PUBLIC,
           contentRating: ContentRating.SAFE,
         },
@@ -353,7 +430,7 @@ async function main() {
           description: c.description,
           tags: c.tags,
           archetype: c.archetype ?? null,
-          profile: c.profile,
+          profile: normalizedProfile(c),
           visibility: Visibility.PUBLIC,
           contentRating: ContentRating.SAFE,
         },
@@ -383,6 +460,8 @@ async function main() {
       });
     }
   }
+
+  await applyFeatured();
 
   console.log(`Seeded ${results.length} SAFE public companions.`);
 }

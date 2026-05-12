@@ -89,6 +89,7 @@ export async function GET(req: Request) {
     create: {
       userId: user.id,
       companionId: companion.id,
+      contentRating: companion.contentRating,
     },
     select: {
       id: true,
@@ -96,6 +97,8 @@ export async function GET(req: Request) {
       trust: true,
       intimacy: true,
       kinkLevel: true,
+      relationshipLevel: true,
+      companionMood: true,
       summary: true,
       messages: {
         orderBy: { createdAt: "asc" },

@@ -53,6 +53,15 @@ export class AdultVerificationRequiredError extends Error {
     }
 }
 
+function hasProfileAvatar(profile: unknown) {
+    return (
+        !!profile &&
+        typeof profile === "object" &&
+        typeof (profile as Record<string, unknown>).avatarImageUrl === "string" &&
+        String((profile as Record<string, unknown>).avatarImageUrl).trim().length > 0
+    );
+}
+
 export async function listCompanions({
     user,
     q = "",
@@ -104,11 +113,6 @@ export async function listCompanions({
             gender ? { gender: { equals: gender, mode: "insensitive" as const } } : {},
             minAge != null ? { age: { gte: minAge } } : {},
             maxAge != null ? { age: { lte: maxAge } } : {},
-            hasPhoto === true
-                ? { assets: { some: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
-                : hasPhoto === false
-                ? { assets: { none: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
-                : {},
         ],
     };
 
@@ -143,9 +147,16 @@ export async function listCompanions({
             },
         });
 
-    const visibleRows = hasPremiumCompanions
+    const entitlementVisibleRows = hasPremiumCompanions
         ? allRows
         : allRows.filter((companion) => !isPremiumOnlyProfile(companion.profile));
+    const visibleRows = entitlementVisibleRows.filter((companion) => {
+        if (hasPhoto == null) return true;
+        const hasAsset = companion.assets.length > 0;
+        const hasAvatar = hasProfileAvatar(companion.profile);
+        const hasAnyPhoto = hasAsset || hasAvatar;
+        return hasPhoto ? hasAnyPhoto : !hasAnyPhoto;
+    });
     const total = visibleRows.length;
     const rows = visibleRows.slice(skip, skip + safePageSize);
 

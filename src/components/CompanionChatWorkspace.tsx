@@ -93,6 +93,7 @@ type ConversationMemory = {
     trust: number;
     intimacy: number;
     kinkLevel: number;
+    relationshipLevel: number;
     summary?: string | null;
 };
 
@@ -166,6 +167,21 @@ export function CompanionChatWorkspace({
         () => companions.find((c) => c.id === activeId) ?? null,
         [companions, activeId],
     );
+
+    const isAdultChat =
+        allowAdult ||
+        activeCompanion?.contentRating === "ADULT" ||
+        (memory?.kinkLevel ?? 0) > 0;
+
+    const relationshipStage = useMemo(() => {
+        if (!memory) return null;
+        const average = (memory.familiarity + memory.trust + memory.intimacy) / 3;
+        if (average >= 65) return "Intimate partner";
+        if (average >= 45) return "Close friend";
+        if (average >= 25) return "Friend";
+        if (average >= 10) return "Acquaintance";
+        return "Stranger";
+    }, [memory]);
 
     const filteredCompanions = useMemo(() => {
         const q = companionSearch.trim().toLowerCase();
@@ -468,8 +484,16 @@ export function CompanionChatWorkspace({
                     trust: conversationData.conversation.trust,
                     intimacy: conversationData.conversation.intimacy,
                     kinkLevel: conversationData.conversation.kinkLevel ?? 0,
+                    relationshipLevel: conversationData.conversation.relationshipLevel ?? 1,
                     summary: conversationData.conversation.summary ?? null,
                 });
+                if (
+                    typeof conversationData.conversation.companionMood === "number" &&
+                    conversationData.conversation.companionMood >= 0 &&
+                    conversationData.conversation.companionMood <= 3
+                ) {
+                    setCompanionMood(conversationData.conversation.companionMood);
+                }
 
                 if (loadedMessages.length === 0) {
                     requestIntro(activeId);
@@ -570,10 +594,11 @@ export function CompanionChatWorkspace({
                             const m = event.memory as Record<string, unknown>;
                             setMemory({
                                 id: (m.id as string) ?? memory?.id ?? "",
-                                familiarity: m.familiarity as number,
-                                trust: m.trust as number,
-                                intimacy: m.intimacy as number,
+                                familiarity: typeof m.familiarity === "number" ? m.familiarity : (memory?.familiarity ?? 0),
+                                trust: typeof m.trust === "number" ? m.trust : (memory?.trust ?? 0),
+                                intimacy: typeof m.intimacy === "number" ? m.intimacy : (memory?.intimacy ?? 0),
                                 kinkLevel: typeof m.kinkLevel === "number" ? m.kinkLevel : (memory?.kinkLevel ?? 0),
+                                relationshipLevel: typeof m.relationshipLevel === "number" ? m.relationshipLevel : (memory?.relationshipLevel ?? 1),
                                 summary: (m.summary as string | null) ?? null,
                             });
                         }
@@ -838,7 +863,7 @@ export function CompanionChatWorkspace({
                 return;
             }
             setMessages([]);
-            setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, kinkLevel: 0, summary: null } : null);
+            setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, kinkLevel: 0, relationshipLevel: 1, summary: null } : null);
             setSuggestions([]);
             setResetConfirmId(null);
         } finally {
@@ -1188,11 +1213,21 @@ export function CompanionChatWorkspace({
                                 {memory ? (
                                     <>
                                         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2 pb-1 text-xs">
+                                                <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-zinc-300">
+                                                    Bond Lv. {memory.relationshipLevel}
+                                                </span>
+                                                {relationshipStage ? (
+                                                    <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-zinc-400">
+                                                        {relationshipStage}
+                                                    </span>
+                                                ) : null}
+                                            </div>
                                             {[
                                                 { label: "Familiarity", value: memory.familiarity, color: "bg-blue-500", show: true },
                                                 { label: "Trust", value: memory.trust, color: "bg-emerald-500", show: true },
                                                 { label: "Intimacy", value: memory.intimacy, color: "bg-rose-500", show: true },
-                                                { label: "Kink", value: memory.kinkLevel, color: "bg-violet-500", show: activeCompanion?.contentRating === "ADULT" },
+                                                { label: "Kink", value: memory.kinkLevel, color: "bg-violet-500", show: isAdultChat },
                                             ].filter((s) => s.show).map(({ label, value, color }) => (
                                                 <div key={label}>
                                                     <div className="flex justify-between text-xs mb-1">

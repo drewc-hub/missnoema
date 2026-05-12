@@ -159,6 +159,16 @@ const companions = [
 },
 ]
 
+await prisma.$transaction(async (tx) => {
+  await tx.generationJob.deleteMany({
+    where: { companionId: { in: companionId } },
+  });
+
+  await tx.companion.deleteMany({
+    where: { id: { in: companionId } },
+  });
+});
+
 async function main() {
     console.log('🌱 Seeding companions...')
 
