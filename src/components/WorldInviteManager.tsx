@@ -101,39 +101,67 @@ export function WorldInviteManager({
     <section className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
       <h2 className="text-sm font-semibold text-white">Invite codes</h2>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          createInvite();
-        }}
-        className="grid gap-2 sm:grid-cols-[120px_120px_1fr]"
-      >
-        <input
-          type="number"
-          min={1}
-          max={500}
-          value={maxUses}
-          onChange={(e) => setMaxUses(Math.max(1, Math.min(500, Number(e.target.value) || 25)))}
-          className="h-10 rounded-lg border border-zinc-800 bg-black px-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
-          title="Max uses"
-        />
-        <input
-          type="number"
-          min={1}
-          max={720}
-          value={expiresHours}
-          onChange={(e) => setExpiresHours(Math.max(1, Math.min(720, Number(e.target.value) || 72)))}
-          className="h-10 rounded-lg border border-zinc-800 bg-black px-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
-          title="Expires in hours"
-        />
-        <button
-          type="submit"
-          disabled={creating}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex rounded-lg border border-zinc-800 bg-black p-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setFilterMode("active")}
+            className={`rounded-md px-2.5 py-1 font-semibold transition ${
+              filterMode === "active"
+                ? "bg-fuchsia-500 text-white"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode("all")}
+            className={`rounded-md px-2.5 py-1 font-semibold transition ${
+              filterMode === "all"
+                ? "bg-fuchsia-500 text-white"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            All
+          </button>
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            createInvite();
+          }}
+          className="flex flex-wrap items-center gap-2"
         >
-          {creating ? "Creating..." : "Create invite"}
-        </button>
-      </form>
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={maxUses}
+            onChange={(e) => setMaxUses(Math.max(1, Math.min(500, Number(e.target.value) || 25)))}
+            className="h-10 w-[104px] rounded-lg border border-zinc-800 bg-black px-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+            title="Max uses"
+          />
+          <input
+            type="number"
+            min={1}
+            max={720}
+            value={expiresHours}
+            onChange={(e) => setExpiresHours(Math.max(1, Math.min(720, Number(e.target.value) || 72)))}
+            className="h-10 w-[110px] rounded-lg border border-zinc-800 bg-black px-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+            title="Expires in hours"
+          />
+          <button
+            type="submit"
+            disabled={creating}
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {creating ? "Creating..." : "Create invite"}
+          </button>
+        </form>
+      </div>
+
       <button
         type="button"
         onClick={() => createInvite({ forceSingleUse: true })}
@@ -144,31 +172,6 @@ export function WorldInviteManager({
       </button>
 
       {error ? <p className="text-xs text-rose-300">{error}</p> : null}
-
-      <div className="inline-flex rounded-lg border border-zinc-800 bg-black p-1 text-xs">
-        <button
-          type="button"
-          onClick={() => setFilterMode("active")}
-          className={`rounded-md px-2.5 py-1 font-semibold transition ${
-            filterMode === "active"
-              ? "bg-fuchsia-500 text-white"
-              : "text-zinc-300 hover:text-white"
-          }`}
-        >
-          Active
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterMode("all")}
-          className={`rounded-md px-2.5 py-1 font-semibold transition ${
-            filterMode === "all"
-              ? "bg-fuchsia-500 text-white"
-              : "text-zinc-300 hover:text-white"
-          }`}
-        >
-          All
-        </button>
-      </div>
 
       <div className="space-y-2">
         {visibleInvites.length > 0 ? (

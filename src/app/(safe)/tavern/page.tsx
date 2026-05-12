@@ -240,7 +240,8 @@ export default async function TavernPage() {
                 </div>
             </section>
 
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 bg-[radial gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]">
+
                 <Metric
                     label={allowAdult ? "All companions" : "Safe companions"}
                     value={totalCompanions.toLocaleString()}
@@ -287,11 +288,11 @@ export default async function TavernPage() {
                 </div>
 
                 <aside className="space-y-4">
-                    <div className="rounded-[1rem] border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
+                    <div className="rounded-[1rem] border border-zinc-800 bg-[radial gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-lg font-semibold text-white">Recent tables</h2>
-                                <p className="text-sm text-zinc-500">Your latest companion sessions.</p>
+                                <p className="text-sm text-zinc-200">Your latest companion sessions.</p>
                             </div>
                             <BookOpen className="h-5 w-5 text-fuchsia-300" />
                         </div>
@@ -326,7 +327,7 @@ export default async function TavernPage() {
                                     </a>
                                 ))
                             ) : (
-                                <div className="rounded-lg border border-dashed border-zinc-800 bg-black p-4 text-sm leading-6 text-zinc-400">
+                                <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950 p-4 text-sm leading-6 text-zinc-200">
                                     No recent chats yet. Choose a companion to open your first table.
                                 </div>
                             )}
