@@ -1,19 +1,30 @@
-import { ContentRating, Visibility } from "@prisma/client";
-import { BadgeCheck, Check, ExternalLink, Store, X } from "lucide-react";
+import { ContentRating, MarketplaceListingStatus, Visibility } from "@prisma/client";
+import { BadgeCheck, Check, Clock, ExternalLink, Store, X } from "lucide-react";
 import {
   getMarketplaceReadiness,
   getMarketplaceState,
   type MarketplaceReadinessInput,
 } from "@/lib/marketplace-readiness";
+import { MarketplaceListingSyncButton } from "@/components/MarketplaceListingSyncButton";
 
 export function MarketplaceListingPanel({
   companion,
+  listing,
 }: {
   companion: MarketplaceReadinessInput & {
+    id: string;
     slug: string;
     visibility: Visibility;
     contentRating: ContentRating;
   };
+  listing?: {
+    id: string;
+    status: MarketplaceListingStatus;
+    priceCoins: number;
+    priceUsdCents: number;
+    updatedAt: Date;
+    publishedAt: Date | null;
+  } | null;
 }) {
   const readiness = getMarketplaceReadiness(companion);
   const state = getMarketplaceState(companion.visibility);
@@ -28,6 +39,21 @@ export function MarketplaceListingPanel({
       : state.tone === "unlisted"
         ? "border-zinc-700 bg-zinc-900 text-zinc-200"
         : "border-amber-900/60 bg-amber-950/40 text-amber-200";
+  const listingTone =
+    listing?.status === MarketplaceListingStatus.PUBLISHED
+      ? "border-emerald-900/60 bg-emerald-950/50 text-emerald-200"
+      : listing?.status === MarketplaceListingStatus.HIDDEN
+        ? "border-zinc-700 bg-zinc-900 text-zinc-200"
+        : listing
+          ? "border-amber-900/60 bg-amber-950/40 text-amber-200"
+          : "border-zinc-800 bg-black text-zinc-400";
+  const priceLabel = listing
+    ? listing.priceUsdCents > 0
+      ? `$${(listing.priceUsdCents / 100).toFixed(2)}`
+      : listing.priceCoins > 0
+        ? `${listing.priceCoins.toLocaleString()} coins`
+        : "Free"
+    : "Not synced";
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
@@ -38,7 +64,7 @@ export function MarketplaceListingPanel({
             Marketplace listing
           </div>
           <p className="mt-1 text-sm leading-6 text-zinc-400">
-            Use the builder&apos;s Visibility field, then save.
+            Use the builder&apos;s Visibility field, save, then sync the listing.
           </p>
         </div>
         <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs ${stateTone}`}>
@@ -58,6 +84,28 @@ export function MarketplaceListingPanel({
           />
         </div>
         <p className="mt-3 text-xs leading-5 text-zinc-500">{state.description}</p>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-lg border border-zinc-800 bg-black p-3 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-zinc-500">Listing record</span>
+          <span className={`rounded-full border px-2.5 py-1 text-xs ${listingTone}`}>
+            {listing?.status ?? "Not synced"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-zinc-500">Price</span>
+          <span className="font-semibold text-zinc-100">{priceLabel}</span>
+        </div>
+        {listing ? (
+          <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              Updated
+            </span>
+            <span>{listing.updatedAt.toLocaleDateString()}</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4 grid gap-2">
@@ -87,9 +135,13 @@ export function MarketplaceListingPanel({
           <ExternalLink className="h-4 w-4" />
           View listing
         </a>
+        <MarketplaceListingSyncButton companionId={companion.id} />
+      </div>
+
+      <div className="mt-2">
         <a
           href={isSafe ? "/marketplace" : "/adult/companions"}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-black px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
         >
           <BadgeCheck className="h-4 w-4" />
           {isSafe ? "Open market" : "Adult library"}

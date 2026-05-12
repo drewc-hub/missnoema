@@ -8,6 +8,7 @@ import {
   Plus,
   Sparkles,
   Swords,
+  Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { ContentRating, Visibility } from "@prisma/client";
@@ -218,6 +219,7 @@ export default async function TavernPage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <ActionLink href="/chat" label="Resume Chat" icon={MessageCircle} primary />
               <ActionLink href="/discover" label="Discover" icon={Compass} />
+              <ActionLink href="/worlds" label="RP Worlds" icon={Users} />
               <ActionLink href="/companions" label="Browse" icon={Compass} />
               <ActionLink href="/companions/new" label="Create" icon={Plus} />
               <ActionLink href="/creator" label="Creator Studio" icon={Sparkles} />

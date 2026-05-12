@@ -35,6 +35,9 @@ importers:
       '@netlify/database':
         specifier: ^1.0.0
         version: 1.0.0
+      '@openai/openai':
+        specifier: jsr:^6.37.0
+        version: '@jsr/openai__openai@6.37.0'
       '@prisma/client':
         specifier: ^6.19.2
         version: 6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3)
@@ -1294,6 +1297,9 @@ packages:
   '@js-temporal/polyfill@0.5.1':
     resolution: {integrity: sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==}
     engines: {node: '>=12'}
+
+  '@jsr/openai__openai@6.37.0':
+    resolution: {integrity: sha512-DYriocjOnFnr0noT82+5pFOxsDOTCSSG1e1eYUYG6aVgPvdU4sQVFPSUFjTsRbCNQ6JwhQy3j2m6N2xz0LK2Rg==, tarball: https://npm.jsr.io/~/11/@jsr/openai__openai/6.37.0.tgz}
 
   '@lukeed/ms@2.0.2':
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
@@ -8646,6 +8652,10 @@ snapshots:
   '@js-temporal/polyfill@0.5.1':
     dependencies:
       jsbi: 4.3.2
+
+  '@jsr/openai__openai@6.37.0':
+    dependencies:
+      zod: 3.25.76
 
   '@lukeed/ms@2.0.2': {}
 

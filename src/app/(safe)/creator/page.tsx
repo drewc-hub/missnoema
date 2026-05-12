@@ -1,5 +1,5 @@
 import {
-  BadgeCheck,
+  CircleDollarSign,
   Eye,
   ImageIcon,
   Lock,
@@ -9,7 +9,7 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
-import { ContentRating, Visibility } from "@prisma/client";
+import { ContentRating, MarketplaceListingStatus, Visibility } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -70,12 +70,23 @@ export default async function CreatorPage() {
           assets: true,
         },
       },
+      marketplaceListings: {
+        take: 1,
+        select: {
+          status: true,
+          priceCoins: true,
+          priceUsdCents: true,
+          updatedAt: true,
+        },
+      },
     },
   });
 
   const publicCount = companions.filter((c) => c.visibility === Visibility.PUBLIC).length;
   const draftCount = companions.length - publicCount;
-  const totalSaves = companions.reduce((sum, companion) => sum + companion.saves, 0);
+  const listedCount = companions.filter(
+    (c) => c.marketplaceListings[0]?.status === MarketplaceListingStatus.PUBLISHED,
+  ).length;
 
   return (
     <main className="space-y-6 text-zinc-100">
@@ -128,10 +139,10 @@ export default async function CreatorPage() {
         </div>
         <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
           <div className="flex items-center gap-2 text-xs uppercase text-zinc-500">
-            <BadgeCheck className="h-4 w-4 text-fuchsia-300" />
-            Saves
+            <CircleDollarSign className="h-4 w-4 text-fuchsia-300" />
+            Listed
           </div>
-          <div className="mt-3 text-2xl font-semibold text-white">{totalSaves.toLocaleString()}</div>
+          <div className="mt-3 text-2xl font-semibold text-white">{listedCount}</div>
         </div>
       </section>
 
@@ -146,7 +157,15 @@ export default async function CreatorPage() {
               : null;
             const readiness = getMarketplaceReadiness(companion);
             const listingState = getMarketplaceState(companion.visibility);
+            const listing = companion.marketplaceListings[0] ?? null;
             const isAdult = companion.contentRating === ContentRating.ADULT;
+            const priceLabel = listing
+              ? listing.priceUsdCents > 0
+                ? `$${(listing.priceUsdCents / 100).toFixed(2)}`
+                : listing.priceCoins > 0
+                  ? `${listing.priceCoins.toLocaleString()} coins`
+                  : "Free"
+              : "Not synced";
             const editHref = isAdult
               ? `/adult/companions/${companion.slug}/edit`
               : `/companions/${companion.slug}/edit`;
@@ -247,6 +266,12 @@ export default async function CreatorPage() {
                     )}
                     <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-400">
                       {listingState.label}: {listingState.description}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs">
+                      <span className="text-zinc-500">Listing</span>
+                      <span className="font-semibold text-zinc-200">
+                        {listing?.status ?? "Not synced"} · {priceLabel}
+                      </span>
                     </div>
 
                     <div className="mt-4 grid gap-2">

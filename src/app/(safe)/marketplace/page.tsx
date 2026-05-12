@@ -9,8 +9,14 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
-import { ContentRating, Visibility } from "@prisma/client";
+import {
+  ContentRating,
+  MarketplaceListingStatus,
+  MarketplaceListingType,
+  Visibility,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getMarketplaceReadiness } from "@/lib/marketplace-readiness";
 
 type SearchParams = { q?: string; page?: string };
 
@@ -21,31 +27,6 @@ function qs(params: Record<string, string | undefined>) {
   }
   const value = p.toString();
   return value ? `?${value}` : "";
-}
-
-function readiness(companion: {
-  description: string;
-  tags: string[];
-  profile: unknown;
-  assets: { id: string }[];
-}) {
-  const profile =
-    companion.profile && typeof companion.profile === "object"
-      ? (companion.profile as Record<string, unknown>)
-      : {};
-
-  let score = 0;
-  if (companion.description.trim().length >= 80) score += 1;
-  if (companion.tags.length >= 3) score += 1;
-  if (typeof profile.personality === "string" && profile.personality.trim().length >= 80) {
-    score += 1;
-  }
-  if (typeof profile.scene === "string" && profile.scene.trim().length >= 20) {
-    score += 1;
-  }
-  if (companion.assets.length > 0) score += 1;
-
-  return score;
 }
 
 export default async function MarketplacePage({
@@ -59,62 +40,80 @@ export default async function MarketplacePage({
   const pageSize = 12;
 
   const where = {
-    visibility: Visibility.PUBLIC,
+    listingType: MarketplaceListingType.COMPANION,
+    status: MarketplaceListingStatus.PUBLISHED,
     contentRating: ContentRating.SAFE,
+    companion: {
+      is: {
+        visibility: Visibility.PUBLIC,
+        contentRating: ContentRating.SAFE,
+      },
+    },
     ...(q
       ? {
           OR: [
-            { name: { contains: q, mode: "insensitive" as const } },
+            { title: { contains: q, mode: "insensitive" as const } },
+            { subtitle: { contains: q, mode: "insensitive" as const } },
             { description: { contains: q, mode: "insensitive" as const } },
-            { slug: { contains: q, mode: "insensitive" as const } },
             { tags: { has: q } },
+            { companion: { is: { slug: { contains: q, mode: "insensitive" as const } } } },
           ],
         }
       : {}),
   };
 
-  const [total, companions] = await Promise.all([
-    prisma.companion.count({ where }),
-    prisma.companion.findMany({
+  const [total, listings] = await Promise.all([
+    prisma.marketplaceListing.count({ where }),
+    prisma.marketplaceListing.findMany({
       where,
       orderBy: [
-        { saves: "desc" },
-        { likes: "desc" },
-        { views: "desc" },
+        { publishedAt: "desc" },
         { updatedAt: "desc" },
       ],
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: {
         id: true,
-        slug: true,
-        name: true,
+        title: true,
+        subtitle: true,
         description: true,
         tags: true,
-        profile: true,
-        ownerId: true,
-        views: true,
-        saves: true,
-        likes: true,
-        assets: {
-          where: {
-            type: "IMAGE",
-            contentRating: ContentRating.SAFE,
-          },
-          orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
-          take: 1,
-          select: { id: true, publicUrl: true },
-        },
-        User: {
+        priceCoins: true,
+        priceUsdCents: true,
+        creatorId: true,
+        creator: {
           select: {
             displayName: true,
             email: true,
           },
         },
-        _count: {
+        companion: {
           select: {
-            conversations: true,
-            assets: true,
+            id: true,
+            slug: true,
+            name: true,
+            description: true,
+            tags: true,
+            profile: true,
+            ownerId: true,
+            views: true,
+            saves: true,
+            likes: true,
+            assets: {
+              where: {
+                type: "IMAGE",
+                contentRating: ContentRating.SAFE,
+              },
+              orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+              take: 1,
+              select: { id: true, publicUrl: true },
+            },
+            _count: {
+              select: {
+                conversations: true,
+                assets: true,
+              },
+            },
           },
         },
       },
@@ -207,20 +206,31 @@ export default async function MarketplacePage({
             </form>
           </section>
 
-          {companions.length > 0 ? (
+          {listings.length > 0 ? (
             <section className="grid gap-4 md:grid-cols-2">
-              {companions.map((companion) => {
+              {listings.map((listing) => {
+                const companion = listing.companion;
+                if (!companion) return null;
                 const asset = companion.assets[0];
                 const thumbnailUrl = asset ? asset.publicUrl ?? `/media/${asset.id}` : null;
-                const score = readiness(companion);
+                const readiness = getMarketplaceReadiness(companion);
                 const creatorName =
-                  companion.User?.displayName ||
-                  companion.User?.email?.split("@")[0] ||
-                  (companion.ownerId ? "Creator" : "Noema");
+                  listing.creator?.displayName ||
+                  listing.creator?.email?.split("@")[0] ||
+                  (listing.creatorId || companion.ownerId ? "Creator" : "Noema");
+                const listingDescription =
+                  listing.subtitle || listing.description || companion.description;
+                const listingTags = listing.tags.length > 0 ? listing.tags : companion.tags;
+                const priceLabel =
+                  listing.priceUsdCents > 0
+                    ? `$${(listing.priceUsdCents / 100).toFixed(2)}`
+                    : listing.priceCoins > 0
+                      ? `${listing.priceCoins.toLocaleString()} coins`
+                      : "Free";
 
                 return (
                   <article
-                    key={companion.id}
+                    key={listing.id}
                     className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
                   >
                     <a href={`/companions/${companion.slug}`} className="group block">
@@ -243,9 +253,9 @@ export default async function MarketplacePage({
                           SAFE
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <div className="text-lg font-semibold text-white">{companion.name}</div>
+                          <div className="text-lg font-semibold text-white">{listing.title}</div>
                           <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-300">
-                            {companion.description}
+                            {listingDescription}
                           </div>
                         </div>
                       </div>
@@ -256,12 +266,12 @@ export default async function MarketplacePage({
                         <span>by {creatorName}</span>
                         <span className="inline-flex items-center gap-1 text-emerald-300">
                           <Shield className="h-3.5 w-3.5" />
-                          {score}/5 ready
+                          {readiness.score}/5 ready
                         </span>
                       </div>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {companion.tags.slice(0, 5).map((tag) => (
+                        {listingTags.slice(0, 5).map((tag) => (
                           <span
                             key={tag}
                             className="rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400"
@@ -275,7 +285,7 @@ export default async function MarketplacePage({
                         <span>{companion.views.toLocaleString()} views</span>
                         <span>{companion.saves.toLocaleString()} saves</span>
                         <span>{companion.likes.toLocaleString()} likes</span>
-                        <span>{companion._count.conversations} chats</span>
+                        <span>{priceLabel}</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">

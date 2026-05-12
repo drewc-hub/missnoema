@@ -41,6 +41,17 @@ export default async function EditSafeCompanionPage({
         take: 1,
         select: { id: true },
       },
+      marketplaceListings: {
+        take: 1,
+        select: {
+          id: true,
+          status: true,
+          priceCoins: true,
+          priceUsdCents: true,
+          updatedAt: true,
+          publishedAt: true,
+        },
+      },
     },
   });
 
@@ -98,6 +109,7 @@ export default async function EditSafeCompanionPage({
         <aside className="space-y-4 lg:col-span-5">
           <MarketplaceListingPanel
             companion={{
+              id: companion.id,
               slug: companion.slug,
               description: companion.description,
               tags: companion.tags,
@@ -106,6 +118,7 @@ export default async function EditSafeCompanionPage({
               visibility: companion.visibility,
               contentRating: companion.contentRating,
             }}
+            listing={companion.marketplaceListings[0] ?? null}
           />
 
           <Card>

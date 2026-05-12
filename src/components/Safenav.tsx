@@ -33,6 +33,9 @@ export function SafeTopNav() {
                         <NavLink href="/discover" label="Discover" />
                     </li>
                     <li>
+                        <NavLink href="/worlds" label="Worlds" />
+                    </li>
+                    <li>
                         <NavLink href="/marketplace" label="Market" />
                     </li>
                     <li>

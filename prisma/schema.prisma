@@ -68,6 +68,7 @@ model Companion {
   CompanionRelationship_CompanionRelationship_toCompanionIdToCompanion   CompanionRelationship[] @relation("CompanionRelationship_toCompanionIdToCompanion")
   conversations                                                          Conversation[]
   GenerationJob                                                          GenerationJob[]
+  marketplaceListings                                                    MarketplaceListing[]
 
   @@index([createdAt])
   @@index([featuredRank])
@@ -123,6 +124,88 @@ model DiscoveryEvent {
   @@index([userId, createdAt])
   @@index([companionId, action, createdAt])
   @@index([action, createdAt])
+  @@schema("public")
+}
+
+model MarketplaceListing {
+  id            String                   @id @default(cuid())
+  listingType   MarketplaceListingType   @default(COMPANION)
+  status        MarketplaceListingStatus @default(DRAFT)
+  creatorId     String?
+  companionId   String?                  @unique
+  title         String
+  subtitle      String?
+  description   String?
+  tags          String[]
+  contentRating ContentRating            @default(SAFE)
+  priceCoins    Int                      @default(0)
+  priceUsdCents Int                      @default(0)
+  coverAssetId  String?
+  publishedAt   DateTime?                @db.Timestamptz(6)
+  createdAt     DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+  creator       User?                    @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  companion     Companion?               @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status, listingType, contentRating, publishedAt])
+  @@index([creatorId, status])
+  @@index([contentRating, status, createdAt])
+  @@schema("public")
+}
+
+model World {
+  id             String         @id @default(cuid())
+  ownerId        String
+  name           String
+  slug           String         @unique
+  summary        String
+  setting        String?
+  contentRating  ContentRating  @default(SAFE)
+  isPublic       Boolean        @default(true)
+  maxMembers     Int            @default(8)
+  lastActivityAt DateTime       @default(now()) @db.Timestamptz(6)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  owner          User           @relation("WorldOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  members        WorldMember[]
+  messages       WorldMessage[]
+
+  @@index([ownerId, createdAt])
+  @@index([isPublic, lastActivityAt])
+  @@index([contentRating, isPublic, createdAt])
+  @@schema("public")
+}
+
+model WorldMember {
+  id          String    @id @default(cuid())
+  worldId     String
+  userId      String
+  role        WorldRole @default(PLAYER)
+  displayName String?
+  joinedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  lastSeenAt  DateTime? @db.Timestamptz(6)
+  world       World     @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([worldId, userId])
+  @@index([userId, joinedAt])
+  @@index([worldId, role])
+  @@schema("public")
+}
+
+model WorldMessage {
+  id           String           @id @default(cuid())
+  worldId       String
+  authorUserId  String?
+  role          WorldMessageRole @default(USER)
+  content       String
+  metadata      Json            @default("{}")
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  world         World           @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  authorUser    User?           @relation("WorldMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([worldId, createdAt])
+  @@index([authorUserId, createdAt])
   @@schema("public")
 }
 
@@ -318,6 +401,10 @@ model User {
   Content              Content[]
   conversations        Conversation[]
   generationJobs       GenerationJob[]
+  marketplaceListings  MarketplaceListing[]
+  worldsOwned          World[]            @relation("WorldOwner")
+  worldMemberships     WorldMember[]
+  worldMessages        WorldMessage[]     @relation("WorldMessageAuthor")
   reports              Report[]
   facts                UserFact[]
 
@@ -1027,6 +1114,40 @@ enum DiscoveryAction {
   PASS
   SAVE
   START
+
+  @@schema("public")
+}
+
+enum WorldRole {
+  HOST
+  PLAYER
+
+  @@schema("public")
+}
+
+enum WorldMessageRole {
+  USER
+  NARRATOR
+  SYSTEM
+
+  @@schema("public")
+}
+
+enum MarketplaceListingType {
+  COMPANION
+  STORY
+  WORLD
+  ADVENTURE
+
+  @@schema("public")
+}
+
+enum MarketplaceListingStatus {
+  DRAFT
+  SUBMITTED
+  PUBLISHED
+  HIDDEN
+  REJECTED
 
   @@schema("public")
 }

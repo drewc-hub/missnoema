@@ -79,6 +79,11 @@ export function Footer({
                                 </a>
                             </li>
                             <li>
+                                <a className="hover:text-white" href="/worlds">
+                                    Worlds
+                                </a>
+                            </li>
+                            <li>
                                 <a className="hover:text-white" href="/marketplace">
                                     Marketplace
                                 </a>
