@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Logout error:", error);
     const origin = getOrigin(req);
-    const res = NextResponse.redirect(new URL("/", origin));
-    return applySupabaseCookies(res, cookiesToSet);
+    return NextResponse.redirect(new URL("/", origin));
   }
 }

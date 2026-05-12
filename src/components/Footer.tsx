@@ -69,7 +69,17 @@ export function Footer({
                         </div>
                         <ul className="mt-3 space-y-2 text-zinc-400">
                             <li>
-                                <a className="hover:text-white" href="/adult/companions">
+                                <a className="hover:text-white" href="/tavern">
+                                    Tavern
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/discover">
+                                    Discover
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/companions">
                                     Library
                                 </a>
                             </li>
@@ -79,13 +89,18 @@ export function Footer({
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/me">
-                                    Profile
+                                <a className="hover:text-white" href="/creator">
+                                    Creator studio
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/admin">
-                                    Admin
+                                <a className="hover:text-white" href="/companions/media">
+                                    Media
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/about">
+                                    About Us
                                 </a>
                             </li>
                         </ul>

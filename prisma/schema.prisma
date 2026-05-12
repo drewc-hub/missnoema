@@ -111,6 +111,21 @@ model CompanionReaction {
   @@schema("public")
 }
 
+model DiscoveryEvent {
+  id          String          @id @default(cuid())
+  userId      String
+  companionId String
+  action      DiscoveryAction
+  source      String          @default("discover")
+  metadata    Json            @default("{}")
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@index([companionId, action, createdAt])
+  @@index([action, createdAt])
+  @@schema("public")
+}
+
 model SavedMessage {
   id            String   @id @default(cuid())
   userId        String
@@ -903,12 +918,13 @@ model companionMemories {
   kind            String                 @default("fact")
   content         String
   importance      Int                    @default(3)
-  embedding       Unsupported("vector(1536)")?
+  embedding       Unsupported("vector")?
   metadata        Json?                  @default("{}")
   created_at      DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at      DateTime?              @default(now()) @db.Timestamptz(6)
 
   @@index([user_id, companion_id], map: "companion_memories_user_companion_idx")
+  @@index([embedding], map: "companion_memories_embedding_idx")
   @@schema("public")
 }
 
@@ -943,20 +959,20 @@ model rag_documents {
 }
 
 model CompanionMemory {
-  id            String      @id @default(cuid())
-  userId        String
-  companionId   String
-  scope         MemoryScope
-  type          MemoryType
-  content       String      @db.Text
-  importance    Int         @default(50)
-  confidence    Float       @default(1.0)
-  bucket        ContentBucket
-  tags          String[]
-  embeddingId   String?
-  expiresAt     DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id          String        @id @default(cuid())
+  userId      String
+  companionId String
+  scope       MemoryScope
+  type        MemoryType
+  content     String
+  importance  Int           @default(50)
+  confidence  Float         @default(1.0)
+  bucket      ContentBucket
+  tags        String[]
+  embeddingId String?
+  expiresAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([userId, companionId, scope])
   @@index([bucket])
@@ -965,20 +981,18 @@ model CompanionMemory {
 }
 
 model RelationshipState {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   companionId     String
-
-  affection        Int     @default(0)
-  trust            Int     @default(0)
-  tension          Int     @default(0)
-  jealousy         Int     @default(0)
-  intimacy         Int     @default(0)
-  familiarity      Int     @default(0)
-
-  mood             String  @default("neutral")
-  lastInteraction  DateTime?
-  updatedAt        DateTime @updatedAt
+  affection       Int       @default(0)
+  trust           Int       @default(0)
+  tension         Int       @default(0)
+  jealousy        Int       @default(0)
+  intimacy        Int       @default(0)
+  familiarity     Int       @default(0)
+  mood            String    @default("neutral")
+  lastInteraction DateTime?
+  updatedAt       DateTime  @updatedAt
 
   @@unique([userId, companionId])
   @@schema("public")
@@ -1004,6 +1018,15 @@ enum Visibility {
   PUBLIC
   UNLISTED
   PRIVATE
+
+  @@schema("public")
+}
+
+enum DiscoveryAction {
+  IMPRESSION
+  PASS
+  SAVE
+  START
 
   @@schema("public")
 }

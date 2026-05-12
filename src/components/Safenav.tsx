@@ -27,28 +27,28 @@ export function SafeTopNav() {
 
                 <ul className="hidden items-center gap-1 lg:flex">
                     <li>
+                        <NavLink href="/tavern" label="Tavern" />
+                    </li>
+                    <li>
+                        <NavLink href="/discover" label="Discover" />
+                    </li>
+                    <li>
                         <NavLink href="/companions" label="Companions" />
                     </li>
                     <li>
                         <NavLink href="/companions/new" label="Create" />
                     </li>
                     <li>
-                        <NavLink href="/adult" label="Adult" />
+                        <NavLink href="/creator" label="Creator" />
                     </li>
                     <li>
-                        <NavLink href="/companions/media" label="Media" />
+                        <NavLink href="/adult" label="Adult" />
                     </li>
                     <li>
                         <NavLink href="/chat" label="Chat" />
                     </li>
                     <li>
                         <NavLink href="/account/billing" label="Subscriptions" />
-                    </li>
-                    <li>
-                        <NavLink href="/about" label="About Us" />
-                    </li>
-                    <li>
-                        <NavLink href="/admin" label="Admin" />
                     </li>
                 </ul>
 

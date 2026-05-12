@@ -70,6 +70,16 @@ export function AdultFooter({
                         </div>
                         <ul className="mt-3 space-y-2 text-zinc-400">
                             <li>
+                                <a className="hover:text-white" href="/tavern">
+                                    Tavern
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/discover">
+                                    Discover
+                                </a>
+                            </li>
+                            <li>
                                 <a className="hover:text-white" href="/adult/companions">
                                     Library
                                 </a>
@@ -80,13 +90,18 @@ export function AdultFooter({
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/me">
-                                    Profile
+                                <a className="hover:text-white" href="/creator">
+                                    Creator studio
                                 </a>
                             </li>
                             <li>
-                                <a className="hover:text-white" href="/admin">
-                                    Admin
+                                <a className="hover:text-white" href="/adult/companions/media">
+                                    Media
+                                </a>
+                            </li>
+                            <li>
+                                <a className="hover:text-white" href="/about">
+                                    About Us
                                 </a>
                             </li>
                         </ul>
