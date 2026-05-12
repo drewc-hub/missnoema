@@ -28,19 +28,19 @@ export function AdultTopNav() {
 
                 <ul className="flex items-center space-x-1">
                     <li>
-                        <NavLink href="/tavern" label="Tavern" />
+                        <NavLink href="/(safe)/tavern" label="Tavern" />
                     </li>
                     <li>
-                        <NavLink href="/discover" label="Discover" />
+                        <NavLink href="/(safe)/discover" label="Discover" />
                     </li>
                     <li>
-                        <NavLink href="/marketplace" label="Market" />
+                        <NavLink href="/(safe)/marketplace" label="Market" />
                     </li>
                     <li>
-                        <NavLink href="/worlds" label="Worlds" />
+                        <NavLink href="/(safe)/worlds" label="Worlds" />
                     </li>
                     <li>
-                        <NavLink href="/creator" label="Creator" />
+                        <NavLink href="/adult/companions/new" label="Creator" />
                     </li>
                     <li>
                         <NavLink href="/adult" label="Adult" />
@@ -53,17 +53,17 @@ export function AdultTopNav() {
                     </li>
                 </ul>
 
-                 <div className="ml-auto flex items-center gap-2">
-                     <UserBadge />
-                     <form action="/api/auth/logout" method="POST" className="hidden lg:block">
-                         <button
-                             type="submit"
-                             className="inline-flex items-center rounded-2xl border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
-                         >
-                             Logout
-                         </button>
-                     </form>
-                 </div>
+                <div className="ml-auto flex items-center gap-2">
+                    <UserBadge />
+                    <form action="/api/auth/logout" method="POST" className="hidden lg:block">
+                        <button
+                            type="submit"
+                            className="inline-flex items-center rounded-2xl border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
+                        >
+                            Logout
+                        </button>
+                    </form>
+                </div>
             </div>
         </header>
     );
