@@ -22,7 +22,9 @@ export function WorldInviteManager({
   const [invites, setInvites] = useState<InviteItem[]>(initialInvites);
   const [maxUses, setMaxUses] = useState(25);
   const [expiresHours, setExpiresHours] = useState(72);
+  const [filterMode, setFilterMode] = useState<"active" | "all">("active");
   const [creating, setCreating] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [linkCopiedCode, setLinkCopiedCode] = useState<string | null>(null);
@@ -67,6 +69,33 @@ export function WorldInviteManager({
       1500,
     );
   }
+
+  async function revokeInvite(inviteId: string) {
+    if (revokingId) return;
+    setRevokingId(inviteId);
+    setError(null);
+
+    const res = await fetch(`/api/worlds/${worldId}/invites/${inviteId}/revoke`, {
+      method: "PATCH",
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setRevokingId(null);
+      setError(data?.error || "Could not disable invite.");
+      return;
+    }
+
+    setInvites((prev) =>
+      prev.map((invite) => (invite.id === inviteId ? { ...invite, revokedAt: data.invite.revokedAt } : invite)),
+    );
+    setRevokingId(null);
+  }
+
+  const visibleInvites =
+    filterMode === "all"
+      ? invites
+      : invites.filter((invite) => !invite.revokedAt);
 
   return (
     <section className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
@@ -116,9 +145,34 @@ export function WorldInviteManager({
 
       {error ? <p className="text-xs text-rose-300">{error}</p> : null}
 
+      <div className="inline-flex rounded-lg border border-zinc-800 bg-black p-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setFilterMode("active")}
+          className={`rounded-md px-2.5 py-1 font-semibold transition ${
+            filterMode === "active"
+              ? "bg-fuchsia-500 text-white"
+              : "text-zinc-300 hover:text-white"
+          }`}
+        >
+          Active
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterMode("all")}
+          className={`rounded-md px-2.5 py-1 font-semibold transition ${
+            filterMode === "all"
+              ? "bg-fuchsia-500 text-white"
+              : "text-zinc-300 hover:text-white"
+          }`}
+        >
+          All
+        </button>
+      </div>
+
       <div className="space-y-2">
-        {invites.length > 0 ? (
-          invites.map((invite) => (
+        {visibleInvites.length > 0 ? (
+          visibleInvites.map((invite) => (
             <div
               key={invite.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-black px-3 py-2 text-xs"
@@ -129,11 +183,17 @@ export function WorldInviteManager({
                   uses {invite.usedCount}/{invite.maxUses} · expires{" "}
                   {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "never"}
                 </span>
+                {invite.revokedAt ? (
+                  <span className="text-rose-300">
+                    disabled {new Date(invite.revokedAt).toLocaleString()}
+                  </span>
+                ) : null}
               </div>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => copyCode(invite.code)}
+                  disabled={!!invite.revokedAt}
                   className="inline-flex h-8 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
                 >
                   {copiedCode === invite.code ? "Copied" : "Copy code"}
@@ -141,16 +201,25 @@ export function WorldInviteManager({
                 <button
                   type="button"
                   onClick={() => copyDirectLink(invite.code)}
+                  disabled={!!invite.revokedAt}
                   className="inline-flex h-8 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
                 >
                   {linkCopiedCode === invite.code ? "Link copied" : "Copy link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => revokeInvite(invite.id)}
+                  disabled={!!invite.revokedAt || revokingId === invite.id}
+                  className="inline-flex h-8 items-center rounded-lg border border-rose-800 bg-rose-950/30 px-3 text-xs font-semibold text-rose-200 transition hover:border-rose-600 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {invite.revokedAt ? "Disabled" : revokingId === invite.id ? "Disabling..." : "Disable"}
                 </button>
               </div>
             </div>
           ))
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-500">
-            No invites yet.
+            {filterMode === "active" ? "No active invites." : "No invites yet."}
           </div>
         )}
       </div>
