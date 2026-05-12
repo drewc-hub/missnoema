@@ -10,6 +10,12 @@ import {
   GENERATION_COOLDOWN_SECONDS,
   DAILY_GENERATION_LIMITS,
 } from "@/lib/economy";
+import {
+  PremiumFeature,
+  consumeImageCreditIfAvailable,
+  getUserEntitlementsMap,
+  hasPremiumFeature,
+} from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -151,7 +157,7 @@ export async function POST(req: Request) {
   // ── Companion lookup ──────────────────────────────────────────────────────
   const companion = await prisma.companion.findFirst({
     where: { id: companionId },
-    select: { id: true, contentRating: true },
+    select: { id: true, contentRating: true, profile: true },
   });
   if (!companion) {
     return NextResponse.json({ error: "Companion not found." }, { status: 404 });
@@ -166,6 +172,32 @@ export async function POST(req: Request) {
   if (effectiveRating === ContentRating.ADULT && !isAdultAllowed(user)) {
     return NextResponse.json(
       { error: "Age verification required." },
+      { status: 403 },
+    );
+  }
+
+  const entitlements = await getUserEntitlementsMap(user.id);
+  if (
+    effectiveRating === ContentRating.ADULT &&
+    !hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS)
+  ) {
+    return NextResponse.json(
+      { error: "NSFW unlock required." },
+      { status: 403 },
+    );
+  }
+
+  const companionMeta =
+    companion.profile && typeof companion.profile === "object"
+      ? (companion.profile as Record<string, unknown>)
+      : null;
+  const premiumOnly = companionMeta?.premiumOnly === true;
+  if (
+    premiumOnly &&
+    !hasPremiumFeature(entitlements, PremiumFeature.PREMIUM_COMPANIONS)
+  ) {
+    return NextResponse.json(
+      { error: "Premium companions pass required." },
       { status: 403 },
     );
   }
@@ -204,12 +236,18 @@ export async function POST(req: Request) {
     type === GenerationType.VIDEO ? "video" : "image",
   );
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { coinBalance: true },
-  });
+  const spentImageCredit =
+    type === GenerationType.IMAGE
+      ? await consumeImageCreditIfAvailable(user.id)
+      : false;
+  const dbUser = spentImageCredit
+    ? null
+    : await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { coinBalance: true },
+      });
 
-  if (!dbUser || dbUser.coinBalance < cost) {
+  if (!spentImageCredit && (!dbUser || dbUser.coinBalance < cost)) {
     return NextResponse.json({ error: "Not enough coins.", coinShortfall: cost - (dbUser?.coinBalance ?? 0) }, { status: 402 });
   }
 
@@ -217,20 +255,22 @@ export async function POST(req: Request) {
   let jobId: string;
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const deducted = await tx.user.updateMany({
-        where: { id: user.id, coinBalance: { gte: cost } },
-        data: { coinBalance: { decrement: cost } },
-      });
-      if (deducted.count === 0) throw new Error("insufficient_coins");
+      if (!spentImageCredit) {
+        const deducted = await tx.user.updateMany({
+          where: { id: user.id, coinBalance: { gte: cost } },
+          data: { coinBalance: { decrement: cost } },
+        });
+        if (deducted.count === 0) throw new Error("insufficient_coins");
 
-      await tx.coinTransaction.create({
-        data: {
-          userId: user.id,
-          amount: -cost,
-          kind: "spend",
-          description: `${type === GenerationType.VIDEO ? "Video" : "Image"} generation`,
-        },
-      });
+        await tx.coinTransaction.create({
+          data: {
+            userId: user.id,
+            amount: -cost,
+            kind: "spend",
+            description: `${type === GenerationType.VIDEO ? "Video" : "Image"} generation`,
+          },
+        });
+      }
 
       return tx.generationJob.create({
         data: {
@@ -256,7 +296,8 @@ export async function POST(req: Request) {
       status: result.status,
       type: result.type,
       contentRating: result.contentRating,
-      coinCost: cost,
+      coinCost: spentImageCredit ? 0 : cost,
+      imageCreditUsed: spentImageCredit,
       dailyCap,
       dailyUsed: newDailyUsed,
       dailyRemaining: dailyCap === null ? null : Math.max(0, dailyCap - newDailyUsed),

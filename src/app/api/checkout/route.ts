@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { createPlanCheckout, type PlanKey } from "@/lib/payments";
 
-type PlanKey = "premium" | "premium_plus";
-
-const PLAN_TO_PRICE_ID: Record<PlanKey, string | undefined> = {
-  premium: process.env.STRIPE_PRICE_ID_PREMIUM,
-  premium_plus: process.env.STRIPE_PRICE_ID_PLUS,
+const VALID_PLANS: Record<PlanKey, true> = {
+  premium: true,
+  premium_plus: true,
 };
 
 export async function POST(req: NextRequest) {
@@ -15,18 +13,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     const plan = body?.plan as PlanKey | undefined;
 
-    if (!plan || !(plan in PLAN_TO_PRICE_ID)) {
+    if (!plan || !(plan in VALID_PLANS)) {
       return NextResponse.json(
         { error: "Invalid plan selected" },
         { status: 400 },
-      );
-    }
-
-    const priceId = PLAN_TO_PRICE_ID[plan];
-    if (!priceId) {
-      return NextResponse.json(
-        { error: `Missing Stripe price for plan: ${plan}` },
-        { status: 500 },
       );
     }
 
@@ -46,9 +36,8 @@ export async function POST(req: NextRequest) {
       select: {
         id: true,
         email: true,
+        supabaseUserId: true,
         stripeCustomerId: true,
-        subscriptionStatus: true,
-        subscriptionPriceId: true,
       },
     });
 
@@ -58,61 +47,17 @@ export async function POST(req: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    let stripeCustomerId = user.stripeCustomerId;
-
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: user.email ?? sbUser.email ?? undefined,
-        metadata: {
-          userId: user.id,
-          supabaseUserId: sbUser.id,
-        },
-      });
-
-      stripeCustomerId = customer.id;
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          stripeCustomerId,
-        },
-      });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: stripeCustomerId,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: `${appUrl}/account/billing?checkout=success`,
-      cancel_url: `${appUrl}/account/billing?checkout=cancelled`,
-      allow_promotion_codes: true,
-      metadata: {
-        userId: user.id,
-        supabaseUserId: sbUser.id,
-        plan,
+    const checkout = await createPlanCheckout({
+      user: {
+        id: user.id,
+        email: user.email ?? sbUser.email ?? null,
+        supabaseUserId: user.supabaseUserId ?? sbUser.id,
+        stripeCustomerId: user.stripeCustomerId,
       },
-      subscription_data: {
-        metadata: {
-          userId: user.id,
-          supabaseUserId: sbUser.id,
-          plan,
-        },
-      },
+      appUrl,
+      plan,
     });
-
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Stripe did not return a checkout URL" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkout.url, provider: checkout.provider });
   } catch (error) {
     console.error("Checkout route error:", error);
     return NextResponse.json(

@@ -6,6 +6,7 @@ import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { ContentRating, Visibility } from "@prisma/client";
 import { CompanionProfileSchema } from "@/lib/companion-profile";
+import { PremiumFeature, hasUserFeature } from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -71,6 +72,44 @@ export async function PATCH(
       { error: "Age verification required." },
       { status: 403 },
     );
+  }
+
+  if (data.visibility === "PRIVATE") {
+    const hasPrivateCompanions = await hasUserFeature(user.id, PremiumFeature.PRIVATE_COMPANIONS);
+    if (!hasPrivateCompanions) {
+      return NextResponse.json(
+        { error: "Private companions require a premium unlock." },
+        { status: 403 },
+      );
+    }
+  }
+
+  if (contentRating === ContentRating.ADULT) {
+    const hasNsfwUnlock = await hasUserFeature(user.id, PremiumFeature.NSFW_UNLOCKS);
+    if (!hasNsfwUnlock) {
+      return NextResponse.json(
+        { error: "NSFW unlock required for adult companions." },
+        { status: 403 },
+      );
+    }
+  }
+
+  const hasPremiumVoices = await hasUserFeature(user.id, PremiumFeature.PREMIUM_VOICES);
+  if (!hasPremiumVoices && profile.voice && profile.voice !== "") {
+    return NextResponse.json(
+      { error: "Premium voices unlock required." },
+      { status: 403 },
+    );
+  }
+
+  if (profile.premiumOnly) {
+    const hasMarketplaceAccess = await hasUserFeature(user.id, PremiumFeature.CREATOR_MARKETPLACE);
+    if (!hasMarketplaceAccess) {
+      return NextResponse.json(
+        { error: "Creator marketplace unlock required for premium-only companions." },
+        { status: 403 },
+      );
+    }
   }
 
   const updated = await prisma.companion.update({

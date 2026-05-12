@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ContentRating, Visibility } from "@prisma/client";
 import { parseCsv } from "@/lib/validate";
 import { isAdultAllowed } from "@/lib/ratings";
+import { PremiumFeature, hasUserFeature } from "@/lib/premium";
 
 type AuthedUser = {
     id: string;
@@ -70,6 +71,9 @@ export async function listCompanions({
     const skip = (safePage - 1) * safePageSize;
 
     const allowedRatings: ContentRating[] = [ContentRating.SAFE];
+    const hasPremiumCompanions = user
+        ? await hasUserFeature(user.id, PremiumFeature.PREMIUM_COMPANIONS)
+        : false;
 
     if (includeAdult) {
         if (!isAdultAllowed(user)) {
@@ -105,6 +109,9 @@ export async function listCompanions({
                 : hasPhoto === false
                 ? { assets: { none: { type: "IMAGE" as const, contentRating: { in: allowedRatings } } } }
                 : {},
+            hasPremiumCompanions
+                ? {}
+                : { NOT: { profile: { path: ["premiumOnly"], equals: true } } },
         ],
     };
 

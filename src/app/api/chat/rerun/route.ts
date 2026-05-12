@@ -5,6 +5,7 @@ import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
+import { PremiumFeature, getUserEntitlementsMap, hasPremiumFeature } from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,28 @@ export async function POST(req: Request) {
 
   if (conversation.companion.contentRating === ContentRating.ADULT && !isAdultAllowed(user)) {
     return NextResponse.json({ error: "Age verification required." }, { status: 403 });
+  }
+
+  const entitlements = await getUserEntitlementsMap(user.id);
+  if (
+    conversation.companion.contentRating === ContentRating.ADULT &&
+    !hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS)
+  ) {
+    return NextResponse.json({ error: "NSFW unlock required." }, { status: 403 });
+  }
+
+  const premiumOnly =
+    conversation.companion.profile &&
+    typeof conversation.companion.profile === "object" &&
+    (conversation.companion.profile as Record<string, unknown>).premiumOnly === true;
+  if (
+    premiumOnly &&
+    !hasPremiumFeature(entitlements, PremiumFeature.PREMIUM_COMPANIONS)
+  ) {
+    return NextResponse.json(
+      { error: "Premium companions pass required." },
+      { status: 403 },
+    );
   }
 
   // Delete the last assistant message so we can replace it

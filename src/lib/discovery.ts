@@ -3,6 +3,7 @@ import "server-only";
 import { ContentRating, DiscoveryAction, Visibility } from "@prisma/client";
 import type { AuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PremiumFeature, hasUserFeature } from "@/lib/premium";
 
 export type DiscoveryDeckItem = {
   id: string;
@@ -24,6 +25,9 @@ export async function getDiscoveryDeck({
   excludeIds?: string[];
 }) {
   const safeLimit = Math.min(30, Math.max(1, Number(limit) || 20));
+  const hasPremiumCompanions = user
+    ? await hasUserFeature(user.id, PremiumFeature.PREMIUM_COMPANIONS)
+    : false;
   const uniqueExcludeIds = Array.from(new Set(excludeIds.filter(Boolean)));
   const blockedSince = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
 
@@ -49,6 +53,9 @@ export async function getDiscoveryDeck({
     where: {
       visibility: Visibility.PUBLIC,
       contentRating: ContentRating.SAFE,
+      ...(hasPremiumCompanions
+        ? {}
+        : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
       id: blockedIds.size > 0 ? { notIn: Array.from(blockedIds) } : undefined,
       assets: {
         some: {

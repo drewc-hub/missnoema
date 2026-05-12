@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { coerceRating, requireAdultAllowed } from "@/lib/ratings";
 import { GenerationType, ContentRating } from "@prisma/client";
+import {
+    PremiumFeature,
+    consumeImageCreditIfAvailable,
+    getUserEntitlementsMap,
+    hasPremiumFeature,
+} from "@/lib/premium";
 
 import { getMediaCost, getMediaIntensity } from "@/lib/mediaPrompt";
 
@@ -31,7 +37,7 @@ export async function POST(req: Request) {
 
     const companion = await prisma.companion.findUnique({
         where: { id: parsed.data.companionId },
-        select: { id: true, slug: true, contentRating: true },
+        select: { id: true, slug: true, contentRating: true, profile: true },
     });
     if (!companion)
         return NextResponse.json({ error: "Companion not found" }, { status: 404 });
@@ -52,6 +58,30 @@ export async function POST(req: Request) {
         }
     }
 
+    const entitlements = await getUserEntitlementsMap(user.id);
+    if (
+        finalRating === ContentRating.ADULT &&
+        !hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS)
+    ) {
+        return NextResponse.json(
+            { error: "NSFW unlock required." },
+            { status: 403 },
+        );
+    }
+    const premiumOnly =
+        companion.profile &&
+        typeof companion.profile === "object" &&
+        (companion.profile as Record<string, unknown>).premiumOnly === true;
+    if (
+        premiumOnly &&
+        !hasPremiumFeature(entitlements, PremiumFeature.PREMIUM_COMPANIONS)
+    ) {
+        return NextResponse.json(
+            { error: "Premium companions pass required." },
+            { status: 403 },
+        );
+    }
+
     const conversation = await prisma.conversation.findUnique({
         where: {
             userId_companionId: {
@@ -70,12 +100,15 @@ export async function POST(req: Request) {
 
     const cost = getMediaCost(intensity, "image");
 
-    const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { coinBalance: true },
-    });
+    const spentImageCredit = await consumeImageCreditIfAvailable(user.id);
+    const dbUser = spentImageCredit
+        ? null
+        : await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { coinBalance: true },
+          });
 
-    if (!dbUser || dbUser.coinBalance < cost) {
+    if (!spentImageCredit && (!dbUser || dbUser.coinBalance < cost)) {
         return NextResponse.json(
             { error: "Not enough coins" },
             { status: 402 },
@@ -85,20 +118,22 @@ export async function POST(req: Request) {
     // Atomically deduct coins and create the job to prevent double-spend races.
     try {
         await prisma.$transaction(async (tx) => {
-            const deducted = await tx.user.updateMany({
-                where: { id: user.id, coinBalance: { gte: cost } },
-                data: { coinBalance: { decrement: cost } },
-            });
-            if (deducted.count === 0) throw new Error("insufficient_coins");
+            if (!spentImageCredit) {
+                const deducted = await tx.user.updateMany({
+                    where: { id: user.id, coinBalance: { gte: cost } },
+                    data: { coinBalance: { decrement: cost } },
+                });
+                if (deducted.count === 0) throw new Error("insufficient_coins");
 
-            await tx.coinTransaction.create({
-                data: {
-                    userId: user.id,
-                    amount: -cost,
-                    kind: "spend",
-                    description: `Image generation job`,
-                },
-            });
+                await tx.coinTransaction.create({
+                    data: {
+                        userId: user.id,
+                        amount: -cost,
+                        kind: "spend",
+                        description: `Image generation job`,
+                    },
+                });
+            }
 
             await tx.generationJob.create({
                 data: {

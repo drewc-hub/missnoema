@@ -4,6 +4,7 @@ import { ContentRating, DiscoveryAction, Visibility } from "@prisma/client";
 import type { AuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { prisma } from "@/lib/prisma";
+import { PremiumFeature, hasUserFeature } from "@/lib/premium";
 
 type MatchmakingProfile = {
   seekingTags?: string[];
@@ -131,6 +132,9 @@ export async function getMatchmakingDeck(args: {
   const allowedRatings = adultAllowed
     ? [ContentRating.SAFE, ContentRating.ADULT]
     : [ContentRating.SAFE];
+  const hasPremiumCompanions = user
+    ? await hasUserFeature(user.id, PremiumFeature.PREMIUM_COMPANIONS)
+    : false;
 
   const uniqueExcludeIds = Array.from(new Set(excludeIds.filter(Boolean)));
   const blockedSince = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
@@ -237,6 +241,9 @@ export async function getMatchmakingDeck(args: {
     where: {
       visibility: Visibility.PUBLIC,
       contentRating: { in: allowedRatings },
+      ...(hasPremiumCompanions
+        ? {}
+        : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
       id: blockedIds.size > 0 ? { notIn: Array.from(blockedIds) } : undefined,
     },
     orderBy: [{ updatedAt: "desc" }],

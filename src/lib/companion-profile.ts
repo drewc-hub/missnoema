@@ -130,6 +130,7 @@ export const MatchmakingSchema = z
   });
 
 export const CompanionProfileSchema = z.object({
+  premiumOnly: z.boolean().optional().default(false),
   scene: z.string().optional().default(""),
   background: z.string().optional().default(""),
   personality: z.string().optional().default(""),

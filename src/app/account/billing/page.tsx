@@ -5,6 +5,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 type PlanKey = "premium" | "premium_plus";
 type CoinPackKey = "coins_500" | "coins_1200" | "coins_2500";
+type PremiumItem = {
+  sku: string;
+  featureKey: string;
+  title: string;
+  description: string;
+  coinsCost: number;
+  grantQuantity: number;
+  kind: "unlock" | "consumable";
+  unlocked?: boolean;
+  quantity?: number;
+  purchasable?: boolean;
+};
 
 const PLANS = [
   {
@@ -64,6 +76,8 @@ function BillingContent() {
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
   const [isPollingBalance, setIsPollingBalance] = useState(false);
+  const [premiumItems, setPremiumItems] = useState<PremiumItem[]>([]);
+  const [loadingPremiumSku, setLoadingPremiumSku] = useState<string | null>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks the balance we knew about before the latest coin purchase, so we
   // can detect when the webhook has actually credited the new coins.
@@ -92,6 +106,25 @@ function BillingContent() {
       }
     }
     fetchBalance();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPremium() {
+      try {
+        const res = await fetch("/api/premium/catalog", { cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        if (!cancelled && res.ok && Array.isArray(data?.items)) {
+          setPremiumItems(data.items as PremiumItem[]);
+        }
+      } catch {
+        // non-fatal
+      }
+    }
+    fetchPremium();
     return () => {
       cancelled = true;
     };
@@ -225,6 +258,37 @@ function BillingContent() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoadingCoinPack(null);
+    }
+  }
+
+  async function handleBuyPremium(sku: string) {
+    try {
+      setLoadingPremiumSku(sku);
+      setError(null);
+
+      const res = await fetch("/api/premium/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sku }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Purchase failed.");
+      }
+
+      if (typeof data?.newCoinBalance === "number") {
+        setCoinBalance(data.newCoinBalance);
+      }
+
+      const premiumRes = await fetch("/api/premium/catalog", { cache: "no-store" });
+      const premiumData = await premiumRes.json().catch(() => null);
+      if (premiumRes.ok && Array.isArray(premiumData?.items)) {
+        setPremiumItems(premiumData.items as PremiumItem[]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoadingPremiumSku(null);
     }
   }
 
@@ -388,6 +452,65 @@ function BillingContent() {
                   className="mt-6 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading ? "Redirecting..." : `Buy ${pack.name}`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold">Premium Unlocks</h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            Spend coins to unlock monetized companion features.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {premiumItems.map((item) => {
+            const isLoading = loadingPremiumSku === item.sku;
+            const isUnlock = item.kind === "unlock";
+            const isOwned = !!item.unlocked;
+            const quantity = item.quantity ?? 0;
+            const lockedByAge = item.purchasable === false;
+            return (
+              <div
+                key={item.sku}
+                className="rounded-3xl border border-zinc-800 bg-zinc-950/70 p-6 shadow-xl"
+              >
+                <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm text-zinc-400">{item.description}</p>
+                <div className="mt-4 text-xl font-bold text-fuchsia-300">
+                  {item.coinsCost.toLocaleString()} coins
+                </div>
+                <div className="mt-2 text-xs text-zinc-500">
+                  {isUnlock
+                    ? isOwned
+                      ? "Unlocked"
+                      : "Permanent unlock"
+                    : `Balance: ${quantity}`}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleBuyPremium(item.sku)}
+                  disabled={
+                    loadingPlan !== null ||
+                    loadingCoinPack !== null ||
+                    loadingPremiumSku !== null ||
+                    lockedByAge ||
+                    (isUnlock && isOwned)
+                  }
+                  className="mt-5 w-full rounded-xl bg-fuchsia-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {lockedByAge
+                    ? "Age verification required"
+                    : isUnlock && isOwned
+                    ? "Owned"
+                    : isLoading
+                    ? "Processing..."
+                    : "Unlock"}
                 </button>
               </div>
             );

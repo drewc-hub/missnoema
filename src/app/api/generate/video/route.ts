@@ -5,6 +5,11 @@ import { getAuthedUser } from "@/lib/auth";
 import { coerceRating, requireAdultAllowed } from "@/lib/ratings";
 import { GenerationType, ContentRating } from "@prisma/client";
 import { getMediaCost, getMediaIntensity } from "@/lib/mediaPrompt";
+import {
+    PremiumFeature,
+    getUserEntitlementsMap,
+    hasPremiumFeature,
+} from "@/lib/premium";
 
 const Schema = z.object({
     companionId: z.string().min(1),
@@ -39,6 +44,7 @@ export async function POST(req: Request) {
             id: true,
             slug: true,
             contentRating: true,
+            profile: true,
         },
     });
 
@@ -60,6 +66,30 @@ export async function POST(req: Request) {
                 { status: 403 },
             );
         }
+    }
+
+    const entitlements = await getUserEntitlementsMap(user.id);
+    if (
+        finalRating === ContentRating.ADULT &&
+        !hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS)
+    ) {
+        return NextResponse.json(
+            { error: "NSFW unlock required." },
+            { status: 403 },
+        );
+    }
+    const premiumOnly =
+        companion.profile &&
+        typeof companion.profile === "object" &&
+        (companion.profile as Record<string, unknown>).premiumOnly === true;
+    if (
+        premiumOnly &&
+        !hasPremiumFeature(entitlements, PremiumFeature.PREMIUM_COMPANIONS)
+    ) {
+        return NextResponse.json(
+            { error: "Premium companions pass required." },
+            { status: 403 },
+        );
     }
 
     const conversation = await prisma.conversation.findUnique({

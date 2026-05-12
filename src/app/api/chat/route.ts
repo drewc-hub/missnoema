@@ -8,6 +8,13 @@ import { getAuthedUser, DAILY_MESSAGE_LIMITS, CONTEXT_WINDOW_SIZES } from "@/lib
 import { isAdultAllowed } from "@/lib/ratings";
 import { checkBannedThemes, logAudit } from "@/lib/moderation";
 import { retrieveConversationMemories, storeConversationMemory } from "@/lib/memory-rag";
+import {
+  PremiumFeature,
+  additionalMemoryWindowForPlan,
+  getUserEntitlementsMap,
+  hasPremiumFeature,
+  relationshipBoostMultiplier,
+} from "@/lib/premium";
 export const runtime = "nodejs";
 
 type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
@@ -683,6 +690,42 @@ export async function POST(req: Request) {
     );
   }
 
+  const entitlements = await getUserEntitlementsMap(user.id);
+  const hasNsfwUnlock = hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS);
+  if (companion.contentRating === ContentRating.ADULT && !hasNsfwUnlock) {
+    return NextResponse.json(
+      { error: "NSFW unlock required for adult companions." },
+      { status: 403 },
+    );
+  }
+
+  const companionProfile =
+    companion.profile && typeof companion.profile === "object"
+      ? (companion.profile as Record<string, unknown>)
+      : {};
+  const premiumOnly = companionProfile.premiumOnly === true;
+  if (premiumOnly) {
+    const hasPremiumCompanions = hasPremiumFeature(
+      entitlements,
+      PremiumFeature.PREMIUM_COMPANIONS,
+    );
+    if (!hasPremiumCompanions) {
+      return NextResponse.json(
+        { error: "Premium companions pass required." },
+        { status: 403 },
+      );
+    }
+  }
+
+  const hasMemoryExpansion = hasPremiumFeature(
+    entitlements,
+    PremiumFeature.MEMORY_EXPANSION,
+  );
+  const hasRelationshipBoost = hasPremiumFeature(
+    entitlements,
+    PremiumFeature.RELATIONSHIP_BOOST,
+  );
+
   if (user.suspendedAt) {
     return NextResponse.json({ error: "Account suspended." }, { status: 403 });
   }
@@ -759,7 +802,9 @@ export async function POST(req: Request) {
     }).catch(() => {});
   }
 
-  const contextWindow = CONTEXT_WINDOW_SIZES[user.plan];
+  const contextWindow =
+    CONTEXT_WINDOW_SIZES[user.plan] +
+    additionalMemoryWindowForPlan(user.plan, hasMemoryExpansion);
 
   const [pinnedMessages, recentMessages, userFactRows, retrievedMemories] = await Promise.all([
     prisma.chatMessage.findMany({
@@ -893,9 +938,25 @@ ${lastAssistantReplies || "(none yet)"}
           ? (profile.sliders as Record<string, unknown>)
           : {};
 
-      const newFamiliarity = delta ? Math.min(conversation.familiarity + delta.familiarity, 100) : conversation.familiarity;
-      const newTrust = delta ? Math.min(conversation.trust + delta.trust, 100) : conversation.trust;
-      const newIntimacy = delta ? Math.min(conversation.intimacy + delta.intimacy, 100) : conversation.intimacy;
+      const progressionMultiplier = relationshipBoostMultiplier(hasRelationshipBoost);
+      const progressionDelta = delta
+        ? {
+            familiarity: Math.max(0, Math.round(delta.familiarity * progressionMultiplier)),
+            trust: Math.max(0, Math.round(delta.trust * progressionMultiplier)),
+            intimacy: Math.max(0, Math.round(delta.intimacy * progressionMultiplier)),
+            kink: delta.kink,
+          }
+        : null;
+
+      const newFamiliarity = progressionDelta
+        ? Math.min(conversation.familiarity + progressionDelta.familiarity, 100)
+        : conversation.familiarity;
+      const newTrust = progressionDelta
+        ? Math.min(conversation.trust + progressionDelta.trust, 100)
+        : conversation.trust;
+      const newIntimacy = progressionDelta
+        ? Math.min(conversation.intimacy + progressionDelta.intimacy, 100)
+        : conversation.intimacy;
       const kinkDelta = (delta && companion.contentRating === ContentRating.ADULT) ? delta.kink : 0;
       const newKinkLevel = Math.min(conversation.kinkLevel + kinkDelta, 100);
 
@@ -906,7 +967,7 @@ ${lastAssistantReplies || "(none yet)"}
         warmth: Number(sliders.warmth ?? 60),
       });
 
-      const levelingUp = delta && newFamiliarity >= 100 && newTrust >= 100 && newIntimacy >= 100;
+      const levelingUp = progressionDelta && newFamiliarity >= 100 && newTrust >= 100 && newIntimacy >= 100;
       const currentLevel = conversation.relationshipLevel ?? 1;
       const levelUpCoins = levelingUp ? 25 * currentLevel : 0;
 
@@ -941,6 +1002,7 @@ ${lastAssistantReplies || "(none yet)"}
               metadata: {
                 moodTier,
                 emotion: delta.emotion,
+                progressionMultiplier,
               },
             },
           })

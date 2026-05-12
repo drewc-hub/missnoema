@@ -68,7 +68,7 @@ model Companion {
   CompanionRelationship_CompanionRelationship_toCompanionIdToCompanion   CompanionRelationship[] @relation("CompanionRelationship_toCompanionIdToCompanion")
   conversations                                                          Conversation[]
   GenerationJob                                                          GenerationJob[]
-  marketplaceListings                                                    MarketplaceListing[]
+  marketplaceListings                                                    MarketplaceListing?
 
   @@index([createdAt])
   @@index([featuredRank])
@@ -144,8 +144,8 @@ model MarketplaceListing {
   publishedAt   DateTime?                @db.Timestamptz(6)
   createdAt     DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
-  creator       User?                    @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   companion     Companion?               @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  creator       User?                    @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([status, listingType, contentRating, publishedAt])
   @@index([creatorId, status])
@@ -166,11 +166,11 @@ model World {
   lastActivityAt DateTime       @default(now()) @db.Timestamptz(6)
   createdAt      DateTime       @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  factions       Faction[]
   owner          User           @relation("WorldOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  invites        WorldInvite[]
   members        WorldMember[]
   messages       WorldMessage[]
-  invites        WorldInvite[]
-  factions       Faction[]
 
   @@index([ownerId, createdAt])
   @@index([isPublic, lastActivityAt])
@@ -186,8 +186,8 @@ model WorldMember {
   displayName String?
   joinedAt    DateTime  @default(now()) @db.Timestamptz(6)
   lastSeenAt  DateTime? @db.Timestamptz(6)
-  world       World     @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  world       World     @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([worldId, userId])
   @@index([userId, joinedAt])
@@ -197,14 +197,14 @@ model WorldMember {
 
 model WorldMessage {
   id           String           @id @default(cuid())
-  worldId       String
-  authorUserId  String?
-  role          WorldMessageRole @default(USER)
-  content       String
-  metadata      Json            @default("{}")
-  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
-  world         World           @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  authorUser    User?           @relation("WorldMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  worldId      String
+  authorUserId String?
+  role         WorldMessageRole @default(USER)
+  content      String
+  metadata     Json             @default("{}")
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  authorUser   User?            @relation("WorldMessageAuthor", fields: [authorUserId], references: [id], onUpdate: NoAction)
+  world        World            @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([worldId, createdAt])
   @@index([authorUserId, createdAt])
@@ -222,8 +222,8 @@ model WorldInvite {
   revokedAt       DateTime? @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  world           World     @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   createdByUser   User      @relation("WorldInviteCreator", fields: [createdByUserId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  world           World     @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([worldId, createdAt])
   @@index([createdByUserId, createdAt])
@@ -232,16 +232,16 @@ model WorldInvite {
 }
 
 model Faction {
-  id           String                 @id @default(cuid())
-  worldId      String?
-  slug         String
-  name         String
-  description  String?
-  metadata     Json                   @default("{}")
-  createdAt    DateTime               @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
-  world        World?                 @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  reputations  UserFactionReputation[]
+  id          String                  @id @default(cuid())
+  worldId     String?
+  slug        String
+  name        String
+  description String?
+  metadata    Json                    @default("{}")
+  createdAt   DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  world       World?                  @relation(fields: [worldId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reputations UserFactionReputation[]
 
   @@unique([worldId, slug])
   @@index([slug])
@@ -256,8 +256,8 @@ model UserFactionReputation {
   level         Int      @default(1)
   metadata      Json     @default("{}")
   lastUpdatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   faction       Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, factionId])
   @@index([factionId, reputation])
@@ -316,29 +316,29 @@ model CompanionAsset {
 }
 
 model Conversation {
-  id                String        @id @default(cuid())
+  id                String                      @id @default(cuid())
   userId            String
   companionId       String
-  contentRating     ContentRating @default(SAFE)
-  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
-  familiarity       Int           @default(0)
-  intimacy          Int           @default(0)
+  contentRating     ContentRating               @default(SAFE)
+  createdAt         DateTime                    @default(now()) @db.Timestamptz(6)
+  familiarity       Int                         @default(0)
+  intimacy          Int                         @default(0)
   summary           String?
-  trust             Int           @default(0)
-  updatedAt         DateTime      @updatedAt
+  trust             Int                         @default(0)
+  updatedAt         DateTime                    @updatedAt
   deletedAt         DateTime?
-  isPermanent       Boolean       @default(false)
+  isPermanent       Boolean                     @default(false)
   memorySummary     String?
-  companionMood     Int           @default(0)
-  lastActiveAt      DateTime?     @db.Timestamptz(6)
+  companionMood     Int                         @default(0)
+  lastActiveAt      DateTime?                   @db.Timestamptz(6)
   emotionalMemory   String?
   emotionalProfile  String?
-  kinkLevel         Int           @default(0)
-  relationshipLevel Int           @default(1)
+  kinkLevel         Int                         @default(0)
+  relationshipLevel Int                         @default(1)
   messages          ChatMessage[]
+  companion         Companion                   @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user              User                        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   progressEvents    RelationshipProgressEvent[]
-  companion         Companion     @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, companionId])
   @@index([userId, companionId, contentRating, updatedAt], map: "Conversation_combo_idx")
@@ -448,28 +448,28 @@ model GenerationJob {
 }
 
 model User {
-  id                   String            @id @default(cuid())
-  supabaseUserId       String            @unique
-  email                String?           @unique
-  dob                  DateTime?         @db.Timestamptz(6)
+  id                   String                  @id @default(cuid())
+  supabaseUserId       String                  @unique
+  email                String?                 @unique
+  dob                  DateTime?               @db.Timestamptz(6)
   region               String?
   displayName          String?
-  ageVerifiedAt        DateTime?         @db.Timestamptz(6)
-  role                 UserRole          @default(USER)
-  createdAt            DateTime          @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
-  coinBalance          Int               @default(100)
-  plan                 SubscriptionPlan  @default(BASIC)
-  stripeCustomerId     String?           @unique
-  stripeSubscriptionId String?           @unique
+  ageVerifiedAt        DateTime?               @db.Timestamptz(6)
+  role                 UserRole                @default(USER)
+  createdAt            DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  coinBalance          Int                     @default(100)
+  plan                 SubscriptionPlan        @default(BASIC)
+  stripeCustomerId     String?                 @unique
+  stripeSubscriptionId String?                 @unique
   subscriptionStatus   String?
-  subscriptionPriceId  String?           @unique
+  subscriptionPriceId  String?                 @unique
   subscriptionTier     String?
-  lastLoginRewardAt    DateTime?         @db.Timestamptz(6)
-  loginStreak          Int               @default(0)
-  bannedAt             DateTime?         @db.Timestamptz(6)
+  lastLoginRewardAt    DateTime?               @db.Timestamptz(6)
+  loginStreak          Int                     @default(0)
+  bannedAt             DateTime?               @db.Timestamptz(6)
   bannedReason         String?
-  suspendedAt          DateTime?         @db.Timestamptz(6)
+  suspendedAt          DateTime?               @db.Timestamptz(6)
   suspendedReason      String?
   AuditLog             AuditLog[]
   coinTransactions     CoinTransaction[]
@@ -479,14 +479,49 @@ model User {
   conversations        Conversation[]
   generationJobs       GenerationJob[]
   marketplaceListings  MarketplaceListing[]
-  worldsOwned          World[]            @relation("WorldOwner")
-  worldMemberships     WorldMember[]
-  worldMessages        WorldMessage[]     @relation("WorldMessageAuthor")
-  worldInvitesCreated  WorldInvite[]      @relation("WorldInviteCreator")
-  factionReputations   UserFactionReputation[]
   reports              Report[]
   facts                UserFact[]
+  factionReputations   UserFactionReputation[]
+  worldsOwned          World[]                 @relation("WorldOwner")
+  worldInvitesCreated  WorldInvite[]           @relation("WorldInviteCreator")
+  worldMemberships     WorldMember[]
+  worldMessages        WorldMessage[]          @relation("WorldMessageAuthor")
+  entitlements         UserEntitlement[]
+  premiumPurchases     PremiumPurchase[]
 
+  @@schema("public")
+}
+
+model UserEntitlement {
+  id         String    @id @default(cuid())
+  userId     String
+  featureKey String
+  quantity   Int       @default(0)
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime? @db.Timestamptz(6)
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, featureKey])
+  @@index([featureKey, isActive])
+  @@schema("public")
+}
+
+model PremiumPurchase {
+  id         String   @id @default(cuid())
+  userId     String
+  sku        String
+  featureKey String
+  coinsSpent Int
+  quantity   Int      @default(0)
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+  @@index([featureKey, createdAt])
   @@schema("public")
 }
 

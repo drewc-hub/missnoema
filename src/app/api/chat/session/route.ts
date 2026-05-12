@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
 import { ContentRating, Visibility } from "@prisma/client";
+import { PremiumFeature, getUserEntitlementsMap, hasPremiumFeature } from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,7 @@ export async function GET(req: Request) {
     select: {
       id: true,
       contentRating: true,
+      profile: true,
     },
   });
 
@@ -47,6 +49,31 @@ export async function GET(req: Request) {
   ) {
     return NextResponse.json(
       { error: "Age verification required." },
+      { status: 403 },
+    );
+  }
+
+  const entitlements = await getUserEntitlementsMap(user.id);
+  if (
+    companion.contentRating === ContentRating.ADULT &&
+    !hasPremiumFeature(entitlements, PremiumFeature.NSFW_UNLOCKS)
+  ) {
+    return NextResponse.json(
+      { error: "NSFW unlock required." },
+      { status: 403 },
+    );
+  }
+
+  const premiumOnly =
+    companion.profile &&
+    typeof companion.profile === "object" &&
+    (companion.profile as Record<string, unknown>).premiumOnly === true;
+  if (
+    premiumOnly &&
+    !hasPremiumFeature(entitlements, PremiumFeature.PREMIUM_COMPANIONS)
+  ) {
+    return NextResponse.json(
+      { error: "Premium companions pass required." },
       { status: 403 },
     );
   }

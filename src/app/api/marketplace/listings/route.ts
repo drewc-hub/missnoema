@@ -9,6 +9,7 @@ import {
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdultAllowed } from "@/lib/ratings";
+import { PremiumFeature, hasUserFeature } from "@/lib/premium";
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,9 @@ function statusFromVisibility(visibility: Visibility) {
 export async function GET(req: Request) {
   const user = await getAuthedUser();
   const allowAdult = isAdultAllowed(user);
+  const hasPremiumCompanions = user
+    ? await hasUserFeature(user.id, PremiumFeature.PREMIUM_COMPANIONS)
+    : false;
   const allowedRatings = allowAdult
     ? [ContentRating.SAFE, ContentRating.ADULT]
     : [ContentRating.SAFE];
@@ -46,6 +50,9 @@ export async function GET(req: Request) {
         is: {
           visibility: Visibility.PUBLIC,
           contentRating: { in: allowedRatings },
+          ...(hasPremiumCompanions
+            ? {}
+            : { NOT: { profile: { path: ["premiumOnly"], equals: true } } }),
         },
       },
       ...(q
@@ -108,6 +115,14 @@ export async function POST(req: Request) {
   const user = await getAuthedUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (user.suspendedAt) return NextResponse.json({ error: "Account suspended." }, { status: 403 });
+
+  const hasMarketplaceUnlock = await hasUserFeature(user.id, PremiumFeature.CREATOR_MARKETPLACE);
+  if (!hasMarketplaceUnlock) {
+    return NextResponse.json(
+      { error: "Creator marketplace is a premium unlock." },
+      { status: 403 },
+    );
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = UpsertListingSchema.safeParse(body);
