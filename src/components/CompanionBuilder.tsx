@@ -277,6 +277,8 @@ export function CompanionBuilder({
     const [kink, setKink] = useState(Number(sliders.kink ?? 0));
 
     const [submitting, setSubmitting] = useState(false);
+    const [cardImporting, setCardImporting] = useState(false);
+    const [cardImportMessage, setCardImportMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
@@ -284,6 +286,45 @@ export function CompanionBuilder({
         if (mode === "edit") return slug;
         return slugify(name);
     }, [mode, name, slug]);
+
+    async function onCharacterCardImport(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setCardImporting(true);
+        setCardImportMessage(null);
+        setError(null);
+        setSavedMessage(null);
+
+        try {
+            const raw = await file.text();
+            const card = JSON.parse(raw);
+            const res = await fetch("/api/companions/import/character-card-v2", {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                },
+                body: JSON.stringify({
+                    card,
+                    visibility,
+                    contentRating,
+                }),
+            });
+
+            const json = await res.json().catch(() => null);
+            if (!res.ok) {
+                throw new Error(json?.error || "Failed to import character card.");
+            }
+
+            setCardImportMessage("Imported. Opening editor...");
+            window.location.href = json?.editUrl || json?.viewUrl || "/companions";
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Invalid Character Card V2 JSON.");
+        } finally {
+            setCardImporting(false);
+        }
+    }
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -419,6 +460,47 @@ export function CompanionBuilder({
             />
 
             <CardBody className="space-y-4">
+                <div className="rounded-2xl border border-sky-900/40 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4 shadow-[0_0_35px_rgba(0,121,193,0.12)]">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="text-sm font-semibold text-white">Character Card V2</div>
+                            <div className="text-xs text-sky-100/80">
+                                Import SillyTavern-style cards or export this companion as portable JSON.
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {mode === "create" ? (
+                                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/15">
+                                    {cardImporting ? "Importing..." : "Import JSON"}
+                                    <input
+                                        type="file"
+                                        accept="application/json,.json"
+                                        className="sr-only"
+                                        disabled={cardImporting}
+                                        onChange={onCharacterCardImport}
+                                    />
+                                </label>
+                            ) : companion.slug ? (
+                                <a
+                                    href={`/api/companions/${encodeURIComponent(companion.slug)}/export/character-card-v2`}
+                                    download
+                                >
+                                    <Button type="button" variant="secondary">
+                                        Export JSON
+                                    </Button>
+                                </a>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {cardImportMessage ? (
+                        <div className="mt-3 rounded-xl border border-white/20 bg-white/10 p-2 text-xs text-white">
+                            {cardImportMessage}
+                        </div>
+                    ) : null}
+                </div>
+
                 <form onSubmit={onSubmit} className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">

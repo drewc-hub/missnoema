@@ -56,6 +56,12 @@ coverage/
 
 # Embedded repo (handle separately)
 Heimdall/
+SillyTavern-Launcher/
+
+# Local SillyTavern/runtime data
+config/
+data/
+docker-compose.yml
 
 # Local Netlify folder
 .netlify
