@@ -35,9 +35,8 @@ function CompanionCard({ c }: { c: ApiItem }) {
       ? `/adult/companions/${encodeURIComponent(c.slug)}`
       : `/companions/${encodeURIComponent(c.slug)}`;
   return (
-    <a
-      href={viewHref}
-      className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700/60 hover:shadow-lg hover:shadow-blue-950/50"
+    <article
+      className="group overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700/60 hover:shadow-lg hover:shadow-blue-950/50"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">
         {c.thumbnailUrl ? (
@@ -59,6 +58,16 @@ function CompanionCard({ c }: { c: ApiItem }) {
         <div className="absolute left-3 top-3">
           <Badge tone={ratingTone}>{c.contentRating}</Badge>
         </div>
+        <div className="absolute right-3 top-3">
+          <a
+            href={viewHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-white/15 bg-zinc-950/75 px-3 text-xs font-semibold text-white backdrop-blur transition hover:border-blue-300/60 hover:bg-blue-500/20"
+          >
+            View
+          </a>
+        </div>
         {/* name + description over image bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <div className="truncate text-lg font-semibold text-white leading-tight">{c.name}</div>
@@ -72,7 +81,7 @@ function CompanionCard({ c }: { c: ApiItem }) {
           </div>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
 

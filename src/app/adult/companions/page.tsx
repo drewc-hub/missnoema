@@ -49,10 +49,10 @@ function qs(params: Record<string, string | undefined>) {
 
 function CardLink({ c }: { c: ApiItem }) {
   const ratingTone = c.contentRating === "ADULT" ? "adult" : "safe";
+  const viewHref = `/adult/companions/${encodeURIComponent(c.slug)}`;
   return (
-    <a
-      href={`/adult/companions/${encodeURIComponent(c.slug)}`}
-      className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-900/50 hover:shadow-lg hover:shadow-rose-950/30"
+    <article
+      className="group overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-900/50 hover:shadow-lg hover:shadow-rose-950/30"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">
         {c.thumbnailUrl ? (
@@ -74,8 +74,18 @@ function CardLink({ c }: { c: ApiItem }) {
         <div className="absolute left-3 top-3">
           <Badge tone={ratingTone}>{c.contentRating}</Badge>
         </div>
+        <div className="absolute right-3 top-3">
+          <a
+            href={viewHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-white/15 bg-zinc-950/75 px-3 text-xs font-semibold text-white backdrop-blur transition hover:border-rose-300/60 hover:bg-rose-500/20"
+          >
+            View
+          </a>
+        </div>
         {typeof c.featuredRank === "number" && c.featuredRank > 0 ? (
-          <div className="absolute right-3 top-3 rounded-full bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-200 ring-1 ring-zinc-700 backdrop-blur-sm">
+          <div className="absolute left-3 top-12 rounded-full bg-zinc-950/80 px-2.5 py-1 text-xs text-zinc-200 ring-1 ring-zinc-700 backdrop-blur-sm">
             Featured #{c.featuredRank}
           </div>
         ) : null}
@@ -101,7 +111,7 @@ function CardLink({ c }: { c: ApiItem }) {
           </div>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
 
