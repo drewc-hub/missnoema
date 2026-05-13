@@ -30,13 +30,13 @@ function qs(params: Record<string, string | undefined>) {
 
 function CompanionCard({ c }: { c: ApiItem }) {
   const ratingTone = c.contentRating === "ADULT" ? "adult" : "safe";
-  const chatHref =
+  const viewHref =
     c.contentRating === "ADULT"
-      ? `/adult/chat?companion=${encodeURIComponent(c.slug)}`
-      : `/chat?companion=${encodeURIComponent(c.slug)}`;
+      ? `/adult/companions/${encodeURIComponent(c.slug)}`
+      : `/companions/${encodeURIComponent(c.slug)}`;
   return (
     <a
-      href={chatHref}
+      href={viewHref}
       className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700/60 hover:shadow-lg hover:shadow-blue-950/50"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">

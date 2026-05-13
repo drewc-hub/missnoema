@@ -1,19 +1,17 @@
 // file: src/app/adult/companions/[slug]/page.tsx
 import { redirect } from "next/navigation";
+import { ArrowLeft, BadgeCheck, Edit, MessageCircle, Shield } from "lucide-react";
 import { ContentRating, Visibility } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
-import CompanionBuilder from "@/components/CompanionBuilder";
-import { MediaGenPanel } from "@/components/MediaGenPanel";
 
-export default async function Page({
+export default async function AdultCompanionProfilePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
   const user = await getAuthedUser();
   const allowAdult = isAdultAllowed(user);
 
@@ -31,45 +29,243 @@ export default async function Page({
     },
     select: {
       id: true,
+      ownerId: true,
+      slug: true,
       name: true,
       description: true,
       tags: true,
       profile: true,
       contentRating: true,
+      views: true,
+      saves: true,
+      likes: true,
+      assets: {
+        where: { type: "IMAGE" },
+        orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+        take: 6,
+        select: { id: true, publicUrl: true, contentRating: true },
+      },
+      User: {
+        select: {
+          displayName: true,
+          email: true,
+        },
+      },
+      _count: {
+        select: {
+          conversations: true,
+          assets: true,
+        },
+      },
     },
   });
 
   if (!companion) {
-    return <main className="p-6">Not found</main>;
+    return <main className="p-6 text-zinc-400">Companion not found.</main>;
   }
 
+  const profile =
+    companion.profile && typeof companion.profile === "object"
+      ? (companion.profile as Record<string, unknown>)
+      : {};
+  const creatorName =
+    companion.User?.displayName ||
+    companion.User?.email?.split("@")[0] ||
+    (companion.ownerId ? "Creator" : "Noema");
+  const primaryAsset = companion.assets[0];
+  const avatarImageUrl =
+    typeof profile.avatarImageUrl === "string" && profile.avatarImageUrl.trim().length > 0
+      ? profile.avatarImageUrl.trim()
+      : null;
+  const primaryUrl = primaryAsset
+    ? primaryAsset.contentRating === ContentRating.ADULT
+      ? `/media/${primaryAsset.id}`
+      : primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`
+    : avatarImageUrl;
+  const stats =
+    profile.stats && typeof profile.stats === "object"
+      ? Object.entries(profile.stats as Record<string, unknown>)
+          .filter(([, value]) => typeof value === "number")
+          .slice(0, 6)
+      : [];
+  const isOwner = Boolean(user && user.id === companion.ownerId);
+  const isAdult = companion.contentRating === ContentRating.ADULT;
+
   return (
-    <main className="grid gap-5 lg:grid-cols-12">
-      <section className="space-y-4 lg:col-span-7">
-        <CompanionBuilder
-          mode="edit"
-          allowAdult={allowAdult}
-          userEmail={user?.email ?? null}
-          companion={{
-            id: companion.id,
-            name: companion.name,
-            description: companion.description,
-            tags: companion.tags,
-            profile: companion.profile as any,
-            contentRating: companion.contentRating,
-          }}
-        />
+    <main className="space-y-6 text-zinc-100">
+      <section className="overflow-hidden rounded-lg border border-zinc-800 bg-black">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="relative min-h-[420px] bg-zinc-950">
+            {primaryUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={primaryUrl}
+                alt={`${companion.name} portrait`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full min-h-[420px] items-center justify-center text-7xl font-semibold text-zinc-800">
+                {companion.name.slice(0, 1)}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              <span
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  isAdult
+                    ? "border-rose-900/60 bg-rose-950/60 text-rose-200"
+                    : "border-emerald-900/60 bg-emerald-950/60 text-emerald-200"
+                }`}
+              >
+                {companion.contentRating}
+              </span>
+              <span className="rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
+                Profile
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between p-5 sm:p-7">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                by {creatorName}
+              </div>
+              <h1 className="mt-5 text-4xl font-black tracking-tight text-white">
+                {companion.name}
+              </h1>
+              <p className="mt-4 text-sm leading-7 text-zinc-300">{companion.description}</p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {companion.tags.slice(0, 10).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-300"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <a
+                href="/adult/companions"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-zinc-600 hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </a>
+              <a
+                href={`/adult/chat?companion=${encodeURIComponent(companion.slug)}`}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Chat
+              </a>
+              {isOwner ? (
+                <a
+                  href={`/adult/companions/${companion.slug}/edit`}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </section>
 
-      <aside className="space-y-4 lg:col-span-5">
-        <MediaGenPanel
-          allowAdult={allowAdult}
-          loggedIn={!!user}
-          companionId={companion.id}
-          contentRating={companion.contentRating}
-          defaultTag={companion.tags?.[0] ?? ""}
-        />
-      </aside>
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-4">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+            <h2 className="text-lg font-semibold text-white">Profile</h2>
+            <div className="mt-4 grid gap-4 text-sm leading-6 text-zinc-400">
+              {typeof profile.scene === "string" && profile.scene ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Scene</div>
+                  <p className="mt-1">{profile.scene}</p>
+                </div>
+              ) : null}
+              {typeof profile.personality === "string" && profile.personality ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Personality</div>
+                  <p className="mt-1">{profile.personality}</p>
+                </div>
+              ) : null}
+              {typeof profile.background === "string" && profile.background ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Background</div>
+                  <p className="mt-1">{profile.background}</p>
+                </div>
+              ) : null}
+              {typeof profile.lore === "string" && profile.lore ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Lore</div>
+                  <p className="mt-1">{profile.lore}</p>
+                </div>
+              ) : null}
+              {stats.length ? (
+                <div>
+                  <div className="text-xs uppercase text-zinc-600">Stats</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {stats.map(([label, value]) => (
+                      <div key={label} className="rounded-md border border-zinc-800 bg-black px-2 py-1.5 text-xs">
+                        <div className="text-zinc-500">{label}</div>
+                        <div className="font-semibold text-zinc-200">{Math.round(Number(value))}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {companion.assets.length > 1 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {companion.assets.slice(1).map((asset) => (
+                <div key={asset.id} className="aspect-[4/3] overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={asset.contentRating === ContentRating.ADULT ? `/media/${asset.id}` : asset.publicUrl ?? `/media/${asset.id}`}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="space-y-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Shield className="h-4 w-4 text-fuchsia-300" />
+              Activity
+            </div>
+            <div className="mt-4 grid gap-2 text-sm text-zinc-400">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Views</span>
+                <span className="font-semibold text-zinc-100">{companion.views.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Saves</span>
+                <span className="font-semibold text-zinc-100">{companion.saves.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Likes</span>
+                <span className="font-semibold text-zinc-100">{companion.likes.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Chats</span>
+                <span className="font-semibold text-zinc-100">{companion._count.conversations.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
     </main>
   );
 }

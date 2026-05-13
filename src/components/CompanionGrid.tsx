@@ -1,5 +1,6 @@
 type Companion = {
   id: string;
+  slug?: string;
   name: string;
   description?: string;
   tags: string[];
@@ -17,7 +18,7 @@ export default function CompanionGrid({
       {companions.map((c) => (
         <a
           key={c.id}
-          href={`/chat?companion=${encodeURIComponent(c.id)}`}
+          href={`/companions/${encodeURIComponent(c.slug ?? c.id)}`}
           className="block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-600"
         >
           <div className="font-semibold text-zinc-100">{c.name}</div>

@@ -130,6 +130,7 @@ export function CompanionChatWorkspace({
 
     const [loadingSuggestion, setLoadingSuggestion] = useState(false);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const messageInputRef = useRef<HTMLInputElement>(null);
 
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingText, setEditingText] = useState("");
@@ -956,6 +957,27 @@ export function CompanionChatWorkspace({
         }
     }
 
+    function insertIntoInput(text: string, cursorOffset = text.length) {
+        const el = messageInputRef.current;
+        const start = el?.selectionStart ?? input.length;
+        const end = el?.selectionEnd ?? input.length;
+        const next = `${input.slice(0, start)}${text}${input.slice(end)}`;
+        const cursor = start + cursorOffset;
+        setInput(next);
+        requestAnimationFrame(() => {
+            messageInputRef.current?.focus();
+            messageInputRef.current?.setSelectionRange(cursor, cursor);
+        });
+    }
+
+    function insertBoldMarkers() {
+        insertIntoInput("****", 2);
+    }
+
+    function insertPhotoRequest() {
+        insertIntoInput("Could you send me a photo of yourself?");
+    }
+
     return (
         <main className="mx-auto w-full max-w-6xl">
             {/* Mobile companion picker bar — visible only on small screens */}
@@ -1380,17 +1402,65 @@ export function CompanionChatWorkspace({
                                     ))}
                                 </div>
 
+                                <div className="flex gap-2">
+                                    <input
+                                        ref={messageInputRef}
+                                        value={input}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                            setInput(e.target.value)
+                                        }
+                                        placeholder={
+                                            activeCompanion
+                                                ? `Message ${activeCompanion.name}...`
+                                                : "Message..."
+                                        }
+                                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                sendMessage();
+                                            }
+                                        }}
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => sendMessage()}
+                                        disabled={!input.trim() || sending || !activeCompanion}
+                                    >
+                                        {sending ? "Sending..." : "Send"}
+                                    </Button>
+                                </div>
+
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="text-xs text-zinc-400">Draft replies</div>
-                                        <button
-                                            type="button"
-                                            onClick={refreshSuggestions}
-                                            disabled={loadingSuggestion || !activeCompanion || messages.length === 0}
-                                            className="rounded-lg border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-300 hover:bg-blue-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                        >
-                                            {loadingSuggestion ? "Drafting…" : "✦ Generate drafts"}
-                                        </button>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={refreshSuggestions}
+                                                disabled={loadingSuggestion || !activeCompanion || messages.length === 0}
+                                                className="rounded-lg border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-300 hover:bg-blue-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                            >
+                                                {loadingSuggestion ? "Drafting…" : "✦ Generate drafts"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={insertPhotoRequest}
+                                                disabled={!activeCompanion}
+                                                className="rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                            >
+                                                Request photo
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={insertBoldMarkers}
+                                                disabled={!activeCompanion}
+                                                className="rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:border-zinc-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                title="Insert bold markers"
+                                            >
+                                                **
+                                            </button>
+                                        </div>
                                     </div>
                                     {suggestions.length > 0 && (
                                         <div className="space-y-2">
@@ -1416,33 +1486,6 @@ export function CompanionChatWorkspace({
                                             ))}
                                         </div>
                                     )}
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={input}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                            setInput(e.target.value)
-                                        }
-                                        placeholder={
-                                            activeCompanion
-                                                ? `Message ${activeCompanion.name}...`
-                                                : "Message..."
-                                        }
-                                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                sendMessage();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        type="button"
-                                        onClick={() => sendMessage()}
-                                        disabled={!input.trim() || sending || !activeCompanion}
-                                    >
-                                        {sending ? "Sending..." : "Send"}
-                                    </Button>
                                 </div>
 
                                 {activeCompanion ? (

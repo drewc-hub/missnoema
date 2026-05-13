@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ContentRating, Visibility } from "@prisma/client";
-import { BadgeCheck, Compass, ImageIcon, MessageCircle, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Compass, ImageIcon, MessageCircle, Shield, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
@@ -158,7 +158,14 @@ export default async function SafeCompanionDetailPage({
               </div>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <a
+                href="/companions"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-zinc-600 hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </a>
               <a
                 href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"

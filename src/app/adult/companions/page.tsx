@@ -51,7 +51,7 @@ function CardLink({ c }: { c: ApiItem }) {
   const ratingTone = c.contentRating === "ADULT" ? "adult" : "safe";
   return (
     <a
-      href={`/adult/chat?companion=${encodeURIComponent(c.slug)}`}
+      href={`/adult/companions/${encodeURIComponent(c.slug)}`}
       className="group block overflow-hidden rounded-2xl border border-blue-900/60 bg-zinc-950 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-900/50 hover:shadow-lg hover:shadow-rose-950/30"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-900">
