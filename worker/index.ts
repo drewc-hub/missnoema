@@ -9,6 +9,7 @@ import {
 import { generateAdultVideo } from "../src/lib/gen/replicate-video.js";
 import { generateProImage } from "../src/lib/gen/replicate-image.js";
 import { generateHfImageBytes } from "../src/lib/gen/hf-image.js";
+import { generateLeonardoImageBytes } from "../src/lib/gen/leonardo-image.js";
 import { createClient } from "@supabase/supabase-js";
 import Replicate from "replicate";
 
@@ -119,9 +120,35 @@ async function downloadToBytes(url: string) {
 }
 async function generateImageBytes(prompt: string, contentRating: ContentRating) {
   const isAdult = contentRating === ContentRating.ADULT;
+  const provider = env("IMAGE_PROVIDER", "replicate");
+
+  if (provider === "leonardo") {
+    return generateLeonardoImageBytes(prompt, {
+      width: Number(env("LEONARDO_IMAGE_WIDTH", "768")),
+      height: Number(env("LEONARDO_IMAGE_HEIGHT", "1024")),
+      numImages: 1,
+      modelId: env("LEONARDO_IMAGE_MODEL_ID", "7b592283-e8a7-4c5a-9ba6-d18c31f258b9"),
+      styleUUID: env("LEONARDO_STYLE_UUID", "111dc692-d470-4eec-b791-3475abac4c46"),
+      alchemy: env("LEONARDO_ALCHEMY", "false") === "true",
+      ultra: env("LEONARDO_ULTRA", "false") === "true",
+      public: env("LEONARDO_PUBLIC", "false") === "true",
+      numInferenceSteps: Number(env("LEONARDO_STEPS", "20")),
+      guidanceScale: Number(env("LEONARDO_GUIDANCE_SCALE", "7")),
+      contrast: Number(env("LEONARDO_CONTRAST", "3.5")),
+      negativePrompt: isAdult
+        ? env(
+            "LEONARDO_ADULT_NEGATIVE_PROMPT",
+            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
+          )
+        : env(
+            "LEONARDO_NEGATIVE_PROMPT",
+            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
+          ),
+    });
+  }
 
   // Use HF/fal-ai when IMAGE_PROVIDER=hf (requires HF_TOKEN env var).
-  if (env("IMAGE_PROVIDER", "replicate") === "hf") {
+  if (provider === "hf") {
     return generateHfImageBytes(prompt, {
       provider: env("HF_PROVIDER", "fal-ai"),
       model: isAdult

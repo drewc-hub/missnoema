@@ -36,3 +36,20 @@ pnpm tsx --env-file .env worker/index.ts
 ```
 [worker] postgres-queue start { pollMs: 1500, concurrency: 2 }
 ```
+
+## Leonardo image provider
+
+Set these server-side env vars to route image jobs through Leonardo instead of
+Replicate:
+
+```bash
+IMAGE_PROVIDER=leonardo
+LEONARDO_API_KEY=your-leonardo-api-key
+LEONARDO_IMAGE_MODEL_ID=7b592283-e8a7-4c5a-9ba6-d18c31f258b9
+LEONARDO_STYLE_UUID=111dc692-d470-4eec-b791-3475abac4c46
+LEONARDO_IMAGE_WIDTH=768
+LEONARDO_IMAGE_HEIGHT=1024
+LEONARDO_PUBLIC=false
+```
+
+Restart the worker after changing env vars.
