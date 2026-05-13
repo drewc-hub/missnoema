@@ -305,7 +305,7 @@ export default async function CreatorPage() {
                     })}
                 </section>
             ) : (
-                <section className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center">
+                <section className="rounded-lg border border-dashed border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]  p-8 text-center">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-black text-zinc-300">
                         <ImageIcon className="h-5 w-5" />
                     </div>
