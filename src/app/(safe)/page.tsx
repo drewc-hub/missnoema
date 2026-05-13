@@ -54,9 +54,9 @@ export default function SafePage() {
                         ].map((item) => (
                             <div
                                 key={item}
-                                className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
+                                className="rounded-3xl border border-zinc-800 bg-zinc-400 p-5 shadow-2xl backdrop-blur"
                             >
-                                <p className="text-sm font-medium text-zinc-200">{item}</p>
+                                <p className="text-medium font-bold text-slate-950">{item}</p>
                             </div>
                         ))}
                     </div>
@@ -67,7 +67,7 @@ export default function SafePage() {
             <section className="mx-auto max-w-7xl px-6 py-24">
                 <div className="grid gap-16 lg:grid-cols-2">
                     <div className="space-y-6">
-                        <div className="inline-flex rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1 text-sm text-zinc-400">
+                        <div className="inline-flex rounded-full border border-zinc-700 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_75%)] px-4 py-1 text-sm text-zinc-400">
                             The Vision
                         </div>
 
@@ -96,7 +96,7 @@ export default function SafePage() {
                         </div>
                     </div>
 
-                    <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+                    <div className="rounded-[2rem] border border-zinc-800  p-8 shadow-2xl">
                         <div className="space-y-6">
                             <div>
                                 <p className="text-sm uppercase tracking-[0.3em] text-fuchsia-400">
@@ -125,7 +125,7 @@ export default function SafePage() {
                                 ].map((feature) => (
                                     <div
                                         key={feature.title}
-                                        className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5"
+                                        className="rounded-2xl border border-zinc-800 g-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)] p-5"
                                     >
                                         <h3 className="text-lg font-semibold text-white">
                                             {feature.title}

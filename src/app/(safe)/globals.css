@@ -16,7 +16,6 @@
   body {
     @apply text-zinc-100 antialiased;
     background:
-      radial-gradient(circle at top, rgba(168, 85, 247, 0.14), transparent 48%),
       linear-gradient(180deg, #060913 0%, #03060f 44%, #010204 100%);
     background-attachment: fixed;
     min-height: 100dvh;
