@@ -124,7 +124,7 @@ async function generateImageBytes(
   negativePrompt?: string | null,
 ) {
   const isAdult = contentRating === ContentRating.ADULT;
-  const provider = env("IMAGE_PROVIDER", "replicate");
+  const provider = env("IMAGE_PROVIDER", "leonardo");
   const defaultNegativePrompt = isAdult
     ? env(
         "LEONARDO_ADULT_NEGATIVE_PROMPT",
@@ -150,6 +150,7 @@ async function generateImageBytes(
       guidanceScale: Number(env("LEONARDO_GUIDANCE_SCALE", "7")),
       contrast: Number(env("LEONARDO_CONTRAST", "3.5")),
       negativePrompt: finalNegativePrompt,
+      nsfw: env("LEONARDO_ADULT_NSFW", "true") === "true",
     });
   }
 
