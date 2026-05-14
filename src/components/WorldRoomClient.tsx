@@ -36,6 +36,7 @@ export function WorldRoomClient({
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [narrating, setNarrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +86,28 @@ export function WorldRoomClient({
     setSending(false);
   }
 
+  async function generateNarratorTurn() {
+    if (narrating || !canPost) return;
+
+    setNarrating(true);
+    setError(null);
+
+    const res = await fetch(`/api/worlds/${worldId}/narrator`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setNarrating(false);
+      setError(data?.error || "Failed to generate narrator turn.");
+      return;
+    }
+
+    setMessages((prev) => [...prev, data.message as RoomMessage]);
+    setNarrating(false);
+  }
+
   const empty = useMemo(
     () =>
       messages.length === 0 ? (
@@ -130,13 +153,23 @@ export function WorldRoomClient({
             className="w-full rounded-lg border border-zinc-800 bg-black px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
           />
           {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-          <button
-            type="submit"
-            disabled={sending}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {sending ? "Posting..." : "Post turn"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={sending || narrating}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {sending ? "Posting..." : "Post turn"}
+            </button>
+            <button
+              type="button"
+              onClick={generateNarratorTurn}
+              disabled={sending || narrating}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-emerald-800/60 bg-emerald-950/40 px-4 text-sm font-semibold text-emerald-100 transition hover:border-emerald-500/70 hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {narrating ? "Narrating..." : "Narrator turn"}
+            </button>
+          </div>
         </form>
       ) : (
         <p className="text-sm text-zinc-500">Join this world to post turns.</p>

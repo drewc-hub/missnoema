@@ -5,7 +5,6 @@ export async function generateSafeImage(prompt: string) {
         model: "gpt-image-1",
         prompt,
         size: "1024x1024",
-        nsfw: true,
     });
 
     return result.data?.[0]?.url ?? null;
