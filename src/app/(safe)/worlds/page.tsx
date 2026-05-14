@@ -1,10 +1,10 @@
 import { Globe2, Lock, PlusCircle, Sparkles, Users } from "lucide-react";
 import { redirect } from "next/navigation";
+import { WorldCreateForm } from "@/components/WorldCreateForm";
+import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isRpWorldEligible } from "@/lib/rp-world";
-import { WorldCreateForm } from "@/components/WorldCreateForm";
-import { WorldJoinByCodeForm } from "@/components/WorldJoinByCodeForm";
 
 export default async function WorldsLobbyPage() {
     const user = await getAuthedUser();
@@ -78,7 +78,7 @@ export default async function WorldsLobbyPage() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-lg border border-zinc-800  bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]p-4">
+                <div className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                         <PlusCircle className="h-4 w-4 text-fuchsia-300" />
                         Create world
@@ -110,7 +110,7 @@ export default async function WorldsLobbyPage() {
                         </div>
                         <div className="mt-3 text-2xl font-semibold text-white">{publicWorlds.length}</div>
                     </div>
-                    <div className="rounded-lg border border-zinc-800  bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]p-4">
+                    <div className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
                         <div className="flex items-center gap-2 text-xs uppercase text-zinc-500">
                             <Lock className="h-4 w-4 text-fuchsia-300" />
                             Plan

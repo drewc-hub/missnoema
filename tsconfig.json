@@ -31,5 +31,14 @@
     "worker/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "prisma", "worker", "scripts", "supabase", "Marinara-Engine"]
+  "exclude": [
+    "node_modules",
+    "node_modules.bad-perms",
+    "prisma",
+    "worker",
+    "scripts",
+    "supabase",
+    "Marinara-Engine",
+    "marinara-import-quarantine"
+  ]
 }
