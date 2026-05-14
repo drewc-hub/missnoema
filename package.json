@@ -65,7 +65,8 @@
     "replicate": "^1.4.0",
     "stripe": "^22.0.1",
     "supabase": "^2.76.17",
-    "supabase-cli": "^0.0.21"
+    "supabase-cli": "^0.0.21",
+    "webpack": "^5.106.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",

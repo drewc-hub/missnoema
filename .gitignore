@@ -57,6 +57,7 @@ coverage/
 # Embedded repo (handle separately)
 Heimdall/
 SillyTavern-Launcher/
+Marinara-Engine/
 
 # Local SillyTavern/runtime data
 config/
