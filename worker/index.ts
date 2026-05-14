@@ -183,7 +183,7 @@ async function generateImageBytes(
       }
     : { prompt };
 
-Portrait of  very sexy beautiful trans Orc.  with a very well shaped body, gorgeous long legs round hips. her 8 inch cock in her hand as per-cum drips. She is lying on the bed with her leg spread  exposing her perfect shaped gorgeous cock.her. Against her perfect green skin. You can see all of her legs and feet red hair,NSFW., character:personality: Surreal, playful, darkly romantic, and emotionally provocative., traits: mysterious, teasing, playful, intense, tags: adult, dream, fantasy, mysterious, teasing, cinematic lighting, highly detailed, clean composition, sharp focus, high quality, natural skin tones, depth of field  const { signal, cancel } = timeoutSignal(
+     const { signal, cancel } = timeoutSignal(
     REPLICATE_RUN_TIMEOUT_MS,
     "replicate.run",
   );
