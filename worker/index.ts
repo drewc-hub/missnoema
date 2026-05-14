@@ -118,9 +118,23 @@ async function downloadToBytes(url: string) {
   const ct = res.headers.get("content-type") ?? "application/octet-stream";
   return { bytes: new Uint8Array(ab), contentType: ct };
 }
-async function generateImageBytes(prompt: string, contentRating: ContentRating) {
+async function generateImageBytes(
+  prompt: string,
+  contentRating: ContentRating,
+  negativePrompt?: string | null,
+) {
   const isAdult = contentRating === ContentRating.ADULT;
   const provider = env("IMAGE_PROVIDER", "replicate");
+  const defaultNegativePrompt = isAdult
+    ? env(
+        "LEONARDO_ADULT_NEGATIVE_PROMPT",
+        "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
+      )
+    : env(
+        "LEONARDO_NEGATIVE_PROMPT",
+        "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
+      );
+  const finalNegativePrompt = negativePrompt?.trim() || defaultNegativePrompt;
 
   if (provider === "leonardo") {
     return generateLeonardoImageBytes(prompt, {
@@ -135,15 +149,7 @@ async function generateImageBytes(prompt: string, contentRating: ContentRating) 
       numInferenceSteps: Number(env("LEONARDO_STEPS", "20")),
       guidanceScale: Number(env("LEONARDO_GUIDANCE_SCALE", "7")),
       contrast: Number(env("LEONARDO_CONTRAST", "3.5")),
-      negativePrompt: isAdult
-        ? env(
-            "LEONARDO_ADULT_NEGATIVE_PROMPT",
-            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
-          )
-        : env(
-            "LEONARDO_NEGATIVE_PROMPT",
-            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
-          ),
+      negativePrompt: finalNegativePrompt,
     });
   }
 
@@ -166,10 +172,8 @@ async function generateImageBytes(prompt: string, contentRating: ContentRating) 
   const input: Record<string, unknown> = isAdult
     ? {
         prompt,
-        negative_prompt:
-          "watermark, text, logo, signature, blurry, deformed, bad anatomy, " +
-          "low quality, worst quality, extra limbs, missing limbs, disfigured, " +
-          "ugly, mutation, cloned face, bad proportions",
+        nsfw: env("REPLICATE_ADULT_NSFW", "true") === "true",
+        negative_prompt: finalNegativePrompt,
         num_inference_steps: 30,
         guidance_scale: 7.5,
         width: 768,
@@ -342,6 +346,7 @@ async function claimJobs(limit: number) {
       type: GenerationType;
       contentRating: ContentRating;
       prompt: string;
+      negativePrompt: string | null;
     }>
   >`
     WITH picked AS (
@@ -366,7 +371,8 @@ async function claimJobs(limit: number) {
       j."companionId",
       j."type",
       j."contentRating",
-      j."prompt";
+      j."prompt",
+      j."negativePrompt";
   `;
   return rows;
 }
@@ -441,13 +447,16 @@ async function processJob(j: Awaited<ReturnType<typeof claimJobs>>[number]) {
   // Fetch extra metadata not returned by the raw claimJobs query
   const jobMeta = await prisma.generationJob.findUnique({
     where: { id: j.id },
-    select: { requestPreset: true, requestTag: true },
+    select: { requestPreset: true, requestTag: true, negativePrompt: true },
   });
   const imagePromptUrl = jobMeta?.requestPreset ?? null; // Flux Redux reference image URL
   const mode = jobMeta?.requestTag ?? "standard";
+  const negativePrompt = jobMeta?.negativePrompt ?? j.negativePrompt ?? null;
 
   if (j.type === GenerationType.VIDEO) {
-    const videoUrl = await generateAdultVideo(j.prompt);
+    const videoUrl = await generateAdultVideo(j.prompt, {
+      negativePrompt: negativePrompt ?? undefined,
+    });
     const { bytes, contentType } = await downloadToBytes(videoUrl);
     const uploaded = await uploadToSupabase({
       rating: j.contentRating,
@@ -502,10 +511,11 @@ async function processJob(j: Awaited<ReturnType<typeof claimJobs>>[number]) {
     const resultUrl = await generateProImage(enhancedPrompt, {
       imagePrompt: imagePromptUrl,
       intensity,
+      negativePrompt: negativePrompt ?? undefined,
     });
     gen = await downloadToBytes(resultUrl);
   } else {
-    gen = await generateImageBytes(enhancedPrompt, j.contentRating);
+    gen = await generateImageBytes(enhancedPrompt, j.contentRating, negativePrompt);
   }
 
   const uploaded = await uploadToSupabase({

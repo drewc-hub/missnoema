@@ -5,7 +5,6 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Input,
   Button,
   Badge,
 } from "@/components/ui";
@@ -63,6 +62,8 @@ export function MediaGenPanel({
   const [prompt, setPrompt] = useState(
     defaultTag ? `Portrait of ${defaultTag}` : "",
   );
+  const [negativePrompt, setNegativePrompt] = useState("");
+  const [promptFocused, setPromptFocused] = useState(false);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -192,7 +193,13 @@ export function MediaGenPanel({
       const res = await fetch("/api/media/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ companionId, prompt, type, contentRating }),
+        body: JSON.stringify({
+          companionId,
+          prompt,
+          negativePrompt,
+          type,
+          contentRating,
+        }),
       });
 
       const data = await res.json().catch(() => null);
@@ -328,12 +335,27 @@ export function MediaGenPanel({
 
           <div className="space-y-2">
             <div className="text-xs text-zinc-400">Prompt</div>
-            <Input
+            <textarea
               value={prompt}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPrompt(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value)}
+              onFocus={() => setPromptFocused(true)}
+              onBlur={() => setPromptFocused(false)}
+              rows={promptFocused ? 8 : 3}
               placeholder="Portrait, cinematic lighting, soft background..."
+              className={`w-full resize-y rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 transition-[min-height] focus:outline-none focus:ring-2 focus:ring-white/20 ${
+                promptFocused ? "min-h-[210px]" : "min-h-[92px]"
+              }`}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs text-zinc-400">Negative prompt</div>
+            <textarea
+              value={negativePrompt}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNegativePrompt(e.target.value)}
+              rows={3}
+              placeholder="Things to avoid: extra fingers, bad anatomy, blur, text, watermark..."
+              className="min-h-[86px] w-full resize-y rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
           </div>
 

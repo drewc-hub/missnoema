@@ -20,6 +20,7 @@ export interface GenerateImageOptions {
   aspectRatio?: string;
   outputFormat?: "webp" | "jpg" | "png";
   outputQuality?: number;
+  negativePrompt?: string;
   seed?: number;
 }
 
@@ -37,6 +38,7 @@ export async function generateAdultImage(
     aspectRatio = "2:3",
     outputFormat = "webp",
     outputQuality = 90,
+    negativePrompt,
     seed,
   } = options;
 
@@ -49,6 +51,7 @@ export async function generateAdultImage(
     resolution: "1 MP",
   };
 
+  if (negativePrompt) input.negative_prompt = negativePrompt;
   if (seed !== undefined) input.seed = seed;
 
   const replicate = getClient();
@@ -75,6 +78,7 @@ export async function generateProImage(
     aspectRatio = "2:3",
     outputFormat = "webp",
     outputQuality = 90,
+    negativePrompt,
     seed,
     imagePrompt,
     promptUpsampling = false,
@@ -89,6 +93,7 @@ export async function generateProImage(
     prompt_upsampling: promptUpsampling,
   };
 
+  if (negativePrompt) input.negative_prompt = negativePrompt;
   if (seed !== undefined) input.seed = seed;
   if (imagePrompt) input.image_prompt = imagePrompt;
 

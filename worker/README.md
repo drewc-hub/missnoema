@@ -53,3 +53,16 @@ LEONARDO_PUBLIC=false
 ```
 
 Restart the worker after changing env vars.
+
+Leonardo returns an `nsfw` flag on generated images, but its public generation
+API docs do not list `nsfw` as a request-body setting. To actually route jobs to
+Leonardo, `IMAGE_PROVIDER=leonardo` must be set in the worker/runtime env.
+
+## Replicate adult fallback
+
+If `IMAGE_PROVIDER` is not set, the worker uses Replicate. Adult image jobs send
+`nsfw: true` by default for models that support that input flag:
+
+```bash
+REPLICATE_ADULT_NSFW=true
+```

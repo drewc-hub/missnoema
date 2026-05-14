@@ -130,7 +130,7 @@ export function CompanionChatWorkspace({
 
     const [loadingSuggestion, setLoadingSuggestion] = useState(false);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const messageInputRef = useRef<HTMLInputElement>(null);
+    const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingText, setEditingText] = useState("");
@@ -1403,24 +1403,25 @@ export function CompanionChatWorkspace({
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <input
+                                    <textarea
                                         ref={messageInputRef}
                                         value={input}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                             setInput(e.target.value)
                                         }
+                                        rows={3}
                                         placeholder={
                                             activeCompanion
                                                 ? `Message ${activeCompanion.name}...`
                                                 : "Message..."
                                         }
-                                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                            if (e.key === "Enter") {
+                                        onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                                            if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault();
                                                 sendMessage();
                                             }
                                         }}
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                                        className="min-h-[88px] w-full resize-y rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                                     />
                                     <Button
                                         type="button"

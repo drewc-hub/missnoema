@@ -85,6 +85,10 @@ export async function POST(req: Request) {
   const companionId =
     typeof body?.companionId === "string" ? body.companionId : "";
   const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+  const negativePrompt =
+    typeof body?.negativePrompt === "string"
+      ? body.negativePrompt.trim().slice(0, 1500)
+      : "";
   const type = parseType(body?.type);
   const requestedRating = parseRating(body?.contentRating);
   // Outfit / undress mode: pass an existing asset as Flux Redux reference image
@@ -280,6 +284,7 @@ export async function POST(req: Request) {
           status: JobStatus.PENDING,
           contentRating: effectiveRating,
           prompt,
+          negativePrompt: negativePrompt || null,
           requestPreset: imagePromptUrl ?? undefined,
           requestTag: mode !== "standard" ? mode : undefined,
         },
