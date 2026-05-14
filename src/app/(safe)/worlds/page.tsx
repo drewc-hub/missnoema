@@ -64,17 +64,28 @@ export default async function WorldsLobbyPage() {
     return (
         <main className="space-y-6 text-zinc-100">
             <section className="rounded-lg border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-5 sm:p-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Multiplayer RP
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Multiplayer RP
+                        </div>
+                        <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                            RP world lobby
+                        </h1>
+                        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
+                            Create shared fantasy worlds, invite players, and run persistent scene threads with
+                            turn-based posting.
+                        </p>
+                    </div>
+                    <a
+                        href="/worlds/studio"
+                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] px-4 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                        <Sparkles className="h-4 w-4" />
+                        Open Studio
+                    </a>
                 </div>
-                <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                    RP world lobby
-                </h1>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
-                    Create shared fantasy worlds, invite players, and run persistent scene threads with
-                    turn-based posting.
-                </p>
             </section>
 
             <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
