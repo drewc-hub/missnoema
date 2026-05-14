@@ -79,7 +79,6 @@ export async function generateProImage(
         outputFormat = "webp",
         outputQuality = 90,
         negativePrompt,
-        nsfw, = true,
         seed,
         imagePrompt,
         promptUpsampling = false,
