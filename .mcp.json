@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "dmcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-p",
+        "3456:3456",
+        "-v",
+        "dmcp-data:/app/data",
+        "ghcr.io/shawnrushefsky/dmcp:latest"
+      ]
+    }
+  }
+}
