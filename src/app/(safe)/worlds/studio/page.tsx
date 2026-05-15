@@ -57,8 +57,8 @@ export default async function WorldStudioPage() {
     ]);
 
     return (
-        <main className="space-y-4 text-zinc-100">
-            <section>
+        <main className="relative left-1/2 w-[calc(100vw-2rem)] max-w-[1680px] -translate-x-1/2 space-y-4 text-zinc-100">
+            <section className="mx-auto max-w-6xl">
                 <div className="inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-100">
                     Dungeon creator
                 </div>

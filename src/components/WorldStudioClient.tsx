@@ -13,7 +13,7 @@ import {
     Wand2,
     Workflow,
 } from "lucide-react";
-import { Badge, Button, Input, Textarea, cn } from "@/components/ui";
+import { Badge, Input, Textarea, cn } from "@/components/ui";
 
 type StudioWorld = {
     id: string;
@@ -171,7 +171,39 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
 
     return (
         <div className="min-h-[calc(100vh-140px)] rounded-lg border border-cyan-900/40 bg-[linear-gradient(360deg,#17023e_50%,#0f2b7d_83%,#0b1d82_100%)] p-3 text-zinc-100 shadow-2xl shadow-blue-950/40 sm:p-4">
-            <div className="grid min-h-[calc(100vh-172px)] gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(280px,0.7fr)_minmax(420px,1.15fr)]">
+            <div className="grid min-h-[calc(100vh-172px)] gap-4 2xl:grid-cols-[minmax(430px,0.9fr)_minmax(720px,1.35fr)]">
+                <section className="rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4 2xl:col-span-2">
+                    <header className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <div className="text-lg font-semibold text-white">{selectedWorld?.name ?? "No world selected"}</div>
+                            <div className="mt-1 text-sm text-cyan-100/75">
+                                {workspaceTab} · {selectedWorld?.summary ?? "Create or select a world to begin."}
+                            </div>
+                        </div>
+                        <Badge>{selectedWorld ? `${selectedWorld.messageCount} turns` : "World builder"}</Badge>
+                    </header>
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                        <div className="rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-4 lg:col-span-2">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                                <Workflow className="h-4 w-4 text-cyan-100" />
+                                Scene board
+                            </div>
+                            <p className="mt-2 line-clamp-3 text-sm leading-6 text-cyan-100/75">
+                                {selectedWorld?.setting ||
+                                    "This world workspace is reserved for the selected world, story title, active scene, and future dungeon state."}
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border border-cyan-950/50 bg-zinc-950/45 p-4">
+                            <div className="text-sm font-semibold text-white">Active Builder</div>
+                            <div className="mt-1 text-xs leading-5 text-cyan-100/70">
+                                {builderTab} is selected for {selectedCompanion?.name ?? "the current character"}.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section className="flex min-h-0 flex-col rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
                     <header className="flex items-center justify-between gap-3">
                         <div>
@@ -194,7 +226,7 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                         ))}
                     </div>
 
-                    <div className="mt-3 min-h-[220px] flex-1 overflow-y-auto rounded-lg border border-cyan-950/40 bg-zinc-950/50 p-2">
+                    <div className="mt-3 min-h-[300px] flex-1 overflow-y-auto rounded-lg border border-cyan-950/40 bg-zinc-950/50 p-2">
                         {worlds.length > 0 ? (
                             <div className="space-y-2">
                                 {worlds.map((world) => (
@@ -226,7 +258,7 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                         )}
                     </div>
 
-                    <div className="mt-4 min-h-[300px] rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-3">
+                    <div className="mt-4 min-h-[380px] rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-3">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="text-lg font-semibold text-white">Roster</div>
@@ -259,7 +291,7 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                             />
                         </label>
 
-                        <div className="mt-3 max-h-56 overflow-y-auto rounded-lg border border-cyan-950/50 bg-zinc-950/50 p-2">
+                        <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-cyan-950/50 bg-zinc-950/50 p-2">
                             {companions.length > 0 ? (
                                 <div className="space-y-2">
                                     {companions.map((companion) => (
@@ -308,39 +340,6 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
                 </section>
 
-                <section className="min-h-0 rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
-                    <header>
-                        <div className="text-lg font-semibold text-white">{selectedWorld?.name ?? "No world selected"}</div>
-                        <div className="mt-1 text-sm text-cyan-100/75">
-                            {workspaceTab} · {selectedWorld?.summary ?? "Create or select a world to begin."}
-                        </div>
-                    </header>
-
-                    <div className="mt-4 rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                            <Workflow className="h-4 w-4 text-cyan-100" />
-                            Scene board
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-cyan-100/75">
-                            {selectedWorld?.setting ||
-                                "This middle workspace is reserved for the selected world, story title, active scene, and future dungeon state."}
-                        </p>
-                    </div>
-
-                    <div className="mt-4 grid gap-3">
-                        {["World Lore", "Current Story", "Active Scene"].map((label) => (
-                            <div key={label} className="rounded-lg border border-cyan-950/50 bg-zinc-950/45 p-3">
-                                <div className="text-sm font-semibold text-white">{label}</div>
-                                <div className="mt-1 text-xs leading-5 text-cyan-100/70">
-                                    {label === "World Lore"
-                                        ? selectedWorld?.setting || "No setting text yet."
-                                        : `${label} content will load here as the dungeon engine grows.`}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
                 <section className="flex min-h-0 flex-col rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
                     <header className="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -369,7 +368,7 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
 
                     <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-4">
-                        <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="grid gap-4 xl:grid-cols-2">
                             <Field label="Name" value={draft.name} rows={1} onChange={(value) => updateDraft("name", value)} />
                             <Field label="Tagline / Description" value={draft.tagline} rows={1} onChange={(value) => updateDraft("tagline", value)} />
                             <Field label="Role" value={draft.role} rows={2} onChange={(value) => updateDraft("role", value)} />

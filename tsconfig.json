@@ -38,6 +38,7 @@
     "worker",
     "scripts",
     "supabase",
+    "eslint.config.ts",
     "Marinara-Engine",
     "marinara-import-quarantine"
   ]
