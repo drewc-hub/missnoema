@@ -1,17 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     BookOpen,
     Brain,
     Database,
+    Edit2,
     Feather,
+    Image as ImageIcon,
     PenLine,
     Save,
-    ScrollText,
     Sparkles,
+    Upload,
     Wand2,
     Workflow,
+    X,
 } from "lucide-react";
 import { Badge, Input, Textarea, cn } from "@/components/ui";
 
@@ -65,9 +68,11 @@ const characterActions = [
     { label: "Generate", icon: Wand2 },
     { label: "Rewrite", icon: PenLine },
     { label: "Expand", icon: Feather },
-    { label: "Shorten", icon: ScrollText },
+    { label: "Image", icon: ImageIcon },
     { label: "Save", icon: Save },
 ] as const;
+
+type ImagePanelTab = "upload" | "generate" | "edit";
 
 function getCharacterDraft(companion?: StudioCompanion) {
     const profile = companion?.profile ?? {};
@@ -155,6 +160,9 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
     const [selectedWorldId, setSelectedWorldId] = useState(worlds[0]?.id ?? "");
     const [selectedCompanionId, setSelectedCompanionId] = useState(companions[0]?.id ?? "");
     const [characterSeed, setCharacterSeed] = useState("");
+    const [imagePanelOpen, setImagePanelOpen] = useState(false);
+    const [imagePanelTab, setImagePanelTab] = useState<ImagePanelTab>("upload");
+    const [imagePrompt, setImagePrompt] = useState("");
     const selectedWorld = worlds.find((world) => world.id === selectedWorldId) ?? worlds[0];
     const selectedCompanion = companions.find((companion) => companion.id === selectedCompanionId) ?? companions[0];
     const initialDraft = useMemo(() => getCharacterDraft(selectedCompanion), [selectedCompanion]);
@@ -340,7 +348,7 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
                 </section>
 
-                <section className="flex min-h-0 flex-col rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
+                <section className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
                     <header className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="text-lg font-semibold text-white">Character</div>
@@ -360,11 +368,142 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
 
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                         {characterActions.map(({ label, icon: Icon }) => (
-                            <TabButton key={label} className="h-10 gap-1.5 px-2 text-xs">
+                            <TabButton
+                                key={label}
+                                active={label === "Image" && imagePanelOpen}
+                                className="h-10 gap-1.5 px-2 text-xs"
+                                onClick={label === "Image" ? () => setImagePanelOpen((open) => !open) : undefined}
+                            >
                                 <Icon className="h-3.5 w-3.5" />
                                 {label}
                             </TabButton>
                         ))}
+                    </div>
+
+                    {/* Image panel — slides in from the right */}
+                    <div
+                        className={cn(
+                            "absolute inset-y-0 right-0 z-20 flex w-full max-w-sm flex-col rounded-lg border border-cyan-700/60 bg-[linear-gradient(160deg,#0b1d82_0%,#00457c_100%)] shadow-2xl transition-transform duration-300 ease-in-out sm:w-96",
+                            imagePanelOpen ? "translate-x-0" : "translate-x-full",
+                        )}
+                    >
+                        <div className="flex items-center justify-between border-b border-cyan-900/50 px-4 py-3">
+                            <div>
+                                <div className="text-sm font-semibold text-white">
+                                    {selectedCompanion ? `${selectedCompanion.name}'s Image` : "Companion Image"}
+                                </div>
+                                <div className="text-xs text-cyan-100/60">Upload, generate, or edit</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setImagePanelOpen(false)}
+                                className="rounded-lg p-1.5 text-cyan-100/60 transition hover:bg-zinc-950/40 hover:text-white"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex gap-1 border-b border-cyan-900/50 px-4 py-2">
+                            {(
+                                [
+                                    { key: "upload", label: "Upload", icon: Upload },
+                                    { key: "generate", label: "Generate", icon: Sparkles },
+                                    { key: "edit", label: "Edit", icon: Edit2 },
+                                ] as { key: ImagePanelTab; label: string; icon: React.ElementType }[]
+                            ).map(({ key, label, icon: Icon }) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setImagePanelTab(key)}
+                                    className={cn(
+                                        "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-semibold transition",
+                                        imagePanelTab === key
+                                            ? "border-cyan-300/50 bg-zinc-950/70 text-white"
+                                            : "border-transparent text-cyan-100/60 hover:text-white",
+                                    )}
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {imagePanelTab === "upload" && (
+                                <div className="flex h-full flex-col gap-4">
+                                    <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-cyan-700/60 bg-zinc-950/40 px-4 py-10 text-center transition hover:border-cyan-400/60 hover:bg-zinc-950/60">
+                                        <Upload className="h-8 w-8 text-cyan-300/60" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-white">Click to upload</p>
+                                            <p className="mt-0.5 text-xs text-cyan-100/50">PNG, JPG, or WEBP · max 8 MB</p>
+                                        </div>
+                                        <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        className="w-full rounded-lg border border-cyan-300/40 bg-zinc-950/60 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-900"
+                                    >
+                                        Set as portrait
+                                    </button>
+                                </div>
+                            )}
+
+                            {imagePanelTab === "generate" && (
+                                <div className="flex h-full flex-col gap-4">
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cyan-100/80">
+                                            Prompt
+                                        </span>
+                                        <Textarea
+                                            value={imagePrompt}
+                                            rows={4}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setImagePrompt(e.target.value)}
+                                            placeholder={
+                                                selectedCompanion?.profile?.appearance
+                                                    ? selectedCompanion.profile.appearance
+                                                    : "Describe the image you want to generate…"
+                                            }
+                                            className="resize-none"
+                                        />
+                                    </label>
+                                    <div className="rounded-lg border border-cyan-950/50 bg-zinc-950/40 p-3 text-xs text-cyan-100/60">
+                                        The appearance field will be used as a base prompt if left blank.
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-300/40 bg-zinc-950/60 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-900"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        Generate image
+                                    </button>
+                                </div>
+                            )}
+
+                            {imagePanelTab === "edit" && (
+                                <div className="flex h-full flex-col gap-4">
+                                    <div className="flex aspect-square items-center justify-center rounded-xl border border-cyan-950/60 bg-zinc-950/50">
+                                        <div className="text-center text-xs text-cyan-100/40">
+                                            <ImageIcon className="mx-auto mb-2 h-10 w-10 opacity-30" />
+                                            No image set yet
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {["Adjust lighting", "Change background", "Refine style", "Upscale"].map(
+                                            (action) => (
+                                                <button
+                                                    key={action}
+                                                    type="button"
+                                                    className="flex w-full items-center gap-2 rounded-lg border border-cyan-950/60 bg-zinc-950/50 px-3 py-2.5 text-sm text-cyan-100/80 transition hover:border-cyan-500/50 hover:text-white"
+                                                >
+                                                    <Edit2 className="h-3.5 w-3.5 shrink-0" />
+                                                    {action}
+                                                </button>
+                                            ),
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-4">
