@@ -127,10 +127,34 @@ export function findPremiumSku(sku: string) {
   return PREMIUM_CATALOG.find((item) => item.sku === sku) ?? null;
 }
 
+// Features included with each subscription plan tier.
+const PRO_FEATURES = new Set<PremiumFeatureKey>([
+  PremiumFeature.CUSTOM_PERSONAS,
+  PremiumFeature.MEMORY_EXPANSION,
+  PremiumFeature.PRIVATE_COMPANIONS,
+  PremiumFeature.PREMIUM_VOICES,
+  PremiumFeature.RELATIONSHIP_BOOST,
+  PremiumFeature.PREMIUM_COMPANIONS,
+]);
+
+const UNLIMITED_FEATURES = new Set<PremiumFeatureKey>([
+  ...PRO_FEATURES,
+  PremiumFeature.NSFW_UNLOCKS,
+  PremiumFeature.CREATOR_MARKETPLACE,
+]);
+
+export function planGrantsFeature(plan: SubscriptionPlan, feature: PremiumFeatureKey): boolean {
+  if (plan === SubscriptionPlan.UNLIMITED) return UNLIMITED_FEATURES.has(feature);
+  if (plan === SubscriptionPlan.PRO) return PRO_FEATURES.has(feature);
+  return false;
+}
+
 export function hasPremiumFeature(
   entitlementsByKey: Map<string, { isActive: boolean; quantity: number; expiresAt: Date | null }>,
   feature: PremiumFeatureKey,
+  plan?: SubscriptionPlan,
 ) {
+  if (plan && planGrantsFeature(plan, feature)) return true;
   const item = entitlementsByKey.get(feature);
   if (!item || !item.isActive) return false;
   if (item.expiresAt && item.expiresAt.getTime() < Date.now()) return false;
@@ -160,8 +184,11 @@ export async function getUserEntitlementsMap(userId: string) {
 }
 
 export async function hasUserFeature(userId: string, feature: PremiumFeatureKey) {
-  const entitlements = await getUserEntitlementsMap(userId);
-  return hasPremiumFeature(entitlements, feature);
+  const [entitlements, user] = await Promise.all([
+    getUserEntitlementsMap(userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { plan: true } }),
+  ]);
+  return hasPremiumFeature(entitlements, feature, user?.plan ?? SubscriptionPlan.BASIC);
 }
 
 export async function consumeImageCreditIfAvailable(userId: string) {
