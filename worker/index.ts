@@ -186,16 +186,33 @@ async function runReplicate(
         return { bytes: new Uint8Array(ab), contentType: blob.type || "image/webp" };
     }
 
-    // zedge/stable-diffusion returns { output_paths: ["https://..."], ... }
+    // zedge/stable-diffusion returns { output_paths: [<FileOutput|string>, ...], ... }
     if (raw && typeof raw === "object") {
         const paths = (raw as any).output_paths;
-        if (Array.isArray(paths) && paths.length > 0 && typeof paths[0] === "string") {
-            console.log("[worker] using output_paths[0]:", paths[0]);
-            return downloadToBytes(paths[0]);
+        if (Array.isArray(paths) && paths.length > 0) {
+            const first = paths[0];
+            console.log("[worker] output_paths[0] type:", typeof first, "str:", String(first).slice(0, 120));
+
+            if (typeof first === "string" && /^https?:\/\//.test(first)) {
+                console.log("[worker] using output_paths[0] string");
+                return downloadToBytes(first);
+            }
+            if (first && typeof (first as any).blob === "function") {
+                console.log("[worker] using output_paths[0].blob()");
+                const blob: Blob = await (first as any).blob();
+                const ab = await blob.arrayBuffer();
+                return { bytes: new Uint8Array(ab), contentType: blob.type || "image/webp" };
+            }
+            const pathUrl = await extractReplicateUrl(first);
+            if (pathUrl) {
+                console.log("[worker] using output_paths[0] extracted url:", pathUrl);
+                return downloadToBytes(pathUrl);
+            }
         }
-        const outputUrl = (raw as any).output ?? (raw as any).url ?? (raw as any).image;
+        // Generic fallback field names
+        const outputUrl = (raw as any).output ?? (raw as any).image;
         if (typeof outputUrl === "string" && /^https?:\/\//.test(outputUrl)) {
-            console.log("[worker] using output field:", outputUrl);
+            console.log("[worker] using output/image field:", outputUrl);
             return downloadToBytes(outputUrl);
         }
     }
