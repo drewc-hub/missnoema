@@ -113,12 +113,6 @@ importers:
       stripe:
         specifier: ^22.1.1
         version: 22.1.1(@types/node@20.19.41)
-      supabase:
-        specifier: ^2.98.2
-        version: 2.98.2
-      supabase-cli:
-        specifier: ^0.0.21
-        version: 0.0.21
       webpack:
         specifier: ^5.106.2
         version: 5.106.2(esbuild@0.28.0)(postcss@8.5.14)
@@ -195,6 +189,12 @@ importers:
       prisma:
         specifier: ^6.19.3
         version: 6.19.3(typescript@5.9.3)
+      supabase:
+        specifier: ^2.98.2
+        version: 2.98.2
+      supabase-cli:
+        specifier: ^0.0.21
+        version: 0.0.21
       tailwindcss:
         specifier: ^3.4.19
         version: 3.4.19(tsx@4.22.0)(yaml@2.9.0)
