@@ -17,7 +17,7 @@
 
 .custom-bg {
   background: #020024;
-  background: radial-gradient(circle at top, #18181b 0%, #0f0f10 45%, #09090b 100%);
+  background: linear-gradient(to top, #030825, #04163a, #062151, #072b68, #0b3681, #0d3c8d, #0f4399, #1149a6, #114ca8, #1150aa, #1253ac, #1356ae);
   padding: 1.5rem 1rem;
 }
 
