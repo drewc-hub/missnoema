@@ -52,7 +52,7 @@ export default async function NewAdultCompanionPage() {
     };
 
     return (
-        <div className="worldstudioPage-bg">
+        <div class="custom-bg">
             <main className="min-h-screen bg-[radial-gradient(circle_at_top,#0f2a4d_0%,#081120_45%,#050816_100%)] px-4 py-6 lg:px-8">
                 <div className="mx-auto w-full max-w-[1800px]">
                     <div className="mb-6">
