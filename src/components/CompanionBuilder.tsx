@@ -550,7 +550,7 @@ export function CompanionBuilder({
     }
 
     return (
-        <Card className="border-fuchsia-900/40 bg-black/90 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
+        <Card className="mx-auto w-full max-w-5xl border-fuchsia-900/40 bg-black/90 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
             <CardHeader
                 title={mode === "create" ? "Companion Builder" : "Edit Companion"}
                 subtitle={
@@ -619,7 +619,7 @@ export function CompanionBuilder({
                     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
                         <div className="text-sm font-semibold text-zinc-100">Basic Info</div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                             <div className="space-y-1">
                                 <div className="text-xs text-zinc-400">Name</div>
                                 <Input value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nova" required />
@@ -630,7 +630,7 @@ export function CompanionBuilder({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                             <div className="space-y-1">
                                 <div className="text-xs text-zinc-400">Tags (comma-separated)</div>
                                 <Input value={tags} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)} placeholder="romance, cozy, fantasy" />
@@ -659,7 +659,7 @@ export function CompanionBuilder({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-3 lg:grid-cols-3">
                             <label className="space-y-1">
                                 <div className="text-xs text-zinc-400">Gender identity</div>
                                 <select value={gender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
@@ -691,7 +691,7 @@ export function CompanionBuilder({
                             </label>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                             <label className="space-y-1">
                                 <div className="text-xs text-zinc-400">Visibility</div>
                                 <select value={visibility} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVisibility(e.target.value as Visibility)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
@@ -750,55 +750,58 @@ export function CompanionBuilder({
                     </div>
 
                     {/* SillyTavern V2 Core */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
-                        <div>
-                            <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Core</div>
-                            <div className="text-xs text-zinc-500">SillyTavern-compatible fields.</div>
-                        </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <div className="lg:col-span-2">
+                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Core</div>
+                                <div className="text-xs text-zinc-500">SillyTavern-compatible fields.</div>
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Tagline <span className="text-zinc-600">· one-sentence hook</span></div>
-                            <Input value={tagline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagline(e.target.value)} placeholder="A sharp-tongued elven noble who hides a centuries-old wound." />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Tagline <span className="text-zinc-600">· one-sentence hook</span></div>
+                                <Input value={tagline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagline(e.target.value)} placeholder="A sharp-tongued elven noble who hides a centuries-old wound." />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Role <span className="text-zinc-600">· occupation / archetype</span></div>
-                            <Input value={role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)} placeholder="Court assassin turned traveling apothecary" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Role <span className="text-zinc-600">· occupation / archetype</span></div>
+                                <Input value={role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)} placeholder="Court assassin turned traveling apothecary" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Personality</div>
-                            <Textarea rows={5} value={personality} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonality(e.target.value)} placeholder="Detailed personality traits, emotional patterns, quirks…" />
-                        </div>
+                            <div className="space-y-1 lg:col-span-2">
+                                <div className="text-xs text-zinc-400">Personality</div>
+                                <Textarea rows={4} value={personality} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonality(e.target.value)} placeholder="Detailed personality traits, emotional patterns, quirks…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Appearance</div>
-                            <Textarea rows={3} value={appearance} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAppearance(e.target.value)} placeholder="Physical description, style, notable features…" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Appearance</div>
+                                <Textarea rows={3} value={appearance} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAppearance(e.target.value)} placeholder="Physical description, style, notable features…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Backstory</div>
-                            <Textarea rows={5} value={background} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBackground(e.target.value)} placeholder="Compelling background and history…" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Speaking style</div>
+                                <Textarea rows={3} value={speakingStyle} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpeakingStyle(e.target.value)} placeholder="How they communicate — cadence, vocabulary, tone…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Speaking style</div>
-                            <Textarea rows={2} value={speakingStyle} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpeakingStyle(e.target.value)} placeholder="How they communicate — cadence, vocabulary, tone…" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Backstory</div>
+                                <Textarea rows={4} value={background} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBackground(e.target.value)} placeholder="Compelling background and history…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Goals & motivations</div>
-                            <Textarea rows={3} value={goals} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoals(e.target.value)} placeholder="What drives them, what they want from the relationship…" />
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Goals & motivations</div>
+                                <Textarea rows={4} value={goals} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoals(e.target.value)} placeholder="What drives them, what they want from the relationship…" />
+                            </div>
                         </div>
                     </div>
 
                     {/* SillyTavern V2 Dialogue */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
-                        <div>
-                            <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Dialogue</div>
-                        </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <div className="lg:col-span-2">
+                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Dialogue</div>
+                            </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                             <label className="space-y-1">
                                 <div className="text-xs text-zinc-400">Scene preset</div>
                                 <select value={scenePreset} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setScenePreset(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
@@ -812,36 +815,39 @@ export function CompanionBuilder({
                             </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">First message <span className="text-zinc-600">· greeting</span></div>
-                            <Textarea rows={4} value={firstMessage} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstMessage(e.target.value)} placeholder="Their opening message to the user, written in character…" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">First message <span className="text-zinc-600">· greeting</span></div>
+                                <Textarea rows={4} value={firstMessage} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstMessage(e.target.value)} placeholder="Their opening message to the user, written in character…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Example dialogue <span className="text-zinc-600">· mes_example</span></div>
-                            <Textarea rows={5} value={exampleDialogue} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExampleDialogue(e.target.value)} placeholder={"User: Hey, are you okay?\nCharacter: *glances sideways* Define okay."} />
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Example dialogue <span className="text-zinc-600">· mes_example</span></div>
+                                <Textarea rows={4} value={exampleDialogue} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExampleDialogue(e.target.value)} placeholder={"User: Hey, are you okay?\nCharacter: *glances sideways* Define okay."} />
+                            </div>
                         </div>
                     </div>
 
                     {/* SillyTavern V2 System */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
-                        <div>
-                            <div className="text-sm font-semibold text-zinc-100">Character Card V2 — System</div>
-                        </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <div className="lg:col-span-2">
+                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — System</div>
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">System prompt <span className="text-zinc-600">· hard rules for AI behavior</span></div>
-                            <Textarea rows={5} value={aiPersonalityPrompt} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPersonalityPrompt(e.target.value)} placeholder="You are {{char}}. Always stay in character. Never break the fourth wall…" />
-                        </div>
+                            <div className="space-y-1 lg:col-span-2">
+                                <div className="text-xs text-zinc-400">System prompt <span className="text-zinc-600">· hard rules for AI behavior</span></div>
+                                <Textarea rows={4} value={aiPersonalityPrompt} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPersonalityPrompt(e.target.value)} placeholder="You are {{char}}. Always stay in character. Never break the fourth wall…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Post-history instructions</div>
-                            <Textarea rows={3} value={postHistoryInstructions} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPostHistoryInstructions(e.target.value)} placeholder="Instructions appended after chat history…" />
-                        </div>
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Post-history instructions</div>
+                                <Textarea rows={3} value={postHistoryInstructions} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPostHistoryInstructions(e.target.value)} placeholder="Instructions appended after chat history…" />
+                            </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Creator notes</div>
-                            <Textarea rows={3} value={creatorNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCreatorNotes(e.target.value)} placeholder="Notes for users of this character card…" />
+                            <div className="space-y-1">
+                                <div className="text-xs text-zinc-400">Creator notes</div>
+                                <Textarea rows={3} value={creatorNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCreatorNotes(e.target.value)} placeholder="Notes for users of this character card…" />
+                            </div>
                         </div>
                     </div>
 
@@ -853,7 +859,7 @@ export function CompanionBuilder({
                         </div>
 
                         <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Behavior style</div>
-                        <div className="grid gap-4 sm:grid-cols-2 mb-5">
+                        <div className="grid gap-4 lg:grid-cols-2 mb-5">
                             <RangeRow label="Jealousy" hint="trusting → possessive" value={jealousyLevel} onChange={setJealousyLevel} />
                             <RangeRow label="Dominance style" hint="yielding → commanding" value={dominanceLevel} onChange={setDominanceLevel} />
                             <RangeRow label="Affection style" hint="reserved → expressive" value={affectionLevel} onChange={setAffectionLevel} />
@@ -861,7 +867,7 @@ export function CompanionBuilder({
                         </div>
 
                         <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Tone & vibe</div>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-4 lg:grid-cols-2">
                             <RangeRow label="Warmth" hint="cold → caring" value={warmth} onChange={setWarmth} />
                             <RangeRow label="Humor" hint="serious → witty" value={humor} onChange={setHumor} />
                             <RangeRow label="Flirtiness" hint="reserved → flirty" value={flirtiness} onChange={setFlirtiness} />
@@ -882,7 +888,7 @@ export function CompanionBuilder({
                             <span className="ml-auto text-xs font-normal text-zinc-500">voice, attachment, humor patterns</span>
                         </summary>
                         <div className="border-t border-zinc-800 p-4 space-y-3">
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-3 lg:grid-cols-2">
                                 <Input value={voiceStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceStyle(e.target.value)} placeholder="Voice style: low, warm, aristocratic…" />
                                 <Input value={speechPattern} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeechPattern(e.target.value)} placeholder="Speech pattern: direct, poetic, teasing…" />
                                 <Input value={emojiUsage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmojiUsage(e.target.value)} placeholder="Emoji usage: none, rare, playful…" />
@@ -950,7 +956,7 @@ export function CompanionBuilder({
                             <span className="ml-auto text-xs font-normal text-zinc-500">lore, prompt, stats</span>
                         </summary>
                         <div className="border-t border-zinc-800 p-4 space-y-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-3 lg:grid-cols-2">
                                 <div className="space-y-1">
                                     <div className="text-xs text-zinc-400">Lore</div>
                                     <Textarea rows={4} value={lore} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLore(e.target.value)} placeholder="World history, factions, past wars, titles…" />
@@ -973,7 +979,7 @@ export function CompanionBuilder({
                                 <div className="text-xs text-zinc-400">Boundaries (comma-separated)</div>
                                 <Input value={boundaries} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBoundaries(e.target.value)} placeholder="adults only, no coercion, no underage themes" />
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="grid gap-3 lg:grid-cols-3">
                                 <div className="space-y-1">
                                     <div className="text-xs text-zinc-400">Avatar image URL</div>
                                     <Input value={avatarImageUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarImageUrl(e.target.value)} placeholder="https://…" />
