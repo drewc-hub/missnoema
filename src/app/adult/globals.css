@@ -15,6 +15,20 @@
   }
 }
 
+.worldstudioPage-bg {
+  background: background: #020024;
+  background: linear-gradient(166deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%);
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 1024px) {
+  .worldstudioPage-bg {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+
 /* ============================================================
  *   RESPONSIVE — TABLET  (641px – 1024px)
  *   ============================================================ */

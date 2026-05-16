@@ -193,7 +193,7 @@ function extFromContentType(ct: string): string {
 async function uploadToSupabase(opts: {
     rating: ContentRating;
     bytes: Uint8Array;
-    contentType: string;
+    contentType: string;warriior
     companionId: string;
     slug: string;
 }): Promise<{ bucket: string; storagePath: string; publicUrl: string }> {

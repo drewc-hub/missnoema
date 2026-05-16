@@ -52,37 +52,39 @@ export default async function NewAdultCompanionPage() {
     };
 
     return (
-        <main className="min-h-screen bg-[radial-gradient(circle_at_top,#0f2a4d_0%,#081120_45%,#050816_100%)] px-4 py-6 lg:px-8">
-            <div className="mx-auto w-full max-w-[1800px]">
-                <div className="mb-6">
-                    <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-black-500/10 px-3 py-1 text-xs tracking-wide text-blue-300 mb-3">
-                        18+ verified access
+        <div className="worldstudioPage-bg">
+            <main className="min-h-screen bg-[radial-gradient(circle_at_top,#0f2a4d_0%,#081120_45%,#050816_100%)] px-4 py-6 lg:px-8">
+                <div className="mx-auto w-full max-w-[1800px]">
+                    <div className="mb-6">
+                        <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-black-500/10 px-3 py-1 text-xs tracking-wide text-blue-300 mb-3">
+                            18+ verified access
+                        </div>
+
+                        <h1 className="text-3xl font-black tracking-tight text-white">
+                            Create{" "}
+                            <span className="text-blue-400">
+                                adult companion
+                            </span>
+                        </h1>
+
+                        <p className="mt-2 text-sm text-blue-100/70">
+                            Build immersive AI companions with advanced personality,
+                            dialogue, emotional sliders, and Character Card V2 support.
+                        </p>
                     </div>
 
-                    <h1 className="text-3xl font-black tracking-tight text-white">
-                        Create{" "}
-                        <span className="text-blue-400">
-                            adult companion
-                        </span>
-                    </h1>
-
-                    <p className="mt-2 text-sm text-blue-100/70">
-                        Build immersive AI companions with advanced personality,
-                        dialogue, emotional sliders, and Character Card V2 support.
-                    </p>
+                    {/* Full-width builder */}
+                    <div className="w-full">
+                        <CompanionBuilder
+                            mode="create"
+                            allowAdult={allowAdult}
+                            userEmail={user.email ?? null}
+                            companion={draftCompanion}
+                            fullPageMode
+                        />
+                    </div>
                 </div>
-
-                {/* Full-width builder */}
-                <div className="w-full">
-                    <CompanionBuilder
-                        mode="create"
-                        allowAdult={allowAdult}
-                        userEmail={user.email ?? null}
-                        companion={draftCompanion}
-                        fullPageMode
-                    />
-                </div>
-            </div>
-        </main>
+            </main>
+        </div>
     );
 }
