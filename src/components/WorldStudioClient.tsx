@@ -163,6 +163,10 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
     const [imagePanelOpen, setImagePanelOpen] = useState(false);
     const [imagePanelTab, setImagePanelTab] = useState<ImagePanelTab>("upload");
     const [imagePrompt, setImagePrompt] = useState("");
+    const [statusMsg, setStatusMsg] = useState<{ text: string; ok: boolean } | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [generatingImage, setGeneratingImage] = useState(false);
     const selectedWorld = worlds.find((world) => world.id === selectedWorldId) ?? worlds[0];
     const selectedCompanion = companions.find((companion) => companion.id === selectedCompanionId) ?? companions[0];
     const initialDraft = useMemo(() => getCharacterDraft(selectedCompanion), [selectedCompanion]);
@@ -176,6 +180,178 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
     function updateDraft(key: keyof typeof draft, value: string) {
         setDraft((current) => ({ ...current, [key]: value }));
     }
+
+    function flash(text: string, ok = true) {
+        setStatusMsg({ text, ok });
+        setTimeout(() => setStatusMsg(null), 3500);
+    }
+
+    async function handleSave() {
+        if (!selectedCompanion || busy) return;
+        setBusy(true);
+        try {
+            const res = await fetch(`/api/companions/${selectedCompanion.slug}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: draft.name,
+                    description: draft.tagline || selectedCompanion.description,
+                    tags: selectedCompanion.tags,
+                    visibility: selectedCompanion.visibility,
+                    contentRating: selectedCompanion.contentRating,
+                    profile: {
+                        tagline: draft.tagline,
+                        role: draft.role,
+                        personality: draft.personality,
+                        appearance: draft.appearance,
+                        backstory: draft.backstory,
+                        speakingStyle: draft.speakingStyle,
+                        goals: draft.goals,
+                        scenario: draft.scenario,
+                        greeting: draft.firstMessage,
+                        exampleDialogue: draft.exampleDialogue,
+                        systemPrompt: draft.systemPrompt,
+                        postHistoryInstructions: draft.postHistoryInstructions,
+                        creatorNotes: draft.creatorNotes,
+                    },
+                }),
+            });
+            const data = await res.json();
+            if (data.ok) flash("Saved!");
+            else flash(data.error ?? "Save failed.", false);
+        } catch {
+            flash("Save failed.", false);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleGenerate() {
+        if (!selectedCompanion || busy) return;
+        setBusy(true);
+        flash("Generating character…");
+        try {
+            const res = await fetch("/api/studio/character", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: "generate", seed: characterSeed, draft }),
+            });
+            const data = await res.json();
+            if (data.ok && data.fields) {
+                setDraft((current) => ({ ...current, ...data.fields }));
+                flash("Character generated!");
+            } else {
+                flash(data.error ?? "Generation failed.", false);
+            }
+        } catch {
+            flash("Generation failed.", false);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleRewrite() {
+        if (!selectedCompanion || busy) return;
+        const field = "personality";
+        setBusy(true);
+        flash("Rewriting personality…");
+        try {
+            const res = await fetch("/api/studio/character", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: "rewrite", field, fieldValue: draft[field as keyof typeof draft], draft }),
+            });
+            const data = await res.json();
+            if (data.ok) {
+                updateDraft(field as keyof typeof draft, data.text);
+                flash("Rewritten!");
+            } else {
+                flash(data.error ?? "Rewrite failed.", false);
+            }
+        } catch {
+            flash("Rewrite failed.", false);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleExpand() {
+        if (!selectedCompanion || busy) return;
+        const field = "backstory";
+        setBusy(true);
+        flash("Expanding backstory…");
+        try {
+            const res = await fetch("/api/studio/character", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: "expand", field, fieldValue: draft[field as keyof typeof draft], draft }),
+            });
+            const data = await res.json();
+            if (data.ok) {
+                updateDraft(field as keyof typeof draft, data.text);
+                flash("Expanded!");
+            } else {
+                flash(data.error ?? "Expand failed.", false);
+            }
+        } catch {
+            flash("Expand failed.", false);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleImageUpload(file: File) {
+        if (!selectedCompanion || uploadingImage) return;
+        setUploadingImage(true);
+        flash("Uploading image…");
+        try {
+            const form = new FormData();
+            form.append("file", file);
+            form.append("companionId", selectedCompanion.id);
+            const res = await fetch("/api/media/upload", { method: "POST", body: form });
+            const data = await res.json();
+            if (data.ok) flash("Image uploaded!");
+            else flash(data.error ?? "Upload failed.", false);
+        } catch {
+            flash("Upload failed.", false);
+        } finally {
+            setUploadingImage(false);
+        }
+    }
+
+    async function handleImageGenerate() {
+        if (!selectedCompanion || generatingImage) return;
+        const prompt = imagePrompt || draft.appearance || selectedCompanion.description;
+        if (!prompt) { flash("Add an appearance description or prompt first.", false); return; }
+        setGeneratingImage(true);
+        flash("Queuing image generation…");
+        try {
+            const res = await fetch("/api/media/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    companionId: selectedCompanion.id,
+                    prompt,
+                    contentRating: selectedCompanion.contentRating,
+                }),
+            });
+            const data = await res.json();
+            if (data.ok) flash("Image queued! Check the companion page.");
+            else flash(data.error ?? "Generation failed.", false);
+        } catch {
+            flash("Generation failed.", false);
+        } finally {
+            setGeneratingImage(false);
+        }
+    }
+
+    const actionHandlers: Record<string, (() => void) | undefined> = {
+        Generate: handleGenerate,
+        Rewrite: handleRewrite,
+        Expand: handleExpand,
+        Image: () => setImagePanelOpen((open) => !open),
+        Save: handleSave,
+    };
 
     return (
         <div className="min-h-[calc(100vh-140px)] rounded-lg border border-cyan-900/40 bg-[linear-gradient(360deg,#17023e_50%,#0f2b7d_83%,#0b1d82_100%)] p-3 text-zinc-100 shadow-2xl shadow-blue-950/40 sm:p-4">
@@ -366,13 +542,26 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                         ) : null}
                     </header>
 
+                    {statusMsg && (
+                        <div
+                            className={cn(
+                                "mt-3 rounded-lg px-3 py-2 text-xs font-semibold",
+                                statusMsg.ok
+                                    ? "bg-cyan-900/60 text-cyan-100"
+                                    : "bg-red-900/60 text-red-200",
+                            )}
+                        >
+                            {statusMsg.text}
+                        </div>
+                    )}
+
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                         {characterActions.map(({ label, icon: Icon }) => (
                             <TabButton
                                 key={label}
-                                active={label === "Image" && imagePanelOpen}
+                                active={(label === "Image" && imagePanelOpen) || (busy && label !== "Image")}
                                 className="h-10 gap-1.5 px-2 text-xs"
-                                onClick={label === "Image" ? () => setImagePanelOpen((open) => !open) : undefined}
+                                onClick={actionHandlers[label]}
                             >
                                 <Icon className="h-3.5 w-3.5" />
                                 {label}
@@ -434,17 +623,22 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                                     <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-cyan-700/60 bg-zinc-950/40 px-4 py-10 text-center transition hover:border-cyan-400/60 hover:bg-zinc-950/60">
                                         <Upload className="h-8 w-8 text-cyan-300/60" />
                                         <div>
-                                            <p className="text-sm font-semibold text-white">Click to upload</p>
+                                            <p className="text-sm font-semibold text-white">
+                                                {uploadingImage ? "Uploading…" : "Click to upload"}
+                                            </p>
                                             <p className="mt-0.5 text-xs text-cyan-100/50">PNG, JPG, or WEBP · max 8 MB</p>
                                         </div>
-                                        <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" />
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/webp"
+                                            className="sr-only"
+                                            disabled={uploadingImage}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleImageUpload(file);
+                                            }}
+                                        />
                                     </label>
-                                    <button
-                                        type="button"
-                                        className="w-full rounded-lg border border-cyan-300/40 bg-zinc-950/60 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-900"
-                                    >
-                                        Set as portrait
-                                    </button>
                                 </div>
                             )}
 
@@ -471,10 +665,12 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                                     </div>
                                     <button
                                         type="button"
-                                        className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-300/40 bg-zinc-950/60 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-900"
+                                        onClick={handleImageGenerate}
+                                        disabled={generatingImage}
+                                        className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-300/40 bg-zinc-950/60 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:opacity-50"
                                     >
                                         <Sparkles className="h-4 w-4" />
-                                        Generate image
+                                        {generatingImage ? "Queuing…" : "Generate image"}
                                     </button>
                                 </div>
                             )}
