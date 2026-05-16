@@ -37,7 +37,7 @@ type CompanionEditLayoutProps = {
 };
 
 export function CompanionEditLayout({ companion, allowAdult, userEmail }: CompanionEditLayoutProps) {
-    const [showAside, setShowAside] = useState(true);
+    // fullPage hides the aside; panels are visible by default
     const [fullPage, setFullPage] = useState(false);
 
     const isSafe = companion.contentRating === "SAFE";
@@ -52,13 +52,22 @@ export function CompanionEditLayout({ companion, allowAdult, userEmail }: Compan
               priceCoins: companion.listing.priceCoins,
               priceUsdCents: companion.listing.priceUsdCents,
               updatedAt: new Date(companion.listing.updatedAt),
-              publishedAt: companion.listing.publishedAt ? new Date(companion.listing.publishedAt) : null,
+              publishedAt: companion.listing.publishedAt
+                  ? new Date(companion.listing.publishedAt)
+                  : null,
           }
         : null;
 
+    function handleGenerated() {
+        setFullPage(false);
+        // scroll to top so the marketplace + media panels are immediately visible
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     return (
-        <div className={`grid gap-5 ${!fullPage && showAside ? "lg:grid-cols-12" : ""}`}>
-            <section className={`space-y-4 ${!fullPage && showAside ? "lg:col-span-7" : ""}`}>
+        <div className={`grid gap-6 ${!fullPage ? "lg:grid-cols-2" : ""}`}>
+            {/* Left column — companion builder */}
+            <section className="space-y-4">
                 <CompanionBuilder
                     mode="edit"
                     allowAdult={allowAdult}
@@ -75,21 +84,15 @@ export function CompanionEditLayout({ companion, allowAdult, userEmail }: Compan
                         contentRating: companion.contentRating,
                         visibility: companion.visibility,
                     }}
-                    onGenerated={() => {
-                        setShowAside(true);
-                        setFullPage(false);
-                    }}
+                    onGenerated={handleGenerated}
                     fullPageMode={fullPage}
-                    onToggleFullPage={() => {
-                        setFullPage((p) => !p);
-                        if (!fullPage) setShowAside(false);
-                        else setShowAside(true);
-                    }}
+                    onToggleFullPage={() => setFullPage((p) => !p)}
                 />
             </section>
 
-            {!fullPage && showAside && (
-                <aside className="space-y-4 lg:col-span-5" id="media-panel">
+            {/* Right column — marketplace + media panels (hidden in full-page mode) */}
+            {!fullPage && (
+                <aside className="space-y-4" id="media-panel">
                     <MarketplaceListingPanel
                         companion={{
                             id: companion.id,
@@ -107,7 +110,11 @@ export function CompanionEditLayout({ companion, allowAdult, userEmail }: Compan
                     <Card>
                         <CardHeader
                             title="Media generation"
-                            subtitle={isSafe ? "Generate images for this companion." : "Generate images for this adult companion."}
+                            subtitle={
+                                isSafe
+                                    ? "Generate images for this companion."
+                                    : "Generate images for this adult companion."
+                            }
                         />
                         <CardBody>
                             <MediaGenPanel
