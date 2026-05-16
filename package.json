@@ -55,6 +55,8 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.16.0",
     "next": "^15.5.18",
+    "node-addon-api": "^8.7.0",
+    "node-gyp": "^12.3.0",
     "openai": "^6.37.0",
     "pg": "^8.20.0",
     "react": "^19.2.5",
@@ -105,7 +107,6 @@
     "seed": "tsx prisma/seed.ts"
   },
   "pnpm": {
-  
     "onlyBuiltDependencies": [
       "@parcel/watcher",
       "@prisma/client",
@@ -117,7 +118,7 @@
       "unix-dgram",
       "unrs-resolver"
     ],
-   "peerDependencyRules": {
+    "peerDependencyRules": {
       "allowedVersions": {
         "react": "19",
         "react-dom": "19"
