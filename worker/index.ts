@@ -122,15 +122,39 @@ const PRIMARY_REPLICATE_MODEL = "zedge/stable-diffusion:69d39dcbb296da580994d867
 
 async function extractReplicateUrl(output: unknown): Promise<string | null> {
     if (!output) return null;
-    if (typeof output === "string") return output;
-    if (typeof (output as any)?.url === "string") return (output as any).url;
-    if (typeof (output as any)?.url === "function") {
-        const r = await (output as any).url();
-        if (typeof r === "string") return r;
+
+    // Plain string URL
+    if (typeof output === "string") {
+        if (/^https?:\/\//.test(output)) return output;
+        return null;
     }
+
+    // URL object (.href)
     if (typeof (output as any)?.href === "string") return (output as any).href;
+
+    // Replicate SDK FileOutput: .url() returns a URL object or string
+    if (typeof (output as any)?.url === "function") {
+        try {
+            const r = await (output as any).url();
+            if (!r) return null;
+            if (typeof r === "string" && /^https?:\/\//.test(r)) return r;
+            if (typeof (r as any)?.href === "string") return (r as any).href;
+            const rs = String(r);
+            if (/^https?:\/\//.test(rs)) return rs;
+        } catch {
+            // fall through to toString
+        }
+    }
+
+    // .url as plain string property
+    if (typeof (output as any)?.url === "string" && /^https?:\/\//.test((output as any).url)) {
+        return (output as any).url;
+    }
+
+    // toString / Symbol.toPrimitive (some FileOutput versions)
     const s = String(output);
     if (/^https?:\/\//.test(s)) return s;
+
     return null;
 }
 
@@ -146,11 +170,18 @@ async function runReplicate(
         cancel();
     }
 
-    console.log("[worker] replicate raw output:", typeof output, Array.isArray(output) ? "array" : "scalar");
+    const isArr = Array.isArray(output);
+    console.log("[worker] replicate raw output type:", typeof output, isArr ? `array[${(output as unknown[]).length}]` : "scalar");
+    if (isArr) {
+        const first = (output as unknown[])[0];
+        console.log("[worker] output[0] type:", typeof first, "keys:", first && typeof first === "object" ? Object.keys(first as object) : "n/a", "str:", String(first).slice(0, 120));
+    } else {
+        console.log("[worker] output str:", String(output).slice(0, 120));
+    }
 
-    const raw = Array.isArray(output) ? output[0] : output;
+    const raw = isArr ? (output as unknown[])[0] : output;
     const url = await extractReplicateUrl(raw);
-    if (!url) throw new Error(`Replicate returned no URL. Raw: ${JSON.stringify(output)}`);
+    if (!url) throw new Error(`Replicate returned no URL. Raw type=${typeof raw} str=${String(raw).slice(0, 200)}`);
     return downloadToBytes(url);
 }
 
