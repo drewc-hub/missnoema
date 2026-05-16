@@ -186,6 +186,20 @@ async function runReplicate(
         return { bytes: new Uint8Array(ab), contentType: blob.type || "image/webp" };
     }
 
+    // zedge/stable-diffusion returns { output_paths: ["https://..."], ... }
+    if (raw && typeof raw === "object") {
+        const paths = (raw as any).output_paths;
+        if (Array.isArray(paths) && paths.length > 0 && typeof paths[0] === "string") {
+            console.log("[worker] using output_paths[0]:", paths[0]);
+            return downloadToBytes(paths[0]);
+        }
+        const outputUrl = (raw as any).output ?? (raw as any).url ?? (raw as any).image;
+        if (typeof outputUrl === "string" && /^https?:\/\//.test(outputUrl)) {
+            console.log("[worker] using output field:", outputUrl);
+            return downloadToBytes(outputUrl);
+        }
+    }
+
     const url = await extractReplicateUrl(raw);
     if (!url) throw new Error(`Replicate returned no URL. Raw type=${typeof raw} keys=${raw && typeof raw === "object" ? Object.keys(raw as object) : "n/a"}`);
     return downloadToBytes(url);
