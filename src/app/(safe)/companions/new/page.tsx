@@ -34,7 +34,8 @@ export default async function NewSafeCompanionPage() {
     };
 
     return (
-        <main className="min-h-screen bg-[radial-gradient(circle_at_top,#18181b_0%,#0f0f10_45%,#09090b_100%)] px-4 py-6 lg:px-8">
+        <div class="custom-bg">
+        <main className="min-h-screen px-4 py-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1800px]">
                 <div className="mb-6">
                     <div className="inline-flex items-center rounded-full border border-zinc-700/50 bg-zinc-800/30 px-3 py-1 text-xs tracking-wide text-zinc-400 mb-3">
@@ -65,5 +66,6 @@ export default async function NewSafeCompanionPage() {
                 </div>
             </div>
         </main>
+        </div>
     );
 }

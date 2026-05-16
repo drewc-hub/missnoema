@@ -37,6 +37,19 @@
     background: linear-gradient(166deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%);
   }
 
+  <style>
+  .custom-bg {
+    min-height: 100vh;
+    background-image: radial-gradient(circle at top, #18181b 0%, #0f0f10 45%, #09090b 100%);
+    padding: 1.5rem 1rem;
+  }
+  @media (min-width: 1024px) {
+    .custom-bg {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
