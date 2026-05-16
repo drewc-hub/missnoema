@@ -171,17 +171,23 @@ async function runReplicate(
     }
 
     const isArr = Array.isArray(output);
-    console.log("[worker] replicate raw output type:", typeof output, isArr ? `array[${(output as unknown[]).length}]` : "scalar");
-    if (isArr) {
-        const first = (output as unknown[])[0];
-        console.log("[worker] output[0] type:", typeof first, "keys:", first && typeof first === "object" ? Object.keys(first as object) : "n/a", "str:", String(first).slice(0, 120));
-    } else {
-        console.log("[worker] output str:", String(output).slice(0, 120));
+    const raw = isArr ? (output as unknown[])[0] : output;
+
+    console.log("[worker] replicate output type:", typeof output, isArr ? `array[${(output as unknown[]).length}]` : "scalar");
+    if (raw && typeof raw === "object") {
+        console.log("[worker] raw keys:", Object.keys(raw as object));
     }
 
-    const raw = isArr ? (output as unknown[])[0] : output;
+    // FileOutput extends ReadableStream — read bytes directly via .blob()
+    if (raw && typeof (raw as any).blob === "function") {
+        console.log("[worker] using blob() path");
+        const blob: Blob = await (raw as any).blob();
+        const ab = await blob.arrayBuffer();
+        return { bytes: new Uint8Array(ab), contentType: blob.type || "image/webp" };
+    }
+
     const url = await extractReplicateUrl(raw);
-    if (!url) throw new Error(`Replicate returned no URL. Raw type=${typeof raw} str=${String(raw).slice(0, 200)}`);
+    if (!url) throw new Error(`Replicate returned no URL. Raw type=${typeof raw} keys=${raw && typeof raw === "object" ? Object.keys(raw as object) : "n/a"}`);
     return downloadToBytes(url);
 }
 
