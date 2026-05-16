@@ -178,9 +178,10 @@ export default async function CreatorPage() {
                         return (
                             <article
                                 key={companion.id}
-                                className="grid overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 lg:grid-cols-[220px_minmax(0,1fr)]"
+                                className="flex overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
                             >
-                                <div className="relative min-h-48 bg-zinc-900">
+                                {/* Thumbnail */}
+                                <div className="relative hidden w-40 shrink-0 bg-zinc-900 sm:block">
                                     {thumbnailUrl ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
@@ -194,33 +195,38 @@ export default async function CreatorPage() {
                                             {companion.name.slice(0, 1)}
                                         </div>
                                     )}
-                                    <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                                        <StatusPill tone={isAdult ? "adult" : "safe"}>{companion.contentRating}</StatusPill>
-                                    </div>
                                 </div>
 
-                                <div className="grid gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-                                    <div className="min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <h2 className="truncate text-xl font-semibold text-white">{companion.name}</h2>
-                                            <StatusPill
-                                                tone={
-                                                    companion.visibility === Visibility.PUBLIC
-                                                        ? "safe"
-                                                        : companion.visibility === Visibility.PRIVATE
-                                                            ? "private"
-                                                            : "neutral"
-                                                }
-                                            >
-                                                {companion.visibility}
-                                            </StatusPill>
-                                        </div>
+                                {/* Main content — single flowing column */}
+                                <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+                                    {/* Header: name + all badges */}
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h2 className="text-xl font-semibold text-white">{companion.name}</h2>
+                                        <StatusPill tone={isAdult ? "adult" : "safe"}>{companion.contentRating}</StatusPill>
+                                        <StatusPill
+                                            tone={
+                                                companion.visibility === Visibility.PUBLIC
+                                                    ? "safe"
+                                                    : companion.visibility === Visibility.PRIVATE
+                                                        ? "private"
+                                                        : "neutral"
+                                            }
+                                        >
+                                            {companion.visibility}
+                                        </StatusPill>
+                                        <span className="ml-auto text-xs text-zinc-500">
+                                            {listing?.status ?? "Not listed"} · {priceLabel}
+                                        </span>
+                                    </div>
 
-                                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-400">
-                                            {companion.description}
-                                        </p>
+                                    {/* Description */}
+                                    <p className="line-clamp-2 text-sm leading-6 text-zinc-400">
+                                        {companion.description}
+                                    </p>
 
-                                        <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {/* Tags */}
+                                    {companion.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5">
                                             {companion.tags.slice(0, 6).map((tag) => (
                                                 <span
                                                     key={tag}
@@ -230,74 +236,64 @@ export default async function CreatorPage() {
                                                 </span>
                                             ))}
                                         </div>
+                                    )}
 
-                                        <div className="mt-4 grid gap-2 text-xs text-zinc-500 sm:grid-cols-5">
-                                            <span>{companion.views.toLocaleString()} views</span>
-                                            <span>{companion.saves.toLocaleString()} saves</span>
-                                            <span>{companion.likes.toLocaleString()} likes</span>
-                                            <span>{companion._count.conversations} chats</span>
-                                            <span>{companion._count.assets} media</span>
-                                        </div>
+                                    {/* Stats */}
+                                    <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+                                        <span>{companion.views.toLocaleString()} views</span>
+                                        <span>{companion.saves.toLocaleString()} saves</span>
+                                        <span>{companion.likes.toLocaleString()} likes</span>
+                                        <span>{companion._count.conversations} chats</span>
+                                        <span>{companion._count.assets} media</span>
                                     </div>
-                                    <aside className="rounded-lg border border-zinc-800 bg-black p-3">
+
+                                    {/* Readiness bar */}
+                                    <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2">
                                         <div className="flex items-center justify-between gap-3">
-                                            <div className="text-sm font-semibold text-white">
-                                                {readiness.label}
-                                            </div>
-                                            <div className="text-xs text-zinc-500">{readiness.score}/5</div>
+                                            <span className="text-xs font-medium text-zinc-300">{readiness.label}</span>
+                                            <span className="text-xs text-zinc-500">{readiness.score}/5</span>
                                         </div>
-                                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-900">
+                                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-900">
                                             <div
                                                 className="h-full rounded-full bg-fuchsia-500"
                                                 style={{ width: `${(readiness.score / 5) * 100}%` }}
                                             />
                                         </div>
                                         {readiness.missing.length > 0 ? (
-                                            <div className="mt-3 text-xs leading-5 text-zinc-500">
+                                            <p className="mt-1.5 text-[11px] text-zinc-500">
                                                 Needs {readiness.missing.slice(0, 3).join(", ")}
-                                            </div>
+                                            </p>
                                         ) : (
-                                            <div className="mt-3 flex items-center gap-2 text-xs text-emerald-300">
-                                                <Shield className="h-3.5 w-3.5" />
-                                                Ready for discovery
-                                            </div>
+                                            <p className="mt-1.5 flex items-center gap-1 text-[11px] text-emerald-400">
+                                                <Shield className="h-3 w-3" /> Ready for discovery
+                                            </p>
                                         )}
-                                        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-400">
-                                            {listingState.label}: {listingState.description}
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs">
-                                            <span className="text-zinc-500">Listing</span>
-                                            <span className="font-semibold text-zinc-200">
-                                                {listing?.status ?? "Not synced"} · {priceLabel}
-                                            </span>
-                                        </div>
+                                    </div>
 
-                                        <div className="mt-4 grid gap-2">
-                                            <a
-                                                href={editHref}
-                                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                                Edit
-                                            </a>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <a
-                                                    href={chatHref}
-                                                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
-                                                >
-                                                    <MessageCircle className="h-4 w-4" />
-                                                    Chat
-                                                </a>
-                                                <a
-                                                    href={viewHref}
-                                                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                    View
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </aside>
+                                    {/* Actions */}
+                                    <div className="mt-auto flex flex-wrap gap-2">
+                                        <a
+                                            href={editHref}
+                                            className="inline-flex h-9 items-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                            Edit
+                                        </a>
+                                        <a
+                                            href={chatHref}
+                                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                                        >
+                                            <MessageCircle className="h-4 w-4" />
+                                            Chat
+                                        </a>
+                                        <a
+                                            href={viewHref}
+                                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                            View
+                                        </a>
+                                    </div>
                                 </div>
                             </article>
                         );

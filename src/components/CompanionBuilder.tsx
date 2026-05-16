@@ -615,386 +615,389 @@ export function CompanionBuilder({
                 </div>
 
                 <form onSubmit={onSubmit} className="space-y-6">
-                    {/* Basic Info */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
-                        <div className="text-sm font-semibold text-zinc-100">Basic Info</div>
+                    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                        {/* ── Left column: identity, settings, sliders ── */}
+                        <div className="space-y-6">
+                            {/* Basic Info */}
+                            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
+                                <div className="text-sm font-semibold text-zinc-100">Basic Info</div>
 
-                        <div className="grid gap-3 lg:grid-cols-2">
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Name</div>
-                                <Input value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nova" required />
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Slug</div>
-                                <Input value={mode === "create" ? computedSlug : slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSlug(e.target.value)} placeholder="nova" disabled={mode === "create"} />
-                            </div>
-                        </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Name</div>
+                                        <Input value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nova" required />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Slug</div>
+                                        <Input value={mode === "create" ? computedSlug : slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSlug(e.target.value)} placeholder="nova" disabled={mode === "create"} />
+                                    </div>
+                                </div>
 
-                        <div className="grid gap-3 lg:grid-cols-2">
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Tags (comma-separated)</div>
-                                <Input value={tags} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)} placeholder="romance, cozy, fantasy" />
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Tags (comma-separated)</div>
+                                        <Input value={tags} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)} placeholder="romance, cozy, fantasy" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Archetype</div>
+                                        <Input value={archetype} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArchetype(e.target.value)} placeholder="demon noble, fae trickster…" />
+                                        <details className="group">
+                                            <summary className="flex cursor-pointer select-none list-none items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-xs font-medium transition-colors hover:border-fuchsia-500/50 hover:text-fuchsia-300 text-zinc-400">
+                                                <svg className="h-3 w-3 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
+                                                </svg>
+                                                Browse archetypes
+                                            </summary>
+                                            <div className="mt-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {ARCHETYPE_CHIPS.map((chip) => (
+                                                        <button key={chip} type="button" onClick={() => setArchetype(chip)}
+                                                            className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${archetype === chip ? "border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-200" : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-fuchsia-500/40 hover:text-zinc-200"}`}>
+                                                            {chip}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Gender identity</div>
+                                        <select value={gender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            <option value="">Unspecified</option>
+                                            <option value="female">Female</option>
+                                            <option value="male">Male</option>
+                                            <option value="non-binary">Non-binary</option>
+                                            <option value="trans-woman">Trans woman</option>
+                                            <option value="trans-man">Trans man</option>
+                                            <option value="gender-fluid">Gender-fluid</option>
+                                        </select>
+                                    </label>
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Orientation</div>
+                                        <select value={sexuality} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexuality(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            <option value="">Unspecified</option>
+                                            <option value="heterosexual">Heterosexual</option>
+                                            <option value="gay-lesbian">Gay / Lesbian</option>
+                                            <option value="bisexual">Bisexual</option>
+                                            <option value="pansexual">Pansexual</option>
+                                            <option value="asexual">Asexual</option>
+                                        </select>
+                                    </label>
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Voice style</div>
+                                        <select value={voice} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVoice(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            {VOICE_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Visibility</div>
+                                        <select value={visibility} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVisibility(e.target.value as Visibility)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            <option value="PUBLIC">PUBLIC</option>
+                                            <option value="UNLISTED">UNLISTED</option>
+                                            <option value="PRIVATE">PRIVATE</option>
+                                        </select>
+                                    </label>
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Content rating</div>
+                                        <select value={contentRating} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setContentRating(e.target.value as ContentRating)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            <option value="SAFE">SAFE</option>
+                                            {allowAdult ? <option value="ADULT">ADULT</option> : null}
+                                        </select>
+                                        {!allowAdult && (
+                                            <div className="text-[11px] text-zinc-500">Age verification required for ADULT.</div>
+                                        )}
+                                    </label>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <div className="text-xs text-zinc-400">Description (required)</div>
+                                    <Textarea rows={2} value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Brief description for listings and search results..." required />
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Archetype</div>
-                                <Input value={archetype} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArchetype(e.target.value)} placeholder="demon noble, fae trickster, trans idol…" />
-                                <details className="group">
-                                    <summary className="flex cursor-pointer select-none list-none items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-xs font-medium transition-colors hover:border-fuchsia-500/50 hover:text-fuchsia-300 text-zinc-400">
-                                        <svg className="h-3 w-3 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
-                                        </svg>
-                                        Browse archetypes
-                                    </summary>
-                                    <div className="mt-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3">
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {ARCHETYPE_CHIPS.map((chip) => (
-                                                <button key={chip} type="button" onClick={() => setArchetype(chip)}
-                                                    className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${archetype === chip ? "border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-200" : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-fuchsia-500/40 hover:text-zinc-200"}`}>
-                                                    {chip}
-                                                </button>
-                                            ))}
+
+                            {/* AI Generate */}
+                            <div className="rounded-2xl border border-fuchsia-900/40 bg-fuchsia-950/20 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div className="text-sm font-semibold text-fuchsia-100">AI Generate</div>
+                                        <div className="text-xs text-zinc-400">
+                                            Fill all V2 fields from the name/tagline above.
+                                            {mode === "edit" ? " Auto-saves." : " Review then click Create."}
                                         </div>
                                     </div>
-                                </details>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 lg:grid-cols-3">
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Gender identity</div>
-                                <select value={gender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGender(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    <option value="">Unspecified</option>
-                                    <option value="female">Female</option>
-                                    <option value="male">Male</option>
-                                    <option value="non-binary">Non-binary</option>
-                                    <option value="trans-woman">Transgender woman</option>
-                                    <option value="trans-man">Transgender man</option>
-                                    <option value="gender-fluid">Gender-fluid</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Sexual orientation</div>
-                                <select value={sexuality} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexuality(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    <option value="">Unspecified</option>
-                                    <option value="heterosexual">Heterosexual</option>
-                                    <option value="gay-lesbian">Gay / Lesbian</option>
-                                    <option value="bisexual">Bisexual</option>
-                                    <option value="pansexual">Pansexual</option>
-                                    <option value="asexual">Asexual</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Voice style</div>
-                                <select value={voice} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVoice(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    {VOICE_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                                </select>
-                            </label>
-                        </div>
-
-                        <div className="grid gap-3 lg:grid-cols-2">
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Visibility</div>
-                                <select value={visibility} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVisibility(e.target.value as Visibility)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    <option value="PUBLIC">PUBLIC</option>
-                                    <option value="UNLISTED">UNLISTED</option>
-                                    <option value="PRIVATE">PRIVATE</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Content rating</div>
-                                <select value={contentRating} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setContentRating(e.target.value as ContentRating)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    <option value="SAFE">SAFE</option>
-                                    {allowAdult ? <option value="ADULT">ADULT</option> : null}
-                                </select>
-                                {!allowAdult && (
-                                    <div className="text-[11px] text-zinc-500">Age verification required for ADULT.</div>
-                                )}
-                            </label>
-                        </div>
-
-                        <div className="space-y-1">
-                            <div className="text-xs text-zinc-400">Description (required)</div>
-                            <Textarea rows={2} value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Brief description for listings and search results..." required />
-                        </div>
-                    </div>
-
-                    {/* AI Generate */}
-                    <div className="rounded-2xl border border-fuchsia-900/40 bg-fuchsia-950/20 p-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <div className="text-sm font-semibold text-fuchsia-100">AI Generate</div>
-                                <div className="text-xs text-zinc-400">
-                                    Fill all V2 fields from the name/tagline above.
-                                    {mode === "edit" ? " Auto-saves and opens the media panel." : " Review then click Create."}
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerate}
+                                        disabled={generating || submitting}
+                                        className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-500/50 bg-fuchsia-600/20 px-4 py-2 text-sm font-semibold text-fuchsia-200 transition-colors hover:bg-fuchsia-600/30 disabled:opacity-50"
+                                    >
+                                        {generating ? (
+                                            <>
+                                                <span className="h-3 w-3 animate-spin rounded-full border border-fuchsia-400 border-t-transparent" />
+                                                Generating...
+                                            </>
+                                        ) : "✦ Generate character"}
+                                    </button>
                                 </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleGenerate}
-                                disabled={generating || submitting}
-                                className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-500/50 bg-fuchsia-600/20 px-4 py-2 text-sm font-semibold text-fuchsia-200 transition-colors hover:bg-fuchsia-600/30 disabled:opacity-50"
-                            >
-                                {generating ? (
-                                    <>
-                                        <span className="h-3 w-3 animate-spin rounded-full border border-fuchsia-400 border-t-transparent" />
-                                        Generating...
-                                    </>
-                                ) : "✦ Generate character"}
-                            </button>
-                        </div>
-                        {generateStatus && (
-                            <div className={`mt-3 rounded-xl border px-3 py-2 text-xs ${generateStatus.includes("failed") ? "border-red-800/50 bg-red-900/20 text-red-300" : "border-fuchsia-800/40 bg-fuchsia-900/20 text-fuchsia-200"}`}>
-                                {generateStatus}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* SillyTavern V2 Core */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <div className="lg:col-span-2">
-                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Core</div>
-                                <div className="text-xs text-zinc-500">SillyTavern-compatible fields.</div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Tagline <span className="text-zinc-600">· one-sentence hook</span></div>
-                                <Input value={tagline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagline(e.target.value)} placeholder="A sharp-tongued elven noble who hides a centuries-old wound." />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Role <span className="text-zinc-600">· occupation / archetype</span></div>
-                                <Input value={role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)} placeholder="Court assassin turned traveling apothecary" />
-                            </div>
-
-                            <div className="space-y-1 lg:col-span-2">
-                                <div className="text-xs text-zinc-400">Personality</div>
-                                <Textarea rows={4} value={personality} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonality(e.target.value)} placeholder="Detailed personality traits, emotional patterns, quirks…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Appearance</div>
-                                <Textarea rows={3} value={appearance} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAppearance(e.target.value)} placeholder="Physical description, style, notable features…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Speaking style</div>
-                                <Textarea rows={3} value={speakingStyle} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpeakingStyle(e.target.value)} placeholder="How they communicate — cadence, vocabulary, tone…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Backstory</div>
-                                <Textarea rows={4} value={background} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBackground(e.target.value)} placeholder="Compelling background and history…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Goals & motivations</div>
-                                <Textarea rows={4} value={goals} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoals(e.target.value)} placeholder="What drives them, what they want from the relationship…" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SillyTavern V2 Dialogue */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <div className="lg:col-span-2">
-                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Dialogue</div>
-                            </div>
-
-                        <div className="grid gap-3 lg:grid-cols-2">
-                            <label className="space-y-1">
-                                <div className="text-xs text-zinc-400">Scene preset</div>
-                                <select value={scenePreset} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setScenePreset(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
-                                    <option value="">(none)</option>
-                                    {SCENE_PRESETS.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </label>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Custom scenario</div>
-                                <Input value={sceneCustom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSceneCustom(e.target.value)} placeholder="Custom overrides preset if filled" />
-                            </div>
-                        </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">First message <span className="text-zinc-600">· greeting</span></div>
-                                <Textarea rows={4} value={firstMessage} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstMessage(e.target.value)} placeholder="Their opening message to the user, written in character…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Example dialogue <span className="text-zinc-600">· mes_example</span></div>
-                                <Textarea rows={4} value={exampleDialogue} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExampleDialogue(e.target.value)} placeholder={"User: Hey, are you okay?\nCharacter: *glances sideways* Define okay."} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SillyTavern V2 System */}
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <div className="lg:col-span-2">
-                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — System</div>
-                            </div>
-
-                            <div className="space-y-1 lg:col-span-2">
-                                <div className="text-xs text-zinc-400">System prompt <span className="text-zinc-600">· hard rules for AI behavior</span></div>
-                                <Textarea rows={4} value={aiPersonalityPrompt} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPersonalityPrompt(e.target.value)} placeholder="You are {{char}}. Always stay in character. Never break the fourth wall…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Post-history instructions</div>
-                                <Textarea rows={3} value={postHistoryInstructions} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPostHistoryInstructions(e.target.value)} placeholder="Instructions appended after chat history…" />
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Creator notes</div>
-                                <Textarea rows={3} value={creatorNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCreatorNotes(e.target.value)} placeholder="Notes for users of this character card…" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Personality Sliders */}
-                    <div className="rounded-2xl border border-fuchsia-900/40 bg-black/30 p-4">
-                        <div className="mb-4">
-                            <div className="text-sm font-semibold text-zinc-100">Personality sliders</div>
-                            <div className="text-xs text-zinc-500">Shape emotional tone and behavior in conversation.</div>
-                        </div>
-
-                        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Behavior style</div>
-                        <div className="grid gap-4 lg:grid-cols-2 mb-5">
-                            <RangeRow label="Jealousy" hint="trusting → possessive" value={jealousyLevel} onChange={setJealousyLevel} />
-                            <RangeRow label="Dominance style" hint="yielding → commanding" value={dominanceLevel} onChange={setDominanceLevel} />
-                            <RangeRow label="Affection style" hint="reserved → expressive" value={affectionLevel} onChange={setAffectionLevel} />
-                            <RangeRow label="Empathy" hint="detached → deeply empathetic" value={empathyLevel} onChange={setEmpathyLevel} />
-                        </div>
-
-                        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Tone & vibe</div>
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <RangeRow label="Warmth" hint="cold → caring" value={warmth} onChange={setWarmth} />
-                            <RangeRow label="Humor" hint="serious → witty" value={humor} onChange={setHumor} />
-                            <RangeRow label="Flirtiness" hint="reserved → flirty" value={flirtiness} onChange={setFlirtiness} />
-                            <RangeRow label="Assertiveness" hint="soft → dominant" value={dominance} onChange={setDominance} />
-                            {contentRating === "ADULT" && (
-                                <RangeRow label="Kink intensity" hint="vanilla → BDSM" value={kink} onChange={setKink} />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Behavior Metadata */}
-                    <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
-                        <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
-                            <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
-                            </svg>
-                            Behavior metadata
-                            <span className="ml-auto text-xs font-normal text-zinc-500">voice, attachment, humor patterns</span>
-                        </summary>
-                        <div className="border-t border-zinc-800 p-4 space-y-3">
-                            <div className="grid gap-3 lg:grid-cols-2">
-                                <Input value={voiceStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceStyle(e.target.value)} placeholder="Voice style: low, warm, aristocratic…" />
-                                <Input value={speechPattern} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeechPattern(e.target.value)} placeholder="Speech pattern: direct, poetic, teasing…" />
-                                <Input value={emojiUsage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmojiUsage(e.target.value)} placeholder="Emoji usage: none, rare, playful…" />
-                                <Input value={attachmentStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAttachmentStyle(e.target.value)} placeholder="Attachment style: secure, anxious, avoidant…" />
-                                <Input value={temperament} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTemperament(e.target.value)} placeholder="Temperament: calm, fiery, guarded…" />
-                                <Input value={humorStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHumorStyle(e.target.value)} placeholder="Humor style: dry wit, banter, absurd…" />
-                            </div>
-                            <Textarea rows={3} value={traumaProfile} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTraumaProfile(e.target.value)} placeholder="Trauma profile: abandonment fears, betrayal history, guarded trust…" />
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Voice / accent</div>
-                                <Input value={voiceAccent} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceAccent(e.target.value)} placeholder="British, Southern US, Tokyo…" />
-                            </div>
-                        </div>
-                    </details>
-
-                    {/* Traits & Wardrobe */}
-                    <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
-                        <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
-                            <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
-                            </svg>
-                            Traits & wardrobe
-                            <span className="ml-auto text-xs font-normal text-zinc-500">{traitList.length}/10 traits</span>
-                        </summary>
-                        <div className="border-t border-zinc-800 p-4 space-y-4">
-                            <div>
-                                <div className="mb-2 flex items-center justify-between gap-2">
-                                    <div className="text-xs text-zinc-400">Traits</div>
-                                    <div className="text-[11px] text-zinc-500">{traitList.length}/10</div>
-                                </div>
-                                <select value="" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                    const val = e.target.value;
-                                    if (!val || traitList.length >= 10 || traitList.includes(val)) return;
-                                    setTraitList((prev) => [...prev, val]);
-                                    e.target.value = "";
-                                }} disabled={traitList.length >= 10} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 disabled:opacity-50">
-                                    <option value="">{traitList.length >= 10 ? "Limit reached (10)" : "Add a trait…"}</option>
-                                    {TRAIT_OPTIONS.filter((t) => !traitList.includes(t)).map((t) => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                {traitList.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 pt-2">
-                                        {traitList.map((t) => (
-                                            <button key={t} type="button" onClick={() => setTraitList((prev) => prev.filter((x) => x !== t))}
-                                                className="inline-flex items-center gap-1 rounded-full border border-fuchsia-900/50 bg-fuchsia-950/30 px-2.5 py-1 text-xs text-fuchsia-200 hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 transition">
-                                                {t} ✕
-                                            </button>
-                                        ))}
+                                {generateStatus && (
+                                    <div className={`mt-3 rounded-xl border px-3 py-2 text-xs ${generateStatus.includes("failed") ? "border-red-800/50 bg-red-900/20 text-red-300" : "border-fuchsia-800/40 bg-fuchsia-900/20 text-fuchsia-200"}`}>
+                                        {generateStatus}
                                     </div>
                                 )}
                             </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Wardrobe / look</div>
-                                <Textarea rows={3} value={wardrobe} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setWardrobe(e.target.value)} placeholder="Outfits, accessories, style…" />
-                            </div>
-                        </div>
-                    </details>
 
-                    {/* Advanced */}
-                    <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
-                        <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
-                            <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
-                            </svg>
-                            Advanced
-                            <span className="ml-auto text-xs font-normal text-zinc-500">lore, prompt, stats</span>
-                        </summary>
-                        <div className="border-t border-zinc-800 p-4 space-y-4">
-                            <div className="grid gap-3 lg:grid-cols-2">
-                                <div className="space-y-1">
-                                    <div className="text-xs text-zinc-400">Lore</div>
-                                    <Textarea rows={4} value={lore} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLore(e.target.value)} placeholder="World history, factions, past wars, titles…" />
+                            {/* Personality Sliders */}
+                            <div className="rounded-2xl border border-fuchsia-900/40 bg-black/30 p-4">
+                                <div className="mb-4">
+                                    <div className="text-sm font-semibold text-zinc-100">Personality sliders</div>
+                                    <div className="text-xs text-zinc-500">Shape emotional tone and behavior in conversation.</div>
                                 </div>
-                                <div className="space-y-1">
-                                    <div className="text-xs text-zinc-400">Prompt profile</div>
-                                    <Textarea rows={4} value={promptProfile} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromptProfile(e.target.value)} placeholder="Roleplay style, cadence, scene framing…" />
+
+                                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Behavior style</div>
+                                <div className="grid gap-4 sm:grid-cols-2 mb-5">
+                                    <RangeRow label="Jealousy" hint="trusting → possessive" value={jealousyLevel} onChange={setJealousyLevel} />
+                                    <RangeRow label="Dominance style" hint="yielding → commanding" value={dominanceLevel} onChange={setDominanceLevel} />
+                                    <RangeRow label="Affection style" hint="reserved → expressive" value={affectionLevel} onChange={setAffectionLevel} />
+                                    <RangeRow label="Empathy" hint="detached → deeply empathetic" value={empathyLevel} onChange={setEmpathyLevel} />
                                 </div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">NSFW preference tags (comma-separated)</div>
-                                <Input value={nsfwPreferenceTags} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNsfwPreferenceTags(e.target.value)} placeholder="dominance, praise, teasing…" />
-                                <div className="text-xs text-zinc-500">Only applied for adult companions.</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Stats (key:value, comma-separated)</div>
-                                <Input value={statsInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStatsInput(e.target.value)} placeholder="intellect:90, charm:75, empathy:68" />
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs text-zinc-400">Boundaries (comma-separated)</div>
-                                <Input value={boundaries} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBoundaries(e.target.value)} placeholder="adults only, no coercion, no underage themes" />
-                            </div>
-                            <div className="grid gap-3 lg:grid-cols-3">
-                                <div className="space-y-1">
-                                    <div className="text-xs text-zinc-400">Avatar image URL</div>
-                                    <Input value={avatarImageUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarImageUrl(e.target.value)} placeholder="https://…" />
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-xs text-zinc-400">Orientation</div>
-                                    <Input value={orientation} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrientation(e.target.value)} placeholder="bisexual, pansexual…" />
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-xs text-zinc-400">Bucket</div>
-                                    <Input value={bucket} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBucket(e.target.value)} placeholder="SAFE or ADULT" />
+
+                                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Tone & vibe</div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <RangeRow label="Warmth" hint="cold → caring" value={warmth} onChange={setWarmth} />
+                                    <RangeRow label="Humor" hint="serious → witty" value={humor} onChange={setHumor} />
+                                    <RangeRow label="Flirtiness" hint="reserved → flirty" value={flirtiness} onChange={setFlirtiness} />
+                                    <RangeRow label="Assertiveness" hint="soft → dominant" value={dominance} onChange={setDominance} />
+                                    {contentRating === "ADULT" && (
+                                        <RangeRow label="Kink intensity" hint="vanilla → BDSM" value={kink} onChange={setKink} />
+                                    )}
                                 </div>
                             </div>
+
+                            {/* Behavior Metadata */}
+                            <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
+                                <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
+                                    <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                    Behavior metadata
+                                    <span className="ml-auto text-xs font-normal text-zinc-500">voice, attachment, humor</span>
+                                </summary>
+                                <div className="border-t border-zinc-800 p-4 space-y-3">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <Input value={voiceStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceStyle(e.target.value)} placeholder="Voice style: low, warm, aristocratic…" />
+                                        <Input value={speechPattern} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeechPattern(e.target.value)} placeholder="Speech pattern: direct, poetic, teasing…" />
+                                        <Input value={emojiUsage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmojiUsage(e.target.value)} placeholder="Emoji usage: none, rare, playful…" />
+                                        <Input value={attachmentStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAttachmentStyle(e.target.value)} placeholder="Attachment style: secure, anxious, avoidant…" />
+                                        <Input value={temperament} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTemperament(e.target.value)} placeholder="Temperament: calm, fiery, guarded…" />
+                                        <Input value={humorStyle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHumorStyle(e.target.value)} placeholder="Humor style: dry wit, banter, absurd…" />
+                                    </div>
+                                    <Textarea rows={3} value={traumaProfile} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTraumaProfile(e.target.value)} placeholder="Trauma profile: abandonment fears, betrayal history, guarded trust…" />
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Voice / accent</div>
+                                        <Input value={voiceAccent} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoiceAccent(e.target.value)} placeholder="British, Southern US, Tokyo…" />
+                                    </div>
+                                </div>
+                            </details>
+
+                            {/* Traits & Wardrobe */}
+                            <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
+                                <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
+                                    <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                    Traits & wardrobe
+                                    <span className="ml-auto text-xs font-normal text-zinc-500">{traitList.length}/10 traits</span>
+                                </summary>
+                                <div className="border-t border-zinc-800 p-4 space-y-4">
+                                    <div>
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <div className="text-xs text-zinc-400">Traits</div>
+                                            <div className="text-[11px] text-zinc-500">{traitList.length}/10</div>
+                                        </div>
+                                        <select value="" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                            const val = e.target.value;
+                                            if (!val || traitList.length >= 10 || traitList.includes(val)) return;
+                                            setTraitList((prev) => [...prev, val]);
+                                            e.target.value = "";
+                                        }} disabled={traitList.length >= 10} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 disabled:opacity-50">
+                                            <option value="">{traitList.length >= 10 ? "Limit reached (10)" : "Add a trait…"}</option>
+                                            {TRAIT_OPTIONS.filter((t) => !traitList.includes(t)).map((t) => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                        {traitList.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 pt-2">
+                                                {traitList.map((t) => (
+                                                    <button key={t} type="button" onClick={() => setTraitList((prev) => prev.filter((x) => x !== t))}
+                                                        className="inline-flex items-center gap-1 rounded-full border border-fuchsia-900/50 bg-fuchsia-950/30 px-2.5 py-1 text-xs text-fuchsia-200 hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-300 transition">
+                                                        {t} ✕
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Wardrobe / look</div>
+                                        <Textarea rows={3} value={wardrobe} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setWardrobe(e.target.value)} placeholder="Outfits, accessories, style…" />
+                                    </div>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+
+                        {/* ── Right column: character writing ── */}
+                        <div className="space-y-6">
+                            {/* CV2 Core */}
+                            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
+                                <div>
+                                    <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Core</div>
+                                    <div className="text-xs text-zinc-500">SillyTavern-compatible fields.</div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Tagline <span className="text-zinc-600">· one-sentence hook</span></div>
+                                        <Input value={tagline} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagline(e.target.value)} placeholder="A sharp-tongued elven noble who hides a centuries-old wound." />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Role <span className="text-zinc-600">· occupation / archetype</span></div>
+                                        <Input value={role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)} placeholder="Court assassin turned traveling apothecary" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <div className="text-xs text-zinc-400">Personality</div>
+                                    <Textarea rows={4} value={personality} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonality(e.target.value)} placeholder="Detailed personality traits, emotional patterns, quirks…" />
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Appearance</div>
+                                        <Textarea rows={3} value={appearance} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAppearance(e.target.value)} placeholder="Physical description, style, notable features…" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Speaking style</div>
+                                        <Textarea rows={3} value={speakingStyle} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpeakingStyle(e.target.value)} placeholder="How they communicate — cadence, vocabulary, tone…" />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Backstory</div>
+                                        <Textarea rows={4} value={background} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBackground(e.target.value)} placeholder="Compelling background and history…" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Goals & motivations</div>
+                                        <Textarea rows={4} value={goals} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoals(e.target.value)} placeholder="What drives them, what they want from the relationship…" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CV2 Dialogue */}
+                            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
+                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — Dialogue</div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Scene preset</div>
+                                        <select value={scenePreset} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setScenePreset(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
+                                            <option value="">(none)</option>
+                                            {SCENE_PRESETS.map((s) => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </label>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Custom scenario</div>
+                                        <Input value={sceneCustom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSceneCustom(e.target.value)} placeholder="Custom overrides preset if filled" />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">First message <span className="text-zinc-600">· greeting</span></div>
+                                        <Textarea rows={4} value={firstMessage} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFirstMessage(e.target.value)} placeholder="Their opening message to the user, written in character…" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Example dialogue <span className="text-zinc-600">· mes_example</span></div>
+                                        <Textarea rows={4} value={exampleDialogue} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExampleDialogue(e.target.value)} placeholder={"User: Hey, are you okay?\nCharacter: *glances sideways* Define okay."} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CV2 System */}
+                            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-4">
+                                <div className="text-sm font-semibold text-zinc-100">Character Card V2 — System</div>
+
+                                <div className="space-y-1">
+                                    <div className="text-xs text-zinc-400">System prompt <span className="text-zinc-600">· hard rules for AI behavior</span></div>
+                                    <Textarea rows={4} value={aiPersonalityPrompt} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPersonalityPrompt(e.target.value)} placeholder="You are {{char}}. Always stay in character. Never break the fourth wall…" />
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Post-history instructions</div>
+                                        <Textarea rows={3} value={postHistoryInstructions} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPostHistoryInstructions(e.target.value)} placeholder="Instructions appended after chat history…" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Creator notes</div>
+                                        <Textarea rows={3} value={creatorNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCreatorNotes(e.target.value)} placeholder="Notes for users of this character card…" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Advanced */}
+                            <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
+                                <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
+                                    <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                    Advanced
+                                    <span className="ml-auto text-xs font-normal text-zinc-500">lore, prompt, stats</span>
+                                </summary>
+                                <div className="border-t border-zinc-800 p-4 space-y-4">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <div className="text-xs text-zinc-400">Lore</div>
+                                            <Textarea rows={4} value={lore} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLore(e.target.value)} placeholder="World history, factions, past wars, titles…" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xs text-zinc-400">Prompt profile</div>
+                                            <Textarea rows={4} value={promptProfile} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromptProfile(e.target.value)} placeholder="Roleplay style, cadence, scene framing…" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">NSFW preference tags (comma-separated)</div>
+                                        <Input value={nsfwPreferenceTags} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNsfwPreferenceTags(e.target.value)} placeholder="dominance, praise, teasing…" />
+                                        <div className="text-xs text-zinc-500">Only applied for adult companions.</div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Stats (key:value, comma-separated)</div>
+                                        <Input value={statsInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStatsInput(e.target.value)} placeholder="intellect:90, charm:75, empathy:68" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Boundaries (comma-separated)</div>
+                                        <Input value={boundaries} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBoundaries(e.target.value)} placeholder="adults only, no coercion, no underage themes" />
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        <div className="space-y-1">
+                                            <div className="text-xs text-zinc-400">Avatar image URL</div>
+                                            <Input value={avatarImageUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarImageUrl(e.target.value)} placeholder="https://…" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xs text-zinc-400">Orientation</div>
+                                            <Input value={orientation} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrientation(e.target.value)} placeholder="bisexual, pansexual…" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xs text-zinc-400">Bucket</div>
+                                            <Input value={bucket} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBucket(e.target.value)} placeholder="SAFE or ADULT" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
 
                     {error && (
                         <div className="rounded-xl border border-red-800/50 bg-red-900/20 p-3 text-sm text-red-200">{error}</div>
