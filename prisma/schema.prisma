@@ -61,6 +61,7 @@ model Companion {
   scenario                                                               String?
   greeting                                                               String?
   personalityTags                                                        String[]
+  profileEmbedding                                                       Unsupported("vector")?
   User                                                                   User?                   @relation(fields: [ownerId], references: [id], onUpdate: NoAction)
   assets                                                                 CompanionAsset[]
   categories                                                             CompanionCategory[]
@@ -69,6 +70,7 @@ model Companion {
   conversations                                                          Conversation[]
   GenerationJob                                                          GenerationJob[]
   marketplaceListings                                                    MarketplaceListing?
+  companion_embeddings                                                   companion_embeddings?
 
   @@index([createdAt])
   @@index([featuredRank])
@@ -77,6 +79,16 @@ model Companion {
   @@index([likes, views])
   @@index([ownerId])
   @@index([visibility, contentRating], map: "Companion_vis_rating_idx")
+  @@index([profileEmbedding], map: "Companion_profileEmbedding_ivfflat_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], map: "companion_description_trgm_idx", type: Gin)
+  @@index([kinkTags], map: "companion_kink_tags_gin_idx", type: Gin)
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "companion_name_trgm_idx", type: Gin)
+  @@index([personalityTags], map: "companion_personality_tags_gin_idx", type: Gin)
+  @@index([profile(ops: JsonbPathOps)], map: "companion_profile_gin_idx", type: Gin)
+  @@index([public, contentRating, createdAt(sort: Desc)], map: "companion_public_rating_created_idx")
+  @@index([relationshipTags], map: "companion_relationship_tags_gin_idx", type: Gin)
+  @@index([tags], map: "companion_tags_gin_idx", type: Gin)
+  @@index([visibility, contentRating, createdAt(sort: Desc)], map: "companion_visibility_rating_created_idx")
   @@schema("public")
 }
 
@@ -124,6 +136,7 @@ model DiscoveryEvent {
   @@index([userId, createdAt])
   @@index([companionId, action, createdAt])
   @@index([action, createdAt])
+  @@index([companionId, action, createdAt(sort: Desc)], map: "discovery_event_rollup_idx")
   @@schema("public")
 }
 
@@ -150,6 +163,7 @@ model MarketplaceListing {
   @@index([status, listingType, contentRating, publishedAt])
   @@index([creatorId, status])
   @@index([contentRating, status, createdAt])
+  @@index([tags], map: "marketplace_tags_gin_idx", type: Gin)
   @@schema("public")
 }
 
@@ -175,6 +189,7 @@ model World {
   @@index([ownerId, createdAt])
   @@index([isPublic, lastActivityAt])
   @@index([contentRating, isPublic, createdAt])
+  @@index([isPublic, contentRating, lastActivityAt(sort: Desc)], map: "world_public_activity_idx")
   @@schema("public")
 }
 
@@ -192,6 +207,7 @@ model WorldMember {
   @@unique([worldId, userId])
   @@index([userId, joinedAt])
   @@index([worldId, role])
+  @@index([worldId, role], map: "world_member_world_role_idx")
   @@schema("public")
 }
 
@@ -378,6 +394,7 @@ model ChatMessage {
 
   @@index([conversationId, createdAt], map: "Message_conv_created_idx")
   @@index([conversationId, isPinned], map: "Message_conv_pinned_idx")
+  @@index([conversationId, createdAt(sort: Desc)], map: "chat_message_recent_idx")
   @@schema("public")
 }
 
@@ -1198,6 +1215,20 @@ model RelationshipState {
   updatedAt       DateTime  @updatedAt
 
   @@unique([userId, companionId])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model companion_embeddings {
+  companion_id String                @id
+  content      String
+  embedding    Unsupported("vector")
+  metadata     Json                  @default("{}")
+  created_at   DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime              @default(now()) @db.Timestamptz(6)
+  Companion    Companion             @relation(fields: [companion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([embedding], map: "companion_embeddings_hnsw_idx")
   @@schema("public")
 }
 
