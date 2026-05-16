@@ -2,12 +2,14 @@ packages:
   - "."
 
 onlyBuiltDependencies:
+  - "@parcel/watcher"
   - "@prisma/client"
   - "@prisma/engines"
   - esbuild
   - msgpackr-extract
+  - netlify
   - ngrok
   - prisma
   - sharp
-  - supabase
+  - unix-dgram
   - unrs-resolver
