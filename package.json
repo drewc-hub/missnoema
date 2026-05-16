@@ -39,6 +39,7 @@
     "@mistralai/mistralai": "^1.15.1",
     "@netlify/database": "^1.0.0",
     "@openai/openai": "jsr:^6.37.0",
+    "@opentelemetry/api": "^1.9.1",
     "@pollinations/model-context-protocol": "^1.0.15",
     "@pollinations/react": "^2.0.7",
     "@prisma/client": "^6.19.3",
@@ -62,6 +63,7 @@
     "react-native-web": "^0.21.2",
     "redis": "^5.12.1",
     "replicate": "^1.4.0",
+    "sharp": "^0.34.5",
     "stripe": "^22.1.1",
     "vue": "^3.5.34",
     "webpack": "^5.106.2"
@@ -103,6 +105,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "pnpm": {
+  
     "onlyBuiltDependencies": [
       "@parcel/watcher",
       "@prisma/client",
@@ -113,6 +116,12 @@
       "sharp",
       "unix-dgram",
       "unrs-resolver"
-    ]
+    ],
+   "peerDependencyRules": {
+      "allowedVersions": {
+        "react": "19",
+        "react-dom": "19"
+      }
+    }
   }
 }
