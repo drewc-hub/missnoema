@@ -64,6 +64,8 @@ export function MediaGenPanel({
   );
   const [negativePrompt, setNegativePrompt] = useState("");
   const [promptFocused, setPromptFocused] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -334,7 +336,48 @@ export function MediaGenPanel({
           )}
 
           <div className="space-y-2">
-            <div className="text-xs text-zinc-400">Prompt</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs text-zinc-400">Prompt</div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] tabular-nums ${prompt.length > 1500 ? "text-amber-400" : "text-zinc-500"}`}>
+                  {prompt.length} / 1500
+                </span>
+                {prompt.length > 100 && (
+                  <button
+                    type="button"
+                    disabled={enhancing}
+                    onClick={async () => {
+                      setEnhancing(true);
+                      setEnhanceError(null);
+                      try {
+                        const res = await fetch("/api/media/enhance-prompt", {
+                          method: "POST",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({ prompt }),
+                        });
+                        const data = await res.json().catch(() => null);
+                        if (!res.ok || !data?.enhanced) throw new Error(data?.error || "Enhancement failed.");
+                        setPrompt(data.enhanced);
+                      } catch (err) {
+                        setEnhanceError(err instanceof Error ? err.message : "Enhancement failed.");
+                      } finally {
+                        setEnhancing(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-fuchsia-500/40 bg-fuchsia-600/10 px-2 py-0.5 text-[11px] font-medium text-fuchsia-300 transition hover:bg-fuchsia-600/20 disabled:opacity-50"
+                  >
+                    {enhancing ? (
+                      <span className="h-2.5 w-2.5 animate-spin rounded-full border border-fuchsia-400 border-t-transparent" />
+                    ) : (
+                      <svg className="h-2.5 w-2.5" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5L8 1z"/>
+                      </svg>
+                    )}
+                    {enhancing ? "Enhancing…" : "Enhance"}
+                  </button>
+                )}
+              </div>
+            </div>
             <textarea
               value={prompt}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value)}
@@ -342,10 +385,13 @@ export function MediaGenPanel({
               onBlur={() => setPromptFocused(false)}
               rows={promptFocused ? 8 : 3}
               placeholder="Portrait, cinematic lighting, soft background..."
-              className={`w-full resize-y rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 transition-[min-height] focus:outline-none focus:ring-2 focus:ring-white/20 ${
-                promptFocused ? "min-h-[210px]" : "min-h-[92px]"
-              }`}
+              className={`w-full resize-y rounded-xl border bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 transition-[min-height] focus:outline-none focus:ring-2 focus:ring-white/20 ${
+                prompt.length > 1500 ? "border-amber-700/60" : "border-zinc-800"
+              } ${promptFocused ? "min-h-[210px]" : "min-h-[92px]"}`}
             />
+            {enhanceError && (
+              <div className="text-[11px] text-red-400">{enhanceError}</div>
+            )}
           </div>
 
           <div className="space-y-2">
