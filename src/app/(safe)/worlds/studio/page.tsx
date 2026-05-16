@@ -13,6 +13,7 @@ function profileString(profile: unknown, key: string) {
 }
 
 export default async function WorldStudioPage() {
+
     const user = await getAuthedUser();
     if (!user) {
         redirect(`/login?next=${encodeURIComponent("/worlds/studio")}`);

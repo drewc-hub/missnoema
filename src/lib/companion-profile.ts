@@ -160,6 +160,18 @@ export const MatchmakingSchema = z
 
 export const CompanionProfileSchema = z.object({
   premiumOnly: z.boolean().optional().default(false),
+  // SillyTavern V2 core fields
+  tagline: z.string().optional().default(""),
+  role: z.string().optional().default(""),
+  appearance: z.string().optional().default(""),
+  speakingStyle: z.string().optional().default(""),
+  goals: z.string().optional().default(""),
+  greeting: z.string().optional().default(""),
+  exampleDialogue: z.string().optional().default(""),
+  postHistoryInstructions: z.string().optional().default(""),
+  creatorNotes: z.string().optional().default(""),
+  memory: z.string().optional().default(""),
+  // existing fields
   scene: z.string().optional().default(""),
   background: z.string().optional().default(""),
   personality: z.string().optional().default(""),

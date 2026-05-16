@@ -5,10 +5,8 @@ import { ContentRating } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
-import { CompanionBuilder } from "@/components/CompanionBuilder";
-import { MediaGenPanel } from "@/components/MediaGenPanel";
-import { MarketplaceListingPanel } from "@/components/MarketplaceListingPanel";
-import { Card, CardBody, CardHeader, Badge } from "@/components/ui";
+import { CompanionEditLayout } from "@/components/CompanionEditLayout";
+import { Badge } from "@/components/ui";
 
 export default async function EditAdultCompanionPage({
   params,
@@ -41,6 +39,7 @@ export default async function EditAdultCompanionPage({
       description: true,
       tags: true,
       archetype: true,
+      gender: true,
       profile: true,
       contentRating: true,
       visibility: true,
@@ -71,6 +70,8 @@ export default async function EditAdultCompanionPage({
     redirect(`/companions/${slug}/edit`);
   }
 
+  const listing = companion.marketplaceListings ?? null;
+
   return (
     <main className="space-y-5">
       <div className="flex items-center justify-between gap-3">
@@ -89,67 +90,33 @@ export default async function EditAdultCompanionPage({
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-12">
-        <section className="space-y-4 lg:col-span-7">
-          <Card>
-            <CardHeader
-              title="Builder"
-              subtitle="Edit the companion profile and save changes."
-            />
-            <CardBody>
-              <CompanionBuilder
-                mode="edit"
-                allowAdult={allowAdult}
-                userEmail={user.email ?? null}
-                companion={{
-                  id: companion.id,
-                  slug: companion.slug,
-                  name: companion.name,
-                  description: companion.description,
-                  tags: companion.tags,
-                  archetype: companion.archetype ?? "",
-                  profile: companion.profile as any,
-                  contentRating: "ADULT",
-                  visibility: companion.visibility,
-                }}
-              />
-            </CardBody>
-          </Card>
-        </section>
-
-        <aside className="space-y-4 lg:col-span-5">
-          <MarketplaceListingPanel
-            companion={{
-              id: companion.id,
-              slug: companion.slug,
-              description: companion.description,
-              tags: companion.tags,
-              profile: companion.profile,
-              assets: companion.assets,
-              visibility: companion.visibility,
-              contentRating: companion.contentRating,
-            }}
-            listing={companion.marketplaceListings ?? null}
-          />
-
-          <Card>
-            <CardHeader
-              title="Media generation"
-              subtitle="Generate images and video for this adult companion."
-            />
-            <CardBody>
-              <MediaGenPanel
-                allowAdult={allowAdult}
-                loggedIn={true}
-                companionId={companion.id}
-                contentRating={companion.contentRating}
-                defaultTag={companion.tags?.[0] ?? ""}
-                redirectAfterGenerate={`/adult/chat?companion=${companion.slug}`}
-              />
-            </CardBody>
-          </Card>
-        </aside>
-      </div>
+      <CompanionEditLayout
+        allowAdult={allowAdult}
+        userEmail={user.email ?? null}
+        companion={{
+          id: companion.id,
+          slug: companion.slug,
+          name: companion.name,
+          description: companion.description,
+          tags: companion.tags,
+          gender: companion.gender,
+          archetype: companion.archetype ?? null,
+          profile: companion.profile as Record<string, unknown> | null,
+          contentRating: "ADULT",
+          visibility: companion.visibility,
+          assets: companion.assets,
+          listing: listing
+            ? {
+                id: listing.id,
+                status: listing.status,
+                priceCoins: listing.priceCoins,
+                priceUsdCents: listing.priceUsdCents,
+                updatedAt: listing.updatedAt.toISOString(),
+                publishedAt: listing.publishedAt?.toISOString() ?? null,
+              }
+            : null,
+        }}
+      />
     </main>
   );
 }
