@@ -16,8 +16,8 @@
 }
 
 .custom-bg {
-  background: background: #020024;
-  background: background-image: radial-gradient(circle at top, #18181b 0%, #0f0f10 45%, #09090b 100%);
+  background: #020024;
+  background: radial-gradient(circle at top, #18181b 0%, #0f0f10 45%, #09090b 100%);
   padding: 1.5rem 1rem;
 }
 
@@ -27,6 +27,20 @@
     padding-right: 2rem;
   }
 }
+
+.studioc-bg {
+  background: #020024;
+  background: linear-gradient(to top right, #0891b2, #1d4ed8, #3730a3);
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 1024px) {
+  .studioc-bg {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
 
 
 /* ============================================================
