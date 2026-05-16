@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   }
 
   const companion = await prisma.companion.findFirst({
-    where: { id: companionId, visibility: "PUBLIC" },
+    where: { id: companionId, ownerId: user.id },
     select: { id: true, contentRating: true },
   });
   if (!companion) return NextResponse.json({ error: "Companion not found." }, { status: 404 });

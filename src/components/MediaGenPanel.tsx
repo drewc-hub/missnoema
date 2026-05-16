@@ -66,6 +66,10 @@ export function MediaGenPanel({
   const [promptFocused, setPromptFocused] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ assetId: string; publicUrl: string | null } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [settingCover, setSettingCover] = useState(false);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -76,6 +80,8 @@ export function MediaGenPanel({
   const [cooldownLeft, setCooldownLeft] = useState(0);
   const activeJobIdRef = useRef<string | null>(null);
   const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [coverSuccess, setCoverSuccess] = useState(false);
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -248,6 +254,47 @@ export function MediaGenPanel({
       activeJobIdRef.current = null;
       setLoadingType(null);
       setJobStatus(null);
+    }
+  }
+
+  async function handleFileUpload(file: File) {
+    setUploading(true);
+    setUploadError(null);
+    setUploadResult(null);
+    setCoverSuccess(false);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("companionId", companionId);
+      const res = await fetch("/api/media/upload", { method: "POST", body: fd });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.assetId) throw new Error(data?.error || "Upload failed.");
+      setUploadResult({ assetId: data.assetId, publicUrl: data.publicUrl ?? null });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSetCover() {
+    if (!uploadResult) return;
+    setSettingCover(true);
+    setCoverSuccess(false);
+    try {
+      const res = await fetch(`/api/media/${uploadResult.assetId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isCover: true }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Failed to set cover.");
+      setCoverSuccess(true);
+      onHistoryRefresh?.();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to set cover.");
+    } finally {
+      setSettingCover(false);
     }
   }
 
@@ -481,6 +528,79 @@ export function MediaGenPanel({
               )}
             </div>
           ) : null}
+
+          {/* Cover photo upload */}
+          {loggedIn && (
+            <div className="border-t border-zinc-800 pt-4 space-y-3">
+              <div className="text-xs font-semibold text-zinc-300">Cover photo</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:bg-zinc-700 disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border border-zinc-400 border-t-transparent" />
+                  ) : (
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {uploading ? "Uploading…" : "Upload image"}
+                </button>
+                <span className="text-[11px] text-zinc-500">JPG · PNG · WebP · max 10 MB</span>
+              </div>
+
+              {uploadError && (
+                <div className="text-[11px] text-red-400">{uploadError}</div>
+              )}
+
+              {uploadResult && (
+                <div className="space-y-2">
+                  {uploadResult.publicUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={uploadResult.publicUrl}
+                      alt="Uploaded cover preview"
+                      className="max-h-48 w-full rounded-xl border border-zinc-800 object-cover"
+                    />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSetCover}
+                      disabled={settingCover || coverSuccess}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-fuchsia-500/40 bg-fuchsia-600/10 px-3 py-1.5 text-sm font-medium text-fuchsia-300 transition hover:bg-fuchsia-600/20 disabled:opacity-50"
+                    >
+                      {settingCover ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border border-fuchsia-400 border-t-transparent" />
+                      ) : (
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      )}
+                      {settingCover ? "Setting…" : coverSuccess ? "Cover set!" : "Set as cover photo"}
+                    </button>
+                    {coverSuccess && (
+                      <span className="text-[11px] text-emerald-400">Cover photo updated.</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardBody>
     </Card>

@@ -118,23 +118,71 @@ async function downloadToBytes(url: string) {
     const ct = res.headers.get("content-type") ?? "application/octet-stream";
     return { bytes: new Uint8Array(ab), contentType: ct };
 }
+const PRIMARY_REPLICATE_MODEL = "zedge/stable-diffusion:69d39dcbb296da580994d867890ba2410d1fb6be9da9225d9bb48da2181594cf" as const;
+
+async function extractReplicateUrl(output: unknown): Promise<string | null> {
+    if (!output) return null;
+    if (typeof output === "string") return output;
+    if (typeof (output as any)?.url === "string") return (output as any).url;
+    if (typeof (output as any)?.url === "function") {
+        const r = await (output as any).url();
+        if (typeof r === "string") return r;
+    }
+    if (typeof (output as any)?.href === "string") return (output as any).href;
+    const s = String(output);
+    if (/^https?:\/\//.test(s)) return s;
+    return null;
+}
+
+async function runReplicate(
+    model: string,
+    input: Record<string, unknown>,
+): Promise<{ bytes: Uint8Array; contentType: string }> {
+    const { signal, cancel } = timeoutSignal(REPLICATE_RUN_TIMEOUT_MS, "replicate.run");
+    let output: unknown;
+    try {
+        output = await replicate.run(model as `${string}/${string}`, { input, signal });
+    } finally {
+        cancel();
+    }
+
+    console.log("[worker] replicate raw output:", typeof output, Array.isArray(output) ? "array" : "scalar");
+
+    const raw = Array.isArray(output) ? output[0] : output;
+    const url = await extractReplicateUrl(raw);
+    if (!url) throw new Error(`Replicate returned no URL. Raw: ${JSON.stringify(output)}`);
+    return downloadToBytes(url);
+}
+
 async function generateImageBytes(
     prompt: string,
     contentRating: ContentRating,
     negativePrompt?: string | null,
 ) {
     const isAdult = contentRating === ContentRating.ADULT;
-    const provider = env("IMAGE_PROVIDER", "leonardo");
     const defaultNegativePrompt = isAdult
-        ? env(
-            "LEONARDO_ADULT_NEGATIVE_PROMPT",
-            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
-        )
-        : env(
-            "LEONARDO_NEGATIVE_PROMPT",
-            "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs",
-        );
+        ? env("LEONARDO_ADULT_NEGATIVE_PROMPT", "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs")
+        : env("LEONARDO_NEGATIVE_PROMPT", "watermark, text, logo, signature, blurry, deformed, bad anatomy, low quality, extra limbs, missing limbs");
     const finalNegativePrompt = negativePrompt?.trim() || defaultNegativePrompt;
+
+    // ── Primary: Replicate zedge/stable-diffusion ──────────────────────────
+    try {
+        console.log("[worker] trying primary Replicate model:", PRIMARY_REPLICATE_MODEL);
+        return await runReplicate(PRIMARY_REPLICATE_MODEL, {
+            prompt,
+            negative_prompt: finalNegativePrompt,
+            width: 768,
+            height: 1024,
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+            scheduler: "DPMSolverMultistep",
+        });
+    } catch (primaryErr: any) {
+        console.warn("[worker] primary Replicate model failed, falling back:", primaryErr?.message ?? primaryErr);
+    }
+
+    // ── Fallback: configured IMAGE_PROVIDER ───────────────────────────────
+    const provider = env("IMAGE_PROVIDER", "leonardo");
 
     if (provider === "leonardo") {
         return generateLeonardoImageBytes(prompt, {
@@ -151,10 +199,9 @@ async function generateImageBytes(
             contrast: Number(env("LEONARDO_CONTRAST", "3.5")),
             negativePrompt: finalNegativePrompt,
             nsfw: env("LEONARDO_ADULT_NSFW", "true") === "true",
-        });
+        } as any);
     }
 
-    // Use HF/fal-ai when IMAGE_PROVIDER=hf (requires HF_TOKEN env var).
     if (provider === "hf") {
         return generateHfImageBytes(prompt, {
             provider: env("HF_PROVIDER", "fal-ai"),
@@ -163,93 +210,22 @@ async function generateImageBytes(
                 : env("HF_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev"),
             intensity: isAdult ? 3 : 1,
             aspectRatio: "2:3",
-            nsfw: env("HF_ADULT_NSFW", "true") === "true",
         });
     }
 
-    const model = isAdult
+    const fallbackModel = isAdult
         ? env("REPLICATE_ADULT_IMAGE_MODEL", "google/nano-banana-2:71516450bdbeafc41df33ad538bc8cc6a90f80038a563b1260531c02d694f4fd")
         : env("REPLICATE_IMAGE_MODEL", "black-forest-labs/flux-dev");
 
-    const input: Record<string, unknown> = isAdult
-        ? {
-            prompt,
-            nsfw: env("REPLICATE_ADULT_NSFW", "true") === "true",
-            negative_prompt: finalNegativePrompt,
-            num_inference_steps: 30,
-            guidance_scale: 7.5,
-            width: 768,
-            height: 1024,
-        }
-        : { prompt };
-
-    const { signal, cancel } = timeoutSignal(
-        REPLICATE_RUN_TIMEOUT_MS,
-        "replicate.run",
-    );
-
-    let output: unknown;
-    try {
-        output = await replicate.run(model as `${string}/${string}`, {
-            input: {
-                ...input,
-                disable_safety_checker: true
-            },
-            signal
-        });
-    } finally {
-        cancel();
-    }
-
-    console.log(
-        "[worker] replicate raw output type:",
-        typeof output,
-        Array.isArray(output) ? "array" : "not-array",
-    );
-
-    let url: string | null = null;
-
-    async function extractUrl(value: any): Promise<string | null> {
-        if (!value) return null;
-
-        if (typeof value === "string") {
-            return value;
-        }
-
-        if (typeof value?.url === "string") {
-            return value.url;
-        }
-
-        if (typeof value?.url === "function") {
-            const result = await value.url();
-            if (typeof result === "string") return result;
-        }
-
-        if (typeof value?.href === "string") {
-            return value.href;
-        }
-
-        const asString = String(value);
-        if (typeof asString === "string" && /^https?:\/\//.test(asString)) {
-            return asString;
-        }
-
-        return null;
-    }
-
-    if (Array.isArray(output)) {
-        url = await extractUrl(output[0]);
-    } else {
-        url = await extractUrl(output);
-    }
-
-    if (!url) {
-        throw new Error(
-            `Replicate returned no output URL. Raw output: ${JSON.stringify(output)}`,
-        );
-    }
-
-    return downloadToBytes(url);
+    return runReplicate(fallbackModel, {
+        prompt,
+        negative_prompt: finalNegativePrompt,
+        num_inference_steps: 30,
+        guidance_scale: 7.5,
+        width: 768,
+        height: 1024,
+        disable_safety_checker: true,
+    });
 }
 
 function extFromContentType(ct: string) {

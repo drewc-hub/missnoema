@@ -55,7 +55,7 @@ export default async function NewAdultCompanionPage() {
         <main className="min-h-screen bg-[radial-gradient(circle_at_top,#0f2a4d_0%,#081120_45%,#050816_100%)] px-4 py-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1800px]">
                 <div className="mb-6">
-                    <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs tracking-wide text-blue-300 mb-3">
+                    <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-black-500/10 px-3 py-1 text-xs tracking-wide text-blue-300 mb-3">
                         18+ verified access
                     </div>
 
