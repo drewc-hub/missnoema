@@ -130,6 +130,28 @@ function computeDecay(daysSinceActive: number): { familiarity: number; trust: nu
   return { familiarity: 0, trust: 0, intimacy: 0 };
 }
 
+function injectLorebookEntries(entries: Array<Record<string, unknown>>, recentText: string): string {
+  const lower = recentText.toLowerCase();
+  const matched: string[] = [];
+  let totalChars = 0;
+  for (const entry of entries) {
+    if (totalChars >= 1200) break;
+    const isConstant = entry.constant === true;
+    const keys = Array.isArray(entry.keys)
+      ? (entry.keys as unknown[]).filter((k): k is string => typeof k === "string")
+      : [];
+    const triggered = isConstant || keys.some(k => k && lower.includes(k.toLowerCase()));
+    if (!triggered) continue;
+    const label = typeof entry.name === "string" && entry.name ? entry.name : "Lore";
+    const content = typeof entry.content === "string" ? entry.content : "";
+    const chunk = `${label}: ${content}`;
+    if (totalChars + chunk.length > 1200) break;
+    matched.push(chunk);
+    totalChars += chunk.length + 2;
+  }
+  return matched.join("\n\n");
+}
+
 function buildCompanionSystemPrompt(args: {
   companion: {
     name: string;
@@ -156,6 +178,8 @@ function buildCompanionSystemPrompt(args: {
   relationshipStage?: RelationshipStage;
   mode?: "rerun" | "variation";
   ooc?: string;
+  lorebookEntries?: Array<Record<string, unknown>>;
+  recentText?: string;
 }) {
   const {
     companion,
@@ -166,6 +190,8 @@ function buildCompanionSystemPrompt(args: {
     companionMood = 0,
     relationshipStage = "STRANGER",
     mode = "rerun",
+    lorebookEntries = [],
+    recentText = "",
   } = args;
 
   const profile =
@@ -312,7 +338,13 @@ function buildCompanionSystemPrompt(args: {
     personality && `Personality: ${personality}`,
     wardrobe    && `Wardrobe: ${wardrobe}`,
     traits.length && `Traits: ${traits.slice(0, 8).join(", ")}`,
-    lore && `Lore: ${lore}`,
+    (() => {
+      if (lorebookEntries.length > 0) {
+        const injected = injectLorebookEntries(lorebookEntries, recentText);
+        return injected ? `Lore:\n${injected}` : "";
+      }
+      return lore ? `Lore: ${lore}` : "";
+    })(),
     orientation && `Orientation: ${orientation}`,
     promptProfile && `Prompt profile: ${promptProfile}`,
     aiPersonalityPrompt && `Personality directive: ${aiPersonalityPrompt}`,
@@ -847,6 +879,23 @@ export async function POST(req: Request) {
     conversation.intimacy,
   );
 
+  const companionProfileRaw = companion.profile && typeof companion.profile === "object"
+    ? (companion.profile as Record<string, unknown>)
+    : {};
+  const companionCharacterBookRaw = companionProfileRaw.characterBook && typeof companionProfileRaw.characterBook === "object"
+    ? (companionProfileRaw.characterBook as Record<string, unknown>)
+    : null;
+  const companionLorebookEntries = companionCharacterBookRaw && Array.isArray(companionCharacterBookRaw.entries)
+    ? (companionCharacterBookRaw.entries as Array<Record<string, unknown>>)
+        .filter(e => e.enabled !== false && typeof e.content === "string" && e.content)
+        .sort((a, b) => Number(a.insertion_order ?? 0) - Number(b.insertion_order ?? 0))
+    : [];
+
+  const recentText = [
+    ...contextMessages.slice(-6).map(m => m.content),
+    message,
+  ].filter(Boolean).join(" ");
+
   const systemPrompt = buildCompanionSystemPrompt({
     companion,
     memory: {
@@ -865,6 +914,8 @@ export async function POST(req: Request) {
     companionMood: conversation.companionMood as 0 | 1 | 2 | 3,
     relationshipStage,
     ooc: ooc || undefined,
+    lorebookEntries: companionLorebookEntries,
+    recentText,
   });
 
   const encoder = new TextEncoder();

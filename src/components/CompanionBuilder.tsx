@@ -11,6 +11,8 @@ import {
     Button,
     Badge,
 } from "@/components/ui";
+import { LorebookEditor } from "@/components/LorebookEditor";
+import type { CharacterBookEntry } from "@/lib/companion-profile";
 
 type ContentRating = "SAFE" | "ADULT";
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -54,6 +56,14 @@ type CompanionProfile = {
     stats?: Record<string, number>;
     avatarImageUrl?: string;
     lore?: string;
+    characterBook?: {
+        name?: string;
+        description?: string;
+        scan_depth?: number;
+        token_budget?: number;
+        recursive_scanning?: boolean;
+        entries?: CharacterBookEntry[];
+    };
     orientation?: string;
     bucket?: string;
     promptProfile?: string;
@@ -306,6 +316,9 @@ export function CompanionBuilder({
         Array.isArray(profile.traits) ? profile.traits.slice(0, 10) : []
     );
     const [wardrobe, setWardrobe] = useState(profileStr(profile, "wardrobe"));
+    const [lorebookEntries, setLorebookEntries] = useState<CharacterBookEntry[]>(
+        Array.isArray(profile.characterBook?.entries) ? profile.characterBook.entries : []
+    );
 
     const [scenePreset, setScenePreset] = useState(
         SCENE_PRESETS.includes((profile.scene ?? "") as (typeof SCENE_PRESETS)[number])
@@ -401,6 +414,14 @@ export function CompanionBuilder({
                 },
                 avatarImageUrl: avatarImageUrl.trim(),
                 lore: lore.trim(),
+                characterBook: {
+                    name: "",
+                    description: "",
+                    scan_depth: 4,
+                    token_budget: 2048,
+                    recursive_scanning: false,
+                    entries: lorebookEntries,
+                },
                 orientation: orientation.trim(),
                 bucket: bucket.trim(),
                 promptProfile: promptProfile.trim(),
@@ -946,6 +967,20 @@ export function CompanionBuilder({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Lorebook */}
+                            <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
+                                <summary className="flex cursor-pointer select-none items-center gap-2 p-4 text-sm font-semibold text-zinc-200 hover:text-white">
+                                    <svg className="h-4 w-4 flex-none transition-transform group-open:rotate-180" fill="none" viewBox="0 0 10 6" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                    Lorebook
+                                    <span className="ml-auto text-xs font-normal text-zinc-500">{lorebookEntries.length} {lorebookEntries.length === 1 ? "entry" : "entries"}</span>
+                                </summary>
+                                <div className="border-t border-zinc-800 p-4">
+                                    <LorebookEditor entries={lorebookEntries} onChange={setLorebookEntries} />
+                                </div>
+                            </details>
 
                             {/* Advanced */}
                             <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">

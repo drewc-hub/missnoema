@@ -13,7 +13,7 @@ import { ContentRating, MarketplaceListingStatus, Visibility } from "@prisma/cli
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getMarketplaceReadiness, getMarketplaceState } from "@/lib/marketplace-readiness";
+import { getMarketplaceReadiness } from "@/lib/marketplace-readiness";
 
 function StatusPill({
     children,
@@ -155,7 +155,6 @@ export default async function CreatorPage() {
                                 : asset.publicUrl ?? `/media/${asset.id}`
                             : null;
                         const readiness = getMarketplaceReadiness(companion);
-                        const listingState = getMarketplaceState(companion.visibility);
                         const listing = companion.marketplaceListings ?? null;
                         const isAdult = companion.contentRating === ContentRating.ADULT;
                         const priceLabel = listing

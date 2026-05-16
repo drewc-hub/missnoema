@@ -101,6 +101,24 @@ function dialogueTreeFromExamples(exampleText: string) {
 }
 
 function characterBookFromProfile(profile: CompanionProfile): CharacterBook | undefined {
+  const cb = profile.characterBook;
+  if (cb && Array.isArray(cb.entries) && cb.entries.length > 0) {
+    return {
+      name: cb.name || `${profile.identity?.archetype ?? "Companion"} Lore`,
+      description: cb.description || "Lore exported from Noema companion profile.",
+      scan_depth: typeof cb.scan_depth === "number" ? cb.scan_depth : 4,
+      token_budget: typeof cb.token_budget === "number" ? cb.token_budget : 1200,
+      recursive_scanning: cb.recursive_scanning ?? false,
+      entries: cb.entries.map((e) => ({
+        keys: e.keys,
+        content: e.content,
+        enabled: e.enabled,
+        insertion_order: e.insertion_order,
+        name: e.name,
+        comment: e.comment,
+      })),
+    };
+  }
   const entries: CharacterBookEntry[] = [];
   if (profile.lore) {
     entries.push({
@@ -151,6 +169,23 @@ export function companionCreateInputFromCharacterCard(
   const extensions = asObject(data.extensions);
   const book = asObject(data.character_book) as CharacterBook;
   const lore = [creatorNotes, loreFromBook(book)].filter(Boolean).join("\n\n");
+  const structuredCharacterBook = {
+    name: asString(book.name) || "",
+    description: asString(book.description) || "",
+    scan_depth: typeof book.scan_depth === "number" ? book.scan_depth : 4,
+    token_budget: typeof book.token_budget === "number" ? book.token_budget : 2048,
+    recursive_scanning: typeof book.recursive_scanning === "boolean" ? book.recursive_scanning : false,
+    entries: Array.isArray(book.entries) ? book.entries.map((entry, i) => ({
+      id: `imported-${i}`,
+      name: asString(entry.name) || asString(entry.comment) || "",
+      comment: asString(entry.comment) || "",
+      keys: asStringArray(entry.keys),
+      content: asString(entry.content),
+      enabled: entry.enabled !== false,
+      constant: false,
+      insertion_order: typeof entry.insertion_order === "number" ? entry.insertion_order : i,
+    })) : [],
+  };
   const noema = asObject(extensions.noema);
   const rating =
     options.contentRating ??
@@ -187,6 +222,7 @@ export function companionCreateInputFromCharacterCard(
     stats: {},
     avatarImageUrl: "",
     lore,
+    characterBook: structuredCharacterBook,
     orientation: "",
     bucket: rating === ContentRating.ADULT ? "ADULT_CARD_IMPORT" : "SAFE_CARD_IMPORT",
     identity: {

@@ -1,5 +1,25 @@
 import { z } from "zod";
 
+export const CharacterBookEntrySchema = z.object({
+  id: z.string().default(""),
+  name: z.string().default(""),
+  comment: z.string().default(""),
+  keys: z.array(z.string()).default([]),
+  content: z.string().default(""),
+  enabled: z.boolean().default(true),
+  constant: z.boolean().default(false),
+  insertion_order: z.number().int().min(0).default(0),
+});
+
+export const CharacterBookSchema = z.object({
+  name: z.string().optional().default(""),
+  description: z.string().optional().default(""),
+  scan_depth: z.number().int().optional().default(4),
+  token_budget: z.number().int().optional().default(2048),
+  recursive_scanning: z.boolean().optional().default(false),
+  entries: z.array(CharacterBookEntrySchema).optional().default([]),
+}).optional().default({ name: "", description: "", scan_depth: 4, token_budget: 2048, recursive_scanning: false, entries: [] });
+
 export const CompanionSlidersSchema = z
   .object({
     warmth: z.number().min(0).max(100).optional().default(50),
@@ -187,6 +207,7 @@ export const CompanionProfileSchema = z.object({
   stats: z.record(z.string(), z.number().min(0).max(100)).optional().default({}),
   avatarImageUrl: z.string().optional().default(""),
   lore: z.string().optional().default(""),
+  characterBook: CharacterBookSchema,
   orientation: z.string().optional().default(""),
   bucket: z.string().optional().default(""),
   identity: z.record(z.string(), z.unknown()).optional().default({}),
@@ -210,6 +231,8 @@ export const CompanionProfileSchema = z.object({
 
 export type CompanionProfile = z.infer<typeof CompanionProfileSchema>;
 export type CompanionBehaviorMeta = z.infer<typeof BehaviorMetaSchema>;
+export type CharacterBookEntry = z.infer<typeof CharacterBookEntrySchema>;
+export type CharacterBook = z.infer<typeof CharacterBookSchema>;
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
