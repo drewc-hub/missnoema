@@ -16,8 +16,11 @@ export default async function SafeCompanionDetailPage({
   const companion = await prisma.companion.findFirst({
     where: {
       slug,
-      visibility: Visibility.PUBLIC,
       contentRating: ContentRating.SAFE,
+      OR: [
+        { visibility: Visibility.PUBLIC },
+        ...(user ? [{ ownerId: user.id }] : []),
+      ],
     },
     select: {
       id: true,
@@ -59,8 +62,11 @@ export default async function SafeCompanionDetailPage({
     const adultCompanion = await prisma.companion.findFirst({
       where: {
         slug,
-        visibility: Visibility.PUBLIC,
         contentRating: ContentRating.ADULT,
+        OR: [
+          { visibility: Visibility.PUBLIC },
+          ...(user ? [{ ownerId: user.id }] : []),
+        ],
       },
       select: { slug: true },
     });

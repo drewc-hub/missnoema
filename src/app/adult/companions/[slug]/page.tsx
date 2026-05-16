@@ -24,8 +24,11 @@ export default async function AdultCompanionProfilePage({
   const companion = await prisma.companion.findFirst({
     where: {
       slug,
-      visibility: Visibility.PUBLIC,
       contentRating: { in: [ContentRating.SAFE, ContentRating.ADULT] },
+      OR: [
+        { visibility: Visibility.PUBLIC },
+        ...(user ? [{ ownerId: user.id }] : []),
+      ],
     },
     select: {
       id: true,
