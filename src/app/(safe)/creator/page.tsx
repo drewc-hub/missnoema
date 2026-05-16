@@ -239,7 +239,6 @@ export default async function CreatorPage() {
                                             <span>{companion._count.assets} media</span>
                                         </div>
                                     </div>
-                                    bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]
                                     <aside className="rounded-lg border border-zinc-800 bg-black p-3">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="text-sm font-semibold text-white">
