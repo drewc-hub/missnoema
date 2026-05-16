@@ -1,13 +1,13 @@
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 
 # ── dependencies ────────────────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install
+RUN pnpm install --ignore-scripts && pnpm rebuild
 
 # ── builder ─────────────────────────────────────────────────────────────────
 FROM base AS builder
