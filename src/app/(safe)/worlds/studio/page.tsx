@@ -56,6 +56,8 @@ export default async function WorldStudioPage() {
         }),
     ]);
 
+    const ageVerified = !!user.ageVerifiedAt;
+
     return (
         <main className="relative left-1/2 w-[calc(100vw-2rem)] max-w-[1680px] -translate-x-1/2 space-y-4 text-zinc-100">
             <section className="mx-auto max-w-6xl">
@@ -71,6 +73,7 @@ export default async function WorldStudioPage() {
             </section>
 
             <WorldStudioClient
+                ageVerified={ageVerified}
                 worlds={worlds.map((world) => ({
                     id: world.id,
                     slug: world.slug,
@@ -135,6 +138,18 @@ export default async function WorldStudioPage() {
                             creatorNotes:
                                 profileString(profile, "creator_notes") ||
                                 profileString(profile, "creatorNotes"),
+                            sliders: (() => {
+                                const bm = profile && typeof profile === "object"
+                                    ? (profile as Record<string, unknown>).behaviorMeta
+                                    : null;
+                                const b = bm && typeof bm === "object" ? bm as Record<string, unknown> : {};
+                                return {
+                                    jealousy: typeof b.jealousyLevel === "number" ? b.jealousyLevel : 20,
+                                    dominance: typeof b.dominanceLevel === "number" ? b.dominanceLevel : 20,
+                                    affection: typeof b.affectionLevel === "number" ? b.affectionLevel : 60,
+                                    empathy: typeof b.empathyLevel === "number" ? b.empathyLevel : 50,
+                                };
+                            })(),
                         },
                     };
                 })}

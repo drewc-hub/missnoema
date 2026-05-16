@@ -44,6 +44,7 @@ export const BehaviorMetaSchema = z
     jealousyLevel: z.number().min(0).max(100).optional().default(20),
     dominanceLevel: z.number().min(0).max(100).optional().default(20),
     affectionLevel: z.number().min(0).max(100).optional().default(60),
+    empathyLevel: z.number().min(0).max(100).optional().default(50),
   })
   .optional()
   .default({
@@ -57,6 +58,7 @@ export const BehaviorMetaSchema = z
     jealousyLevel: 20,
     dominanceLevel: 20,
     affectionLevel: 60,
+    empathyLevel: 50,
   });
 
 export const RelationshipProgressionSchema = z

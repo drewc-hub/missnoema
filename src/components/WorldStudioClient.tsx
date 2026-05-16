@@ -53,12 +53,19 @@ type StudioCompanion = {
         systemPrompt?: string;
         postHistoryInstructions?: string;
         creatorNotes?: string;
+        sliders?: {
+            jealousy: number;
+            dominance: number;
+            affection: number;
+            empathy: number;
+        };
     };
 };
 
 type WorldStudioClientProps = {
     worlds: StudioWorld[];
     companions: StudioCompanion[];
+    ageVerified: boolean;
 };
 
 const workspaceTabs = ["New World", "New Story", "New Scene"] as const;
@@ -92,7 +99,41 @@ function getCharacterDraft(companion?: StudioCompanion) {
         systemPrompt: profile.systemPrompt ?? "",
         postHistoryInstructions: profile.postHistoryInstructions ?? "",
         creatorNotes: profile.creatorNotes ?? "",
+        contentRating: (companion?.contentRating ?? "SAFE") as "SAFE" | "ADULT",
+        sliders: {
+            jealousy: profile.sliders?.jealousy ?? 20,
+            dominance: profile.sliders?.dominance ?? 20,
+            affection: profile.sliders?.affection ?? 60,
+            empathy: profile.sliders?.empathy ?? 50,
+        },
     };
+}
+
+function SliderField({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: number;
+    onChange: (value: number) => void;
+}) {
+    return (
+        <label className="block">
+            <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-cyan-100/80">{label}</span>
+                <span className="text-xs font-mono text-cyan-300">{value}</span>
+            </div>
+            <input
+                type="range"
+                min={0}
+                max={100}
+                value={value}
+                onChange={(e) => onChange(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+            />
+        </label>
+    );
 }
 
 function TabButton({
@@ -153,7 +194,7 @@ function Field({
     );
 }
 
-export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps) {
+export function WorldStudioClient({ worlds, companions, ageVerified }: WorldStudioClientProps) {
     const [workspaceTab, setWorkspaceTab] = useState<(typeof workspaceTabs)[number]>("New World");
     const [rosterTab, setRosterTab] = useState<(typeof rosterTabs)[number]>("New");
     const [builderTab, setBuilderTab] = useState<(typeof builderTabs)[number]>("Lorebook");
@@ -161,12 +202,13 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
     const [selectedCompanionId, setSelectedCompanionId] = useState(companions[0]?.id ?? "");
     const [characterSeed, setCharacterSeed] = useState("");
     const [imagePanelOpen, setImagePanelOpen] = useState(false);
-    const [imagePanelTab, setImagePanelTab] = useState<ImagePanelTab>("upload");
+    const [imagePanelTab, setImagePanelTab] = useState<ImagePanelTab>("generate");
     const [imagePrompt, setImagePrompt] = useState("");
     const [statusMsg, setStatusMsg] = useState<{ text: string; ok: boolean } | null>(null);
     const [busy, setBusy] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [generatingImage, setGeneratingImage] = useState(false);
+    const [editMode, setEditMode] = useState(false);
     const selectedWorld = worlds.find((world) => world.id === selectedWorldId) ?? worlds[0];
     const selectedCompanion = companions.find((companion) => companion.id === selectedCompanionId) ?? companions[0];
     const initialDraft = useMemo(() => getCharacterDraft(selectedCompanion), [selectedCompanion]);
@@ -181,44 +223,60 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
         setDraft((current) => ({ ...current, [key]: value }));
     }
 
+    function updateSlider(key: keyof typeof draft.sliders, value: number) {
+        setDraft((current) => ({ ...current, sliders: { ...current.sliders, [key]: value } }));
+    }
+
     function flash(text: string, ok = true) {
         setStatusMsg({ text, ok });
         setTimeout(() => setStatusMsg(null), 3500);
+    }
+
+    async function doSave(currentDraft = draft) {
+        if (!selectedCompanion) return false;
+        const res = await fetch(`/api/companions/${selectedCompanion.slug}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: currentDraft.name,
+                description: currentDraft.tagline || selectedCompanion.description,
+                tags: selectedCompanion.tags,
+                visibility: selectedCompanion.visibility,
+                contentRating: currentDraft.contentRating,
+                profile: {
+                    tagline: currentDraft.tagline,
+                    role: currentDraft.role,
+                    personality: currentDraft.personality,
+                    appearance: currentDraft.appearance,
+                    backstory: currentDraft.backstory,
+                    speakingStyle: currentDraft.speakingStyle,
+                    goals: currentDraft.goals,
+                    scenario: currentDraft.scenario,
+                    greeting: currentDraft.firstMessage,
+                    exampleDialogue: currentDraft.exampleDialogue,
+                    systemPrompt: currentDraft.systemPrompt,
+                    postHistoryInstructions: currentDraft.postHistoryInstructions,
+                    creatorNotes: currentDraft.creatorNotes,
+                    behaviorMeta: {
+                        jealousyLevel: currentDraft.sliders.jealousy,
+                        dominanceLevel: currentDraft.sliders.dominance,
+                        affectionLevel: currentDraft.sliders.affection,
+                        empathyLevel: currentDraft.sliders.empathy,
+                    },
+                },
+            }),
+        });
+        const data = await res.json();
+        return data.ok === true;
     }
 
     async function handleSave() {
         if (!selectedCompanion || busy) return;
         setBusy(true);
         try {
-            const res = await fetch(`/api/companions/${selectedCompanion.slug}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: draft.name,
-                    description: draft.tagline || selectedCompanion.description,
-                    tags: selectedCompanion.tags,
-                    visibility: selectedCompanion.visibility,
-                    contentRating: selectedCompanion.contentRating,
-                    profile: {
-                        tagline: draft.tagline,
-                        role: draft.role,
-                        personality: draft.personality,
-                        appearance: draft.appearance,
-                        backstory: draft.backstory,
-                        speakingStyle: draft.speakingStyle,
-                        goals: draft.goals,
-                        scenario: draft.scenario,
-                        greeting: draft.firstMessage,
-                        exampleDialogue: draft.exampleDialogue,
-                        systemPrompt: draft.systemPrompt,
-                        postHistoryInstructions: draft.postHistoryInstructions,
-                        creatorNotes: draft.creatorNotes,
-                    },
-                }),
-            });
-            const data = await res.json();
-            if (data.ok) flash("Saved!");
-            else flash(data.error ?? "Save failed.", false);
+            const ok = await doSave();
+            if (ok) flash("Saved!");
+            else flash("Save failed.", false);
         } catch {
             flash("Save failed.", false);
         } finally {
@@ -238,8 +296,17 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
             });
             const data = await res.json();
             if (data.ok && data.fields) {
-                setDraft((current) => ({ ...current, ...data.fields }));
-                flash("Character generated!");
+                const newDraft = { ...draft, ...data.fields };
+                setDraft(newDraft);
+                flash("Generated — saving…");
+                const saved = await doSave(newDraft);
+                if (saved) {
+                    flash("Saved! Open the image panel to generate a portrait.");
+                    setImagePanelTab("generate");
+                    setImagePanelOpen(true);
+                } else {
+                    flash("Generated but save failed.", false);
+                }
             } else {
                 flash(data.error ?? "Generation failed.", false);
             }
@@ -355,8 +422,16 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
 
     return (
         <div className="min-h-[calc(100vh-140px)] rounded-lg border border-cyan-900/40 bg-[linear-gradient(360deg,#17023e_50%,#0f2b7d_83%,#0b1d82_100%)] p-3 text-zinc-100 shadow-2xl shadow-blue-950/40 sm:p-4">
-            <div className="grid min-h-[calc(100vh-172px)] gap-4 2xl:grid-cols-[minmax(430px,0.9fr)_minmax(720px,1.35fr)]">
-                <section className="rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4 2xl:col-span-2">
+            <div className={cn(
+                "grid min-h-[calc(100vh-172px)] gap-4",
+                editMode
+                    ? "2xl:grid-cols-[1fr]"
+                    : "2xl:grid-cols-[minmax(430px,0.9fr)_minmax(720px,1.35fr)]",
+            )}>
+                <section className={cn(
+                    "rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4 2xl:col-span-2",
+                    editMode && "hidden",
+                )}>
                     <header className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="text-lg font-semibold text-white">{selectedWorld?.name ?? "No world selected"}</div>
@@ -388,7 +463,10 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
                 </section>
 
-                <section className="flex min-h-0 flex-col rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
+                <section className={cn(
+                    "flex min-h-0 flex-col rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4",
+                    editMode && "hidden",
+                )}>
                     <header className="flex items-center justify-between gap-3">
                         <div>
                             <div className="text-lg font-semibold text-white">Workspace</div>
@@ -524,7 +602,10 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
                 </section>
 
-                <section className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4">
+                <section className={cn(
+                    "relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-cyan-900/50 bg-[linear-gradient(45deg,#00457c_0%,#0079c1_100%)] p-4",
+                    editMode && "2xl:col-span-2",
+                )}>
                     <header className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="text-lg font-semibold text-white">Character</div>
@@ -532,14 +613,15 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                                 {selectedCompanion ? `Editing ${selectedCompanion.name}` : "Create a SillyTavern V2-style card"}
                             </div>
                         </div>
-                        {selectedCompanion ? (
-                            <a
-                                href={selectedCompanion.editHref}
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setEditMode((m) => !m)}
                                 className="inline-flex h-9 items-center justify-center rounded-lg border border-cyan-200/40 bg-zinc-950/70 px-3 text-sm font-semibold text-white hover:bg-zinc-900"
                             >
-                                Open Edit
-                            </a>
-                        ) : null}
+                                {editMode ? "← Back" : "Edit Full Page"}
+                            </button>
+                        </div>
                     </header>
 
                     {statusMsg && (
@@ -703,6 +785,47 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                     </div>
 
                     <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-cyan-950/50 bg-zinc-950/55 p-4">
+
+                        {/* Content Rating */}
+                        <div className="mb-4">
+                            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cyan-100/80">
+                                Content Rating
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => updateDraft("contentRating", "SAFE")}
+                                    className={cn(
+                                        "flex-1 rounded-lg border py-2 text-sm font-semibold transition",
+                                        draft.contentRating === "SAFE"
+                                            ? "border-cyan-300/50 bg-cyan-700/40 text-white"
+                                            : "border-zinc-700 bg-zinc-950/60 text-zinc-400 hover:text-white",
+                                    )}
+                                >
+                                    Safe
+                                </button>
+                                {ageVerified ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => updateDraft("contentRating", "ADULT")}
+                                        className={cn(
+                                            "flex-1 rounded-lg border py-2 text-sm font-semibold transition",
+                                            draft.contentRating === "ADULT"
+                                                ? "border-rose-400/50 bg-rose-900/40 text-white"
+                                                : "border-zinc-700 bg-zinc-950/60 text-zinc-400 hover:text-white",
+                                        )}
+                                    >
+                                        Adult
+                                    </button>
+                                ) : (
+                                    <div className="flex-1 rounded-lg border border-zinc-800 bg-zinc-950/40 py-2 text-center text-xs text-zinc-500">
+                                        Adult (age verify required)
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* SillyTavern V2 fields */}
                         <div className="grid gap-4 xl:grid-cols-2">
                             <Field label="Name" value={draft.name} rows={1} onChange={(value) => updateDraft("name", value)} />
                             <Field label="Tagline / Description" value={draft.tagline} rows={1} onChange={(value) => updateDraft("tagline", value)} />
@@ -723,6 +846,19 @@ export function WorldStudioClient({ worlds, companions }: WorldStudioClientProps
                                 onChange={(value) => updateDraft("postHistoryInstructions", value)}
                             />
                             <Field label="Creator Notes" value={draft.creatorNotes} rows={4} onChange={(value) => updateDraft("creatorNotes", value)} />
+                        </div>
+
+                        {/* Personality Sliders */}
+                        <div className="mt-6 rounded-lg border border-cyan-950/50 bg-blue-950/30 p-4">
+                            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-cyan-100/80">
+                                Personality Sliders
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <SliderField label="Jealousy" value={draft.sliders.jealousy} onChange={(v) => updateSlider("jealousy", v)} />
+                                <SliderField label="Dominance Style" value={draft.sliders.dominance} onChange={(v) => updateSlider("dominance", v)} />
+                                <SliderField label="Affection Style" value={draft.sliders.affection} onChange={(v) => updateSlider("affection", v)} />
+                                <SliderField label="Empathy" value={draft.sliders.empathy} onChange={(v) => updateSlider("empathy", v)} />
+                            </div>
                         </div>
 
                         <div className="mt-4 rounded-lg border border-cyan-950/50 bg-blue-950/40 p-3">
