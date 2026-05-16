@@ -571,7 +571,7 @@ export function CompanionBuilder({
     }
 
     return (
-        <Card className="mx-auto w-full max-w-5xl border-fuchsia-900/40 bg-black/90 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
+        <Card className="w-full border-fuchsia-900/40 bg-black/90 shadow-[0_0_60px_rgba(168,85,247,0.07)]">
             <CardHeader
                 title={mode === "create" ? "Companion Builder" : "Edit Companion"}
                 subtitle={
