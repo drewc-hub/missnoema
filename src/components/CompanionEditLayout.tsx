@@ -1,7 +1,7 @@
 // file: src/components/CompanionEditLayout.tsx
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { CompanionBuilder } from "@/components/CompanionBuilder";
 import { MediaGenPanel } from "@/components/MediaGenPanel";
 import { MarketplaceListingPanel } from "@/components/MarketplaceListingPanel";
@@ -37,9 +37,6 @@ type CompanionEditLayoutProps = {
 };
 
 export function CompanionEditLayout({ companion, allowAdult, userEmail }: CompanionEditLayoutProps) {
-    // fullPage hides the aside; panels are visible by default
-    const [fullPage, setFullPage] = useState(false);
-
     const isSafe = companion.contentRating === "SAFE";
     const chatHref = isSafe
         ? `/chat?companion=${companion.slug}`
@@ -58,77 +55,63 @@ export function CompanionEditLayout({ companion, allowAdult, userEmail }: Compan
           }
         : null;
 
-    function handleGenerated() {
-        setFullPage(false);
-        // scroll to top so the marketplace + media panels are immediately visible
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
     return (
-        <div className={`grid gap-6 ${!fullPage ? "lg:grid-cols-2" : ""}`}>
-            {/* Left column — companion builder */}
-            <section className="space-y-4">
-                <CompanionBuilder
-                    mode="edit"
-                    allowAdult={allowAdult}
-                    userEmail={userEmail}
-                    companion={{
-                        id: companion.id,
-                        slug: companion.slug,
-                        name: companion.name,
-                        description: companion.description,
-                        tags: companion.tags,
-                        gender: companion.gender,
-                        archetype: companion.archetype,
-                        profile: companion.profile as any,
-                        contentRating: companion.contentRating,
-                        visibility: companion.visibility,
-                    }}
-                    onGenerated={handleGenerated}
-                    fullPageMode={fullPage}
-                    onToggleFullPage={() => setFullPage((p) => !p)}
+        <div className="space-y-6">
+            {/* Companion builder — full width */}
+            <CompanionBuilder
+                mode="edit"
+                allowAdult={allowAdult}
+                userEmail={userEmail}
+                companion={{
+                    id: companion.id,
+                    slug: companion.slug,
+                    name: companion.name,
+                    description: companion.description,
+                    tags: companion.tags,
+                    gender: companion.gender,
+                    archetype: companion.archetype,
+                    profile: companion.profile as any,
+                    contentRating: companion.contentRating,
+                    visibility: companion.visibility,
+                }}
+            />
+
+            {/* Marketplace listing — full width */}
+            <MarketplaceListingPanel
+                companion={{
+                    id: companion.id,
+                    slug: companion.slug,
+                    description: companion.description,
+                    tags: companion.tags,
+                    profile: companion.profile,
+                    assets: companion.assets,
+                    visibility: companion.visibility as any,
+                    contentRating: companion.contentRating as any,
+                }}
+                listing={listing}
+            />
+
+            {/* Media generation — full width underneath */}
+            <Card>
+                <CardHeader
+                    title="Media generation"
+                    subtitle={
+                        isSafe
+                            ? "Generate images for this companion."
+                            : "Generate images for this adult companion."
+                    }
                 />
-            </section>
-
-            {/* Right column — marketplace + media panels (hidden in full-page mode) */}
-            {!fullPage && (
-                <aside className="space-y-4" id="media-panel">
-                    <MarketplaceListingPanel
-                        companion={{
-                            id: companion.id,
-                            slug: companion.slug,
-                            description: companion.description,
-                            tags: companion.tags,
-                            profile: companion.profile,
-                            assets: companion.assets,
-                            visibility: companion.visibility as any,
-                            contentRating: companion.contentRating as any,
-                        }}
-                        listing={listing}
+                <CardBody>
+                    <MediaGenPanel
+                        allowAdult={allowAdult}
+                        loggedIn={true}
+                        companionId={companion.id}
+                        contentRating={companion.contentRating as any}
+                        defaultTag={companion.tags?.[0] ?? ""}
+                        redirectAfterGenerate={chatHref}
                     />
-
-                    <Card>
-                        <CardHeader
-                            title="Media generation"
-                            subtitle={
-                                isSafe
-                                    ? "Generate images for this companion."
-                                    : "Generate images for this adult companion."
-                            }
-                        />
-                        <CardBody>
-                            <MediaGenPanel
-                                allowAdult={allowAdult}
-                                loggedIn={true}
-                                companionId={companion.id}
-                                contentRating={companion.contentRating as any}
-                                defaultTag={companion.tags?.[0] ?? ""}
-                                redirectAfterGenerate={chatHref}
-                            />
-                        </CardBody>
-                    </Card>
-                </aside>
-            )}
+                </CardBody>
+            </Card>
         </div>
     );
 }
