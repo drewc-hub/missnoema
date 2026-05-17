@@ -2,36 +2,36 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import { initializeSchema } from "./db/schema.js";
-import { closeDatabase } from "./db/connection.js";
-import { startHttpServer } from "./http/server.js";
-import { setHttpPort } from "./utils/webui.js";
+import { initializeSchema } from "@/components/db/schema.js";
+import { closeDatabase } from "@/components/db/connection.js";
+import { startHttpServer } from "@/components/http/server.js";
+import { setHttpPort } from "@/components/utils/webui.js";
 
 // Import registration functions
-import { registerCoreTools } from "./register/core.js";
-import { registerWorldTools } from "./register/world.js";
-import { registerCharacterTools } from "./register/character.js";
-import { registerCombatTools } from "./register/combat.js";
-import { registerInventoryTools } from "./register/inventory.js";
-import { registerQuestTools } from "./register/quests.js";
-import { registerNarrativeTools } from "./register/narrative.js";
-import { registerResourceTools } from "./register/resources.js";
-import { registerTimeTools } from "./register/time.js";
-import { registerTableTools } from "./register/tables.js";
-import { registerSecretTools } from "./register/secrets.js";
-import { registerRelationshipTools } from "./register/relationships.js";
-import { registerTagTools } from "./register/tags.js";
-import { registerStatusTools } from "./register/status.js";
-import { registerFactionTools } from "./register/factions.js";
-import { registerAbilityTools } from "./register/abilities.js";
-import { registerNoteTools } from "./register/notes.js";
-import { registerPauseTools } from "./register/pause.js";
-import { registerImageTools } from "./register/images.js";
-import { registerAudioTools } from "./register/audio.js";
-import { registerDisplayTools } from "./register/display.js";
-import { registerBatchTools } from "./register/batch.js";
-import { registerMcpResources } from "./register/mcp-resources.js";
-import { registerMcpPrompts } from "./register/mcp-prompts.js";
+import { registerCoreTools } from "@/components/register/core.js";
+import { registerWorldTools } from "@/components/register/world.js";
+import { registerCharacterTools } from "@/components/register/character.js";
+import { registerCombatTools } from "@/components/register/combat.js";
+import { registerInventoryTools } from "@/components/register/inventory.js";
+import { registerQuestTools } from "@/components/register/quests.js";
+import { registerNarrativeTools } from "@/components/register/narrative.js";
+import { registerResourceTools } from "@/components/register/resources.js";
+import { registerTimeTools } from "@/components/register/time.js";
+import { registerTableTools } from "@/components/register/tables.js";
+import { registerSecretTools } from "@/components/register/secrets.js";
+import { registerRelationshipTools } from "@/components/register/relationships.js";
+import { registerTagTools } from "@/components/register/tags.js";
+import { registerStatusTools } from "@/components/register/status.js";
+import { registerFactionTools } from "@/components/register/factions.js";
+import { registerAbilityTools } from "@/components/register/abilities.js";
+import { registerNoteTools } from "@/components/register/notes.js";
+import { registerPauseTools } from "@/components/register/pause.js";
+import { registerImageTools } from "@/components/register/images.js";
+import { registerAudioTools } from "@/components/register/audio.js";
+import { registerDisplayTools } from "@/components/register/display.js";
+import { registerBatchTools } from "@/components/register/batch.js";
+import { registerMcpResources } from "@/components/register/mcp-resources.js";
+import { registerMcpPrompts } from "@/components/register/mcp-prompts.js";
 
 // Initialize database
 initializeSchema();

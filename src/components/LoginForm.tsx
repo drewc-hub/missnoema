@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardBody, CardHeader, Input, Button, Badge } from "./ui";
+import { Card, CardBody, CardHeader, Input, Button, Badge } from "@/components/ui";
 
 type AuthMethod = "magic-link" | "password";
 type PasswordMode = "signin" | "signup";

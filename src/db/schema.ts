@@ -1,4 +1,4 @@
-import { getDatabase } from "./connection.js";
+import { getDatabase } from "@/components/connection.js";
 
 export function initializeSchema(): void {
   const db = getDatabase();

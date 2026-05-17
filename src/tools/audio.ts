@@ -15,9 +15,9 @@ import type {
   AudioListResult,
   VoiceReferenceResult,
 } from "../types/index.js";
-import { getCharacter } from "./character.js";
-import { getLocation } from "./world.js";
-import { getFaction } from "./faction.js";
+import { getCharacter } from "@/components/character.js";
+import { getLocation } from "@/components/world.js";
+import { getFaction } from "@/components/faction.js";
 
 // Use the same data directory as the database, but in an 'audio' subdirectory
 function getAudioDir(): string {

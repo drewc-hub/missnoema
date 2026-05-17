@@ -1,0 +1,73 @@
+import { redirect } from "next/navigation";
+import { getAuthedUser } from "@/lib/auth";
+import { CompanionBuilder } from "@/components/CompanionBuilder";
+import { Card, CardBody } from "@/components/ui";
+
+export default async function CreateCompanionPage() {
+    const user = await getAuthedUser();
+
+    if (!user) {
+        redirect("/login");
+    }
+
+    return (
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,#0f2a4d_0%,#081120_45%,#050816_100%)] text-white">
+            {/* Top glow */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-[-120px] top-[-120px] h-[340px] w-[340px] rounded-full bg-blue-500/10 blur-3xl" />
+                <div className="absolute right-[-80px] top-[120px] h-[280px] w-[280px] rounded-full bg-cyan-400/10 blur-3xl" />
+                <div className="absolute bottom-[-120px] left-1/2 h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl" />
+            </div>
+
+            <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
+                {/* Header */}
+                <Card className="border border-blue-900/40 bg-[#07111f]/90 shadow-[0_0_60px_rgba(37,99,235,0.12)] backdrop-blur">
+                    <CardBody className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-white">
+                                Companion Studio
+                            </h1>
+
+                            <p className="mt-2 max-w-2xl text-sm text-blue-100/70">
+                                Build immersive AI companions with advanced
+                                personality systems, dialogue tuning, emotional
+                                sliders, and Character Card V2 compatibility.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <div className="rounded-xl border border-blue-800/40 bg-blue-950/40 px-3 py-2 text-xs text-blue-200">
+                                Character Card V2
+                            </div>
+
+                            <div className="rounded-xl border border-cyan-800/40 bg-cyan-950/30 px-3 py-2 text-xs text-cyan-200">
+                                AI Generation
+                            </div>
+
+                            <div className="rounded-xl border border-indigo-800/40 bg-indigo-950/30 px-3 py-2 text-xs text-indigo-200">
+                                Advanced Persona Engine
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+
+                {/* Main Builder */}
+                <div className="mx-auto w-full max-w-6xl">
+                    <CompanionBuilder
+                        mode="create"
+                        userEmail={user.email}
+                        allowAdult={Boolean(user.ageVerified)}
+                        companion={{
+                            name: "",
+                            description: "",
+                            tags: [],
+                            contentRating: "SAFE",
+                            visibility: "UNLISTED",
+                            profile: {},
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}

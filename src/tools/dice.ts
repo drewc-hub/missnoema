@@ -1,6 +1,6 @@
 import type { DiceRoll, CheckResult } from "../types/index.js";
-import { getRules } from "./rules.js";
-import { getCharacter } from "./character.js";
+import { getRules } from "@/components/rules.js";
+import { getCharacter } from "@/components/character.js";
 
 // Maximum limits to prevent DoS attacks
 const MAX_DICE_COUNT = 100;

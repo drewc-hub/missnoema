@@ -422,7 +422,7 @@ export function WorldStudioClient({ worlds, companions, ageVerified }: WorldStud
     };
 
     return (
-        <div class="custom-bg">
+        <div className="custom-bg">
             <div className="min-h-[calc(100vh-140px)] rounded-lg border border-cyan-900/40 bg-[linear-gradient(360deg,#17023e_50%,#0f2b7d_83%,#0b1d82_100%)] p-3 text-zinc-100 shadow-2xl shadow-blue-950/40 sm:p-4">
                 <div className={cn(
                     "grid min-h-[calc(100vh-172px)] gap-4",

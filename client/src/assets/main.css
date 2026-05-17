@@ -1269,6 +1269,26 @@ hr {
   color: var(--text-muted);
 }
 
+.toast-item {
+  min-width: 300px;
+  max-width: 450px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+footer {
+  margin-top: 40px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
 /* Legacy content spacing */
 .mt-20 { margin-top: 20px; }
 .mb-20 { margin-bottom: 20px; }

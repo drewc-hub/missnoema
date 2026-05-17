@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getDatabase } from "../db/connection.js";
 import { safeJsonParse } from "../utils/json.js";
 import { gameEvents } from "../events/emitter.js";
-import { validateGameExists } from "./game.js";
+import { validateGameExists } from "@/components/game.js";
 import type { Item, ItemProperties, ImageGeneration } from "../types/index.js";
 
 export function createItem(params: {

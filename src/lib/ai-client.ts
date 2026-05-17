@@ -2,7 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, generateText } from "ai";
 
 const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "x-ai/grok-4.20-multi-agent";
+  process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash:free";
 
 let provider: ReturnType<typeof createOpenAI> | undefined;
 

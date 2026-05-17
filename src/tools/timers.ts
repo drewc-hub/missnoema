@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDatabase } from "../db/connection.js";
-import { validateGameExists } from "./game.js";
+import { validateGameExists } from "@/components/game.js";
 import type { Timer } from "../types/index.js";
 
 export function createTimer(params: {

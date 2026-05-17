@@ -1,9 +1,9 @@
-import { getCharacter, listCharacters } from "./character.js";
-import { getLocation } from "./world.js";
-import { getItem } from "./inventory.js";
-import { getFaction } from "./faction.js";
-import { getDefaultImagePreset, getDefaultImagePromptTemplate, getImagePromptTemplate } from "./game.js";
-import { listEntityImages } from "./images.js";
+import { getCharacter, listCharacters } from "@/components/character.js";
+import { getLocation } from "@/components/world.js";
+import { getItem } from "@/components/inventory.js";
+import { getFaction } from "@/components/faction.js";
+import { getDefaultImagePreset, getDefaultImagePromptTemplate, getImagePromptTemplate } from "@/components/game.js";
+import { listEntityImages } from "@/components/images.js";
 import type { ImageGeneration, ImageGenerationPreferences, ImagePromptTemplate, Character, Location, Item, Faction } from "../types/index.js";
 
 export interface PromptBuilderResult {

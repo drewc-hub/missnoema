@@ -101,7 +101,7 @@ export async function GET(req: Request) {
       companionMood: true,
       summary: true,
       messages: {
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
         take: 50,
         select: {
           id: true,
@@ -113,6 +113,8 @@ export async function GET(req: Request) {
       },
     },
   });
+
+  conversation.messages.reverse();
 
   return NextResponse.json({
     conversation,

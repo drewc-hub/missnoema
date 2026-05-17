@@ -39,7 +39,7 @@ export function SafeTopNav() {
                         <NavLink href="/marketplace" label="Market" />
                     </li>
                     <li>
-                        <NavLink href="/creator" label="Creator" />
+                        <NavLink href="/marinara-engine" label="AI Studio" />
                     </li>
                     <li>
                         <NavLink href="/adult" label="Adult" />
@@ -48,21 +48,24 @@ export function SafeTopNav() {
                         <NavLink href="/chat" label="Chat" />
                     </li>
                     <li>
+                        <NavLink href="/taverngames" label="Chat, RP Games" />
+                    </li>
+                    <li>
                         <NavLink href="/account/billing" label="Subscriptions" />
                     </li>
                 </ul>
 
-                 <div className="ml-auto flex items-center gap-3">
-                     <UserBadge />
-                     <form action="/api/auth/logout" method="POST" className="hidden lg:block">
-                         <button
-                             type="submit"
-                             className="inline-flex items-center rounded-2xl border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
-                         >
-                             Logout
-                         </button>
-                     </form>
-                 </div>
+                <div className="ml-auto flex items-center gap-3">
+                    <UserBadge />
+                    <form action="/api/auth/logout" method="POST" className="hidden lg:block">
+                        <button
+                            type="submit"
+                            className="inline-flex items-center rounded-2xl border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500 hover:text-white"
+                        >
+                            Logout
+                        </button>
+                    </form>
+                </div>
             </div>
         </header>
     );

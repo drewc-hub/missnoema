@@ -1,6 +1,6 @@
 // file: src/lib/together.ts
 import OpenAI from "openai";
-import { getOpenAI } from "./openai";
+import { getOpenAI } from "@/lib/openai";
 
 // Together AI client (kept as fallback if credits are available)
 let _together: OpenAI | undefined;

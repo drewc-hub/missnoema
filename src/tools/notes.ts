@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDatabase } from "../db/connection.js";
 import { safeJsonParse } from "../utils/json.js";
-import { validateGameExists } from "./game.js";
+import { validateGameExists } from "@/components/game.js";
 import type { Note } from "../types/index.js";
-import { getHistory } from "./narrative.js";
+import { getHistory } from "@/components/narrative.js";
 
 export function createNote(params: {
   gameId: string;
