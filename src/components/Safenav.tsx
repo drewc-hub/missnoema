@@ -39,7 +39,7 @@ export function SafeTopNav() {
                         <NavLink href="/marketplace" label="Market" />
                     </li>
                     <li>
-                        <NavLink href="/marinara-engine" label="AI Studio" />
+                        <NavLink href="/client/src" label="AI Studio" />
                     </li>
                     <li>
                         <NavLink href="/adult" label="Adult" />

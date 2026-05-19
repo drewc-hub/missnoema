@@ -10,6 +10,7 @@ import { generateAdultVideo } from "../src/lib/gen/replicate-video.js";
 import { generateProImage } from "../src/lib/gen/replicate-image.js";
 import { generateHfImageBytes } from "../src/lib/gen/hf-image.js";
 import { generateLeonardoImageBytes } from "../src/lib/gen/leonardo-image.js";
+import { generateA2eImageBytes } from "../src/lib/gen/a2e-image.js";
 import { createClient } from "@supabase/supabase-js";
 import Replicate from "replicate";
 
@@ -268,6 +269,15 @@ async function generateImageBytes(
             negativePrompt: finalNegativePrompt,
             nsfw: env("LEONARDO_ADULT_NSFW", "true") === "true",
         } as any);
+    }
+
+    if (provider === "a2e") {
+        return generateA2eImageBytes(prompt, {
+            modelType: isAdult
+                ? (env("A2E_ADULT_MODEL", "a2e") as "a2e" | "seedream")
+                : (env("A2E_MODEL", "seedream") as "a2e" | "seedream"),
+            aspectRatio: "2:3",
+        });
     }
 
     if (provider === "hf") {

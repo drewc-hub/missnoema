@@ -86,7 +86,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SpriteFrameEditor } from "@/components/ui/SpriteFrameEditor";
 import { SpriteWandCleanupEditor } from "@/components/ui/SpriteWandCleanupEditor";
 import { ExportFormatDialog, type ExportFormatChoice } from "@/components/ui/ExportFormatDialog";
-import type { CharacterCardVersion, CharacterData, RPGStatsConfig } from "@/app/marinara-engine/shared";
+import type { CharacterCardVersion, CharacterData, RPGStatsConfig } from "@marinara-engine/shared";
 
 // ── Tabs ──
 const TABS = [

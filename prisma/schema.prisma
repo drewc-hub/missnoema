@@ -351,6 +351,7 @@ model Conversation {
   emotionalProfile  String?
   kinkLevel         Int                         @default(0)
   relationshipLevel Int                         @default(1)
+  gameState         Json?
   messages          ChatMessage[]
   companion         Companion                   @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user              User                        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -358,6 +359,38 @@ model Conversation {
 
   @@unique([userId, companionId])
   @@index([userId, companionId, contentRating, updatedAt], map: "Conversation_combo_idx")
+  @@schema("public")
+}
+
+model Lorebook {
+  id          String      @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isGlobal    Boolean     @default(false)
+  enabled     Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(6)
+  entries     LoreEntry[]
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, enabled])
+  @@schema("public")
+}
+
+model LoreEntry {
+  id          String   @id @default(cuid())
+  lorebookId  String
+  keys        String[]
+  content     String
+  constant    Boolean  @default(false)
+  enabled     Boolean  @default(true)
+  priority    Int      @default(100)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  lorebook    Lorebook @relation(fields: [lorebookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lorebookId, enabled])
   @@schema("public")
 }
 
@@ -495,6 +528,7 @@ model User {
   Content              Content[]
   conversations        Conversation[]
   generationJobs       GenerationJob[]
+  lorebooks            Lorebook[]
   marketplaceListings  MarketplaceListing[]
   premiumPurchases     PremiumPurchase[]
   reports              Report[]

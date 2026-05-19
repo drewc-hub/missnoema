@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import { applyRegexReplacement, resolveMacros, type MacroContext, type RegexPlacement } from "@/app/marinara-engine/shared";
+import { applyRegexReplacement, resolveMacros, type MacroContext, type RegexPlacement } from "@marinara-engine/shared";
 
 // ═══════════════════════════════════════════════
 //  Placement metadata

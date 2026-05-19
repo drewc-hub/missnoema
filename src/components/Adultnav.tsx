@@ -46,7 +46,7 @@ export function AdultTopNav() {
                         <NavLink href="/marinara-engine" label="Games" />
                     </li>
                     <li>
-                        <NavLink href="/marinara-engine" Label="RP & Chat" />
+                        <NavLink href="/marinara-engine/packages/client" Label="RP & Chat" />
                     </li>
 
                     <li>

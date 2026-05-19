@@ -16,6 +16,7 @@ import {
   relationshipBoostMultiplier,
 } from "@/lib/premium";
 import { formatBehaviorMetaForPrompt } from "@/lib/companion-profile";
+import { buildLoreInjection, extractGameState, type GameState } from "@/lib/rp-engine";
 export const runtime = "nodejs";
 
 type UserEmotion = "neutral" | "sad" | "vulnerable" | "playful" | "loving" | "frustrated";
@@ -180,6 +181,8 @@ function buildCompanionSystemPrompt(args: {
   ooc?: string;
   lorebookEntries?: Array<Record<string, unknown>>;
   recentText?: string;
+  userLoreText?: string;
+  gameState?: GameState;
 }) {
   const {
     companion,
@@ -192,6 +195,8 @@ function buildCompanionSystemPrompt(args: {
     mode = "rerun",
     lorebookEntries = [],
     recentText = "",
+    userLoreText,
+    gameState,
   } = args;
 
   const profile =
@@ -363,12 +368,27 @@ function buildCompanionSystemPrompt(args: {
     memory.emotionalProfile && `User emotional style: ${memory.emotionalProfile}`,
   ].filter(Boolean).join("\n");
 
+  const gameStateBlock = (() => {
+    if (!gameState) return "";
+    const lines: string[] = [];
+    if (gameState.location) lines.push(`Location: ${gameState.location}`);
+    if (gameState.time) lines.push(`Time: ${gameState.time}`);
+    if (gameState.weather) lines.push(`Weather: ${gameState.weather}`);
+    if (Array.isArray(gameState.presentCharacters) && gameState.presentCharacters.length)
+      lines.push(`Present: ${(gameState.presentCharacters as string[]).join(", ")}`);
+    if (Array.isArray(gameState.activeQuests) && gameState.activeQuests.length)
+      lines.push(`Active quests: ${(gameState.activeQuests as string[]).join("; ")}`);
+    if (Array.isArray(gameState.recentEvents) && gameState.recentEvents.length)
+      lines.push(`Recent events: ${(gameState.recentEvents as string[]).slice(0, 3).join("; ")}`);
+    return lines.length ? `\nGAME STATE\n${lines.join("\n")}` : "";
+  })();
+
   const sharedCore = `
 COMPANION
 Name: ${companion.name}
 Description: ${descTrunc}
 Tags: ${companion.tags.slice(0, 8).join(", ") || "none"}
-${profileLines ? `\nPROFILE\n${profileLines}` : ""}
+${profileLines ? `\nPROFILE\n${profileLines}` : ""}${userLoreText ? `\nUSER LORE\n${userLoreText}` : ""}${gameStateBlock}
 BEHAVIOR
 Warmth: ${warmth}/100  Humor: ${humor}/100  Flirtiness: ${flirtiness}/100  Dominance: ${dominance}/100${isAdult && kink > 0 ? `  Kink: ${kink}/100` : ""}
 ${behaviorMetaLines}
@@ -788,6 +808,7 @@ export async function POST(req: Request) {
     emotionalProfile: true,
     lastActiveAt: true,
     relationshipLevel: true,
+    gameState: true,
   } as const;
 
   let conversation = await prisma.conversation.findUnique({
@@ -841,7 +862,7 @@ export async function POST(req: Request) {
     CONTEXT_WINDOW_SIZES[user.plan] +
     additionalMemoryWindowForPlan(user.plan, hasMemoryExpansion);
 
-  const [pinnedMessages, recentMessages, userFactRows, retrievedMemories] = await Promise.all([
+  const [pinnedMessages, recentMessages, userFactRows, retrievedMemories, userLoreInjection] = await Promise.all([
     prisma.chatMessage.findMany({
       where: { conversationId: conversation.id, isPinned: true },
       orderBy: { createdAt: "asc" },
@@ -865,6 +886,7 @@ export async function POST(req: Request) {
     message
       ? retrieveConversationMemories({ conversationId: conversation.id, queryText: message })
       : Promise.resolve<string[]>([]),
+    buildLoreInjection(user.id, message ?? "").catch(() => ({ text: "", entryCount: 0 })),
   ]);
 
   const pinnedContents = new Set(pinnedMessages.map((m) => m.content));
@@ -896,6 +918,8 @@ export async function POST(req: Request) {
     message,
   ].filter(Boolean).join(" ");
 
+  const gameState = conversation.gameState as GameState | null;
+
   const systemPrompt = buildCompanionSystemPrompt({
     companion,
     memory: {
@@ -916,6 +940,8 @@ export async function POST(req: Request) {
     ooc: ooc || undefined,
     lorebookEntries: companionLorebookEntries,
     recentText,
+    userLoreText: userLoreInjection.text || undefined,
+    gameState: gameState || undefined,
   });
 
   const encoder = new TextEncoder();
@@ -1111,11 +1137,22 @@ ${lastAssistantReplies || "(none yet)"}
       });
 
       if (delta) {
+        const allMessages = [
+          ...contextMessages,
+          { role: "user", content: message },
+          { role: "assistant", content: reply },
+        ].filter((m) => m.content);
+
         Promise.all([
           maybeRefreshConversationSummary({ conversationId: conversation.id, currentSummary: conversation.summary }),
           maybeExtractUserMemory({ conversationId: conversation.id, currentMemory: conversation.memorySummary }),
           maybeExtractEmotionalMemory({ conversationId: conversation.id, currentMemory: conversation.emotionalMemory }),
           maybeExtractEmotionalProfile({ conversationId: conversation.id, currentProfile: conversation.emotionalProfile }),
+          extractGameState({
+            conversationId: conversation.id,
+            previousState: gameState,
+            recentMessages: allMessages,
+          }),
         ]).catch(() => {});
       }
     } catch (error) {
