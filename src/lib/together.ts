@@ -37,7 +37,10 @@ export const TOGETHER_CHAT_MODEL =
 
 // Default free OpenRouter model — override via OPENROUTER_MODEL env var
 export const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free";
+  process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash:free";
+
+const OPENROUTER_FALLBACK =
+  process.env.OPENROUTER_FALLBACK_MODEL ?? "deepseek/deepseek-chat:free";
 
 /** Priority: OpenRouter → Together AI → OpenAI */
 export function getChatClient(): { client: OpenAI; model: string } {
@@ -61,31 +64,57 @@ type StreamParams = Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model
 
 function isRecoverable(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
-  return status === 400 || status === 402 || status === 429;
+  return status === 400 || status === 402 || status === 429 || (!!status && status >= 500);
 }
 
-/** Chat completion with automatic OpenAI fallback on provider errors. */
+/** Chat completion — tries primary model, then fallback, then OpenAI. */
 export async function chatCompletion(params: ChatParams): Promise<OpenAI.Chat.ChatCompletion> {
-  const { client, model } = getChatClient();
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return await (client.chat.completions.create as any)({ ...params, ...llamaExtras(model), model, stream: false });
-  } catch (err: unknown) {
-    if (!isRecoverable(err)) throw err;
-    console.warn(`Chat provider error (${(err as { status?: number })?.status}), falling back to OpenAI`);
-    return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: false });
+  if (process.env.OPENROUTER_API_KEY) {
+    const client = getOpenRouter();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (client.chat.completions.create as any)({ ...params, model: OPENROUTER_MODEL, stream: false });
+    } catch (err: unknown) {
+      if (!isRecoverable(err)) throw err;
+      console.warn(`[together] primary model failed (${(err as { status?: number })?.status}), trying fallback ${OPENROUTER_FALLBACK}`);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return await (client.chat.completions.create as any)({ ...params, model: OPENROUTER_FALLBACK, stream: false });
+      } catch {
+        // fall through to OpenAI
+      }
+    }
+  } else if (process.env.TOGETHER_API_KEY) {
+    try {
+      const client = getTogether();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (client.chat.completions.create as any)({ ...params, ...llamaExtras(TOGETHER_CHAT_MODEL), model: TOGETHER_CHAT_MODEL, stream: false });
+    } catch (err: unknown) {
+      if (!isRecoverable(err)) throw err;
+    }
   }
+  console.warn(`[together] falling back to OpenAI gpt-4o-mini`);
+  return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: false });
 }
 
-/** Streaming chat completion with automatic OpenAI fallback on provider errors. */
+/** Streaming chat completion — tries primary model, then fallback, then OpenAI. */
 export async function chatCompletionStream(params: StreamParams): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
-  const { client, model } = getChatClient();
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return await (client.chat.completions.create as any)({ ...params, ...llamaExtras(model), model, stream: true });
-  } catch (err: unknown) {
-    if (!isRecoverable(err)) throw err;
-    console.warn(`Chat provider error (${(err as { status?: number })?.status}), falling back to OpenAI`);
-    return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: true });
+  if (process.env.OPENROUTER_API_KEY) {
+    const client = getOpenRouter();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (client.chat.completions.create as any)({ ...params, model: OPENROUTER_MODEL, stream: true });
+    } catch (err: unknown) {
+      if (!isRecoverable(err)) throw err;
+      console.warn(`[together] stream primary failed, trying ${OPENROUTER_FALLBACK}`);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return await (client.chat.completions.create as any)({ ...params, model: OPENROUTER_FALLBACK, stream: true });
+      } catch {
+        // fall through
+      }
+    }
   }
+  console.warn(`[together] stream falling back to OpenAI gpt-4o-mini`);
+  return await getOpenAI().chat.completions.create({ ...params, model: "gpt-4o-mini", stream: true });
 }
