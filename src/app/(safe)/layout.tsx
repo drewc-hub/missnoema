@@ -1,6 +1,7 @@
 import React from "react";
 import { Footer } from "@/components/Footer";
-import { SafeTopNav } from "@/components/Safenav";
+import { NoemaAppShell } from "@/components/NoemaAppShell";
+import { NoemaTopNav } from "@/components/NoemaTopNav";
 
 export default function SafeLayout({
     children,
@@ -8,12 +9,12 @@ export default function SafeLayout({
     children: React.ReactNode;
 }) {
     return (
-        <>
-            <SafeTopNav />
-            <div className="mx-auto w-full max-w-6xl px-4">
-                <div className="py-8">{children}</div>
-                <Footer className="rounded-[24px]" />
+        <NoemaAppShell>
+            <NoemaTopNav />
+            <div className="flex-1 px-4 sm:px-6 py-6">
+                {children}
             </div>
-        </>
+            <Footer className="mx-4 sm:mx-6 mb-6 rounded-[24px]" />
+        </NoemaAppShell>
     );
 }
