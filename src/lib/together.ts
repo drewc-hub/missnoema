@@ -37,7 +37,7 @@ export const TOGETHER_CHAT_MODEL =
 export const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash:free";
 
-const OPENROUTER_FALLBACK =
+export const OPENROUTER_FALLBACK =
   process.env.OPENROUTER_FALLBACK_MODEL ?? "deepseek/deepseek-chat:free";
 
 // repetition_penalty is native to Llama — inject when using a Llama model
