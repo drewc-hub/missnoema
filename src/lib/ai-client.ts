@@ -4,8 +4,9 @@ import { streamText, generateText } from "ai";
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash:free";
 
+// Reliable fallback — used whenever the primary model fails for any reason
 const OPENROUTER_FALLBACK =
-  process.env.OPENROUTER_FALLBACK_MODEL ?? "deepseek/deepseek-chat:free";
+  process.env.OPENROUTER_FALLBACK_MODEL ?? "meta-llama/llama-3.1-8b-instruct:free";
 
 let provider: ReturnType<typeof createOpenAI> | undefined;
 
@@ -31,11 +32,6 @@ type Msg = {
   content: string;
 };
 
-function isRetryable(err: unknown): boolean {
-  const status = (err as { status?: number })?.status;
-  return status === 429 || status === 402 || (!!status && status >= 500);
-}
-
 function buildStreamParams(model: string, systemPrompt: string, messages: Msg[]) {
   return {
     model: getProvider().chat(model),
@@ -53,7 +49,7 @@ export async function* companionStream(
   systemPrompt: string,
   messages: Msg[],
 ): AsyncGenerator<string> {
-  // Try primary model
+  // Try primary model — fall back on ANY error (404, 422, 429, 5xx, network)
   try {
     const result = streamText(buildStreamParams(OPENROUTER_MODEL, systemPrompt, messages));
     for await (const chunk of result.textStream) {
@@ -61,8 +57,8 @@ export async function* companionStream(
     }
     return;
   } catch (err: unknown) {
-    if (!isRetryable(err)) throw err;
-    console.warn(`[ai-client] ${OPENROUTER_MODEL} failed (${(err as { status?: number })?.status}), trying fallback`);
+    const status = (err as { status?: number })?.status;
+    console.warn(`[ai-client] primary model ${OPENROUTER_MODEL} failed (status=${status ?? "unknown"}), trying fallback`);
   }
 
   // Try fallback model
@@ -73,7 +69,8 @@ export async function* companionStream(
     }
     return;
   } catch (err: unknown) {
-    console.error(`[ai-client] fallback model ${OPENROUTER_FALLBACK} also failed:`, err);
+    const status = (err as { status?: number })?.status;
+    console.error(`[ai-client] fallback ${OPENROUTER_FALLBACK} also failed (status=${status ?? "unknown"})`, err);
     yield "I'm having trouble connecting right now. Please try again in a moment.";
   }
 }
@@ -98,8 +95,8 @@ export async function companionGenerate(
   try {
     return await tryGenerate(OPENROUTER_MODEL);
   } catch (err: unknown) {
-    if (!isRetryable(err)) throw err;
-    console.warn(`[ai-client] generate fallback to ${OPENROUTER_FALLBACK}`);
+    const status = (err as { status?: number })?.status;
+    console.warn(`[ai-client] generate primary failed (status=${status ?? "unknown"}), trying fallback`);
     try {
       return await tryGenerate(OPENROUTER_FALLBACK);
     } catch {
