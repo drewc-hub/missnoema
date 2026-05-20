@@ -1,12 +1,9 @@
-
 // app/api/rp-chat/route.ts
-import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
+import { getOpenRouter, OPENROUTER_MODEL, OPENROUTER_FALLBACK } from '@/lib/together';
 import type { CharacterProfile, ChatMessage } from '@/lib/rp-types';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const runtime = 'nodejs';
 
 type RequestBody = {
   character: CharacterProfile;
@@ -23,42 +20,29 @@ function buildSystemPrompt(character: CharacterProfile, scene: string): string {
     'Do not speak for the user.',
     '',
     `Name: ${character.name}`,
-    `Title: ${character.title}`,
-    `Archetype: ${character.archetype}`,
-    `Age: ${character.age}`,
-    `Pronouns: ${character.pronouns}`,
-    `Origin: ${character.origin}`,
-    `Personality: ${character.personality}`,
-    `Appearance: ${character.appearance}`,
-    `Likes: ${character.likes}`,
-    `Dislikes: ${character.dislikes}`,
-    `Secret: ${character.secret}`,
-    `Goal: ${character.goal}`,
-    `Opening Line: ${character.openingLine}`,
+    `Title: ${character.title ?? ''}`,
+    `Archetype: ${character.archetype ?? ''}`,
+    `Age: ${character.age ?? ''}`,
+    `Pronouns: ${character.pronouns ?? ''}`,
+    `Origin: ${character.origin ?? ''}`,
+    `Personality: ${character.personality ?? ''}`,
+    `Appearance: ${character.appearance ?? ''}`,
+    `Likes: ${character.likes ?? ''}`,
+    `Dislikes: ${character.dislikes ?? ''}`,
+    `Secret: ${character.secret ?? ''}`,
+    `Goal: ${character.goal ?? ''}`,
+    `Opening Line: ${character.openingLine ?? ''}`,
     '',
     `Scene: ${scene}`,
   ].join('\n');
 }
 
-function formatMessages(messages: ChatMessage[]): string {
-  return messages
-    .map((message) => {
-      if (message.role === 'user') return `User: ${message.content}`;
-      if (message.role === 'character') return `Character: ${message.content}`;
-      return `System: ${message.content}`;
-    })
-    .join('\n');
-}
-
 export async function POST(request: Request) {
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'Missing OPENAI_API_KEY environment variable.' },
-        { status: 500 }
-      );
-    }
+  if (!process.env.OPENROUTER_API_KEY) {
+    return NextResponse.json({ error: 'Missing OPENROUTER_API_KEY.' }, { status: 500 });
+  }
 
+  try {
     const body = (await request.json()) as RequestBody;
     const { character, scene, messages } = body;
 
@@ -67,28 +51,36 @@ export async function POST(request: Request) {
     }
 
     const systemPrompt = buildSystemPrompt(character, scene);
-    const transcript = formatMessages(messages);
 
-    const response = await client.responses.create({
-      model: 'gpt-5.4-mini',
-      input: [
-        {
-          role: 'system',
-          content: [{ type: 'input_text', text: systemPrompt }],
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'input_text',
-              text: `Continue this roleplay conversation.\n\n${transcript}`,
-            },
-          ],
-        },
-      ],
-    });
+    const modelMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...messages.map((m) => ({
+        role: m.role === 'character' ? ('assistant' as const) : m.role === 'system' ? ('system' as const) : ('user' as const),
+        content: m.content,
+      })),
+    ];
 
-    const reply = response.output_text?.trim();
+    const client = getOpenRouter();
+
+    let reply: string | null | undefined;
+
+    try {
+      const response = await client.chat.completions.create({
+        model: OPENROUTER_MODEL,
+        messages: modelMessages,
+        max_tokens: 1200,
+        temperature: 0.75,
+      });
+      reply = response.choices[0]?.message?.content?.trim();
+    } catch {
+      const response = await client.chat.completions.create({
+        model: OPENROUTER_FALLBACK,
+        messages: modelMessages,
+        max_tokens: 1200,
+        temperature: 0.75,
+      });
+      reply = response.choices[0]?.message?.content?.trim();
+    }
 
     if (!reply) {
       return NextResponse.json({ error: 'Model returned an empty reply.' }, { status: 500 });
@@ -97,9 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply });
   } catch (error) {
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Unknown server error.',
-      },
+      { error: error instanceof Error ? error.message : 'Unknown server error.' },
       { status: 500 }
     );
   }
