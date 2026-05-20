@@ -1,209 +1,106 @@
+
 // app/api/rp-chat/route.ts
-import { prisma } from '@/lib/prisma';
-import { getAuthedUser } from '@/lib/auth';
-import { getOpenRouter, OPENROUTER_MODEL, OPENROUTER_FALLBACK } from '@/lib/together';
-import type { RpClientMessage, SendRpRequest } from '@/lib/rp-chat-types';
+import OpenAI from 'openai';
+import { NextResponse } from 'next/server';
+import type { CharacterProfile, ChatMessage } from '@/lib/rp-types';
 
-export const runtime = 'nodejs';
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-function sse(event: string, data: unknown) {
-    return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+type RequestBody = {
+  character: CharacterProfile;
+  scene: string;
+  messages: ChatMessage[];
+};
+
+function buildSystemPrompt(character: CharacterProfile, scene: string): string {
+  return [
+    'You are roleplaying as the following fictional character.',
+    'Stay in character unless safety requires otherwise.',
+    'Write immersive, dialogue-forward responses.',
+    'Keep replies concise to medium length unless the user asks for more.',
+    'Do not speak for the user.',
+    '',
+    `Name: ${character.name}`,
+    `Title: ${character.title}`,
+    `Archetype: ${character.archetype}`,
+    `Age: ${character.age}`,
+    `Pronouns: ${character.pronouns}`,
+    `Origin: ${character.origin}`,
+    `Personality: ${character.personality}`,
+    `Appearance: ${character.appearance}`,
+    `Likes: ${character.likes}`,
+    `Dislikes: ${character.dislikes}`,
+    `Secret: ${character.secret}`,
+    `Goal: ${character.goal}`,
+    `Opening Line: ${character.openingLine}`,
+    '',
+    `Scene: ${scene}`,
+  ].join('\n');
 }
 
-function toModelInput(messages: RpClientMessage[]) {
-    return messages.map((message) => ({
-        role:
-            message.role === 'character'
-                ? ('assistant' as const)
-                : message.role === 'system'
-                    ? ('system' as const)
-                    : ('user' as const),
-        content: message.content,
-    }));
-}
-
-function buildSystemPrompt(params: {
-    companionName: string;
-    archetype: string | null;
-    description: string;
-    scenario: string | null;
-    greeting: string | null;
-    profile: unknown;
-}) {
-    const { companionName, archetype, description, scenario, greeting, profile } = params;
-
-    return [
-        `You are roleplaying as ${companionName}.`,
-        'Stay fully in character unless safety requires otherwise.',
-        'Do not speak for the user.',
-        'Write immersive, dialogue-forward replies.',
-        'Keep responses concise to medium length unless asked otherwise.',
-        '',
-        `Name: ${companionName}`,
-        `Archetype: ${archetype ?? 'Unknown'}`,
-        `Description: ${description}`,
-        `Scenario: ${scenario ?? 'None provided'}`,
-        `Greeting: ${greeting ?? 'None provided'}`,
-        `Profile JSON: ${JSON.stringify(profile)}`,
-    ].join('\n');
+function formatMessages(messages: ChatMessage[]): string {
+  return messages
+    .map((message) => {
+      if (message.role === 'user') return `User: ${message.content}`;
+      if (message.role === 'character') return `Character: ${message.content}`;
+      return `System: ${message.content}`;
+    })
+    .join('\n');
 }
 
 export async function POST(request: Request) {
-    if (!process.env.OPENROUTER_API_KEY) {
-        return new Response(
-            sse('error', { message: 'Missing OPENROUTER_API_KEY.' }),
-            {
-                status: 500,
-                headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' },
-            }
-        );
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Missing OPENAI_API_KEY environment variable.' },
+        { status: 500 }
+      );
     }
 
-    const user = await getAuthedUser();
-    if (!user) {
-        return new Response(
-            sse('error', { message: 'Login required.' }),
-            {
-                status: 401,
-                headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' },
-            }
-        );
+    const body = (await request.json()) as RequestBody;
+    const { character, scene, messages } = body;
+
+    if (!character || !scene || !Array.isArray(messages)) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    let body: SendRpRequest;
-    try {
-        body = (await request.json()) as SendRpRequest;
-    } catch {
-        return new Response(
-            sse('error', { message: 'Invalid JSON body.' }),
-            {
-                status: 400,
-                headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' },
-            }
-        );
-    }
+    const systemPrompt = buildSystemPrompt(character, scene);
+    const transcript = formatMessages(messages);
 
-    const { companionId, message, messages } = body;
-    if (!companionId || !message || !Array.isArray(messages)) {
-        return new Response(
-            sse('error', { message: 'Missing required fields.' }),
-            {
-                status: 400,
-                headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' },
-            }
-        );
-    }
-
-    const encoder = new TextEncoder();
-
-    const stream = new ReadableStream<Uint8Array>({
-        async start(controller) {
-            let finalReply = '';
-
-            try {
-                const companion = await prisma.companion.findUnique({
-                    where: { id: companionId },
-                    select: {
-                        id: true,
-                        name: true,
-                        archetype: true,
-                        description: true,
-                        scenario: true,
-                        greeting: true,
-                        profile: true,
-                        contentRating: true,
-                    },
-                });
-                if (!companion) {
-                    controller.enqueue(encoder.encode(sse('error', { message: 'Companion not found.' })));
-                    controller.close();
-                    return;
-                }
-
-                const conversation = await prisma.conversation.upsert({
-                    where: { userId_companionId: { userId: user.id, companionId: companion.id } },
-                    update: { lastActiveAt: new Date(), updatedAt: new Date(), contentRating: companion.contentRating },
-                    create: { userId: user.id, companionId: companion.id, contentRating: companion.contentRating, lastActiveAt: new Date() },
-                    select: { id: true, contentRating: true },
-                });
-
-                controller.enqueue(encoder.encode(sse('conversation', { conversationId: conversation.id, contentRating: conversation.contentRating })));
-
-                await prisma.chatMessage.create({
-                    data: { conversationId: conversation.id, role: 'user', content: message, contentRating: companion.contentRating },
-                });
-
-                const systemPrompt = buildSystemPrompt({
-                    companionName: companion.name,
-                    archetype: companion.archetype,
-                    description: companion.description,
-                    scenario: companion.scenario,
-                    greeting: companion.greeting,
-                    profile: companion.profile,
-                });
-
-                const client = getOpenRouter();
-                const modelMessages = [
-                    { role: 'system' as const, content: systemPrompt },
-                    ...toModelInput(messages),
-                ];
-
-                // Try primary model, fall back to fallback on rate-limit/quota errors
-                let response: AsyncIterable<import('openai').OpenAI.Chat.ChatCompletionChunk>;
-                try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    response = await (client.chat.completions.create as any)({ model: OPENROUTER_MODEL, messages: modelMessages, stream: true, max_tokens: 1200, temperature: 0.75 });
-                } catch (err: unknown) {
-                    const status = (err as { status?: number })?.status;
-                    if (status === 429 || status === 402 || (status && status >= 500)) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        response = await (client.chat.completions.create as any)({ model: OPENROUTER_FALLBACK, messages: modelMessages, stream: true, max_tokens: 1200, temperature: 0.75 });
-                    } else {
-                        throw err;
-                    }
-                }
-
-                for await (const chunk of response) {
-                    const delta = chunk.choices[0]?.delta?.content ?? '';
-                    if (delta) {
-                        finalReply += delta;
-                        controller.enqueue(encoder.encode(sse('delta', { delta })));
-                    }
-                }
-
-                finalReply = finalReply.trim();
-                if (!finalReply) {
-                    controller.enqueue(encoder.encode(sse('error', { message: 'Model returned an empty reply.' })));
-                    controller.close();
-                    return;
-                }
-
-                const saved = await prisma.chatMessage.create({
-                    data: { conversationId: conversation.id, role: 'assistant', content: finalReply, contentRating: companion.contentRating },
-                    select: { id: true, content: true },
-                });
-
-                await prisma.conversation.update({
-                    where: { id: conversation.id },
-                    data: { lastActiveAt: new Date(), updatedAt: new Date() },
-                });
-
-                controller.enqueue(encoder.encode(sse('done', { messageId: saved.id, content: saved.content })));
-            } catch (error) {
-                controller.enqueue(
-                    encoder.encode(sse('error', { message: error instanceof Error ? error.message : 'Unknown server error.' }))
-                );
-            } finally {
-                controller.close();
-            }
+    const response = await client.responses.create({
+      model: 'gpt-5.4-mini',
+      input: [
+        {
+          role: 'system',
+          content: [{ type: 'input_text', text: systemPrompt }],
         },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: `Continue this roleplay conversation.\n\n${transcript}`,
+            },
+          ],
+        },
+      ],
     });
 
-    return new Response(stream, {
-        headers: {
-            'Content-Type': 'text/event-stream; charset=utf-8',
-            'Cache-Control': 'no-cache, no-transform',
-            Connection: 'keep-alive',
-        },
-    });
+    const reply = response.output_text?.trim();
+
+    if (!reply) {
+      return NextResponse.json({ error: 'Model returned an empty reply.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ reply });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Unknown server error.',
+      },
+      { status: 500 }
+    );
+  }
 }
