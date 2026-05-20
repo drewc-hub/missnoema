@@ -12,24 +12,42 @@ type SearchParams = {
     companion?: string;
 };
 
+function buildNextAdultChatHref(companion?: string) {
+    const params = new URLSearchParams();
+
+    if (companion?.trim()) {
+        params.set("companion", companion.trim());
+    }
+
+    const query = params.toString();
+    return query ? `/adult/chat?${query}` : "/adult/chat";
+}
+
 export default async function AdultChatPage({
     searchParams,
 }: {
     searchParams: Promise<SearchParams>;
 }) {
     const sp = await searchParams;
+    const requestedSlug = (sp.companion ?? "").trim();
 
     const user = await getAuthedUser();
+
     if (!user) {
-        redirect("/login?next=/adult/chat");
+        redirect(`/login?next=${encodeURIComponent(buildNextAdultChatHref(requestedSlug))}`);
+    }
+
+    if (user.suspendedAt) {
+        redirect("/adult");
     }
 
     const allowAdult = isAdultAllowed(user);
-    if (!allowAdult) {
-        redirect(`/adult/verify?next=${encodeURIComponent("/adult/chat")}`);
-    }
 
-    const requestedSlug = (sp.companion ?? "").trim();
+    if (!allowAdult) {
+        redirect(
+            `/adult/verify?next=${encodeURIComponent(buildNextAdultChatHref(requestedSlug))}`
+        );
+    }
 
     let initialCompanionId: string | undefined;
 
@@ -37,7 +55,9 @@ export default async function AdultChatPage({
         const companion = await prisma.companion.findFirst({
             where: {
                 slug: requestedSlug,
-                contentRating: { in: [ContentRating.SAFE, ContentRating.ADULT] },
+                contentRating: {
+                    in: [ContentRating.SAFE, ContentRating.ADULT],
+                },
                 OR: [{ visibility: Visibility.PUBLIC }, { ownerId: user.id }],
             },
             select: {

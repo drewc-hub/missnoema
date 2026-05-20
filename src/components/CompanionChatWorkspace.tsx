@@ -442,7 +442,7 @@ export function CompanionChatWorkspace({
         }
 
         loadCompanions();
-    }, []);
+    }, [initialCompanionId]);
 
     useEffect(() => {
         async function loadConversation() {
@@ -452,6 +452,12 @@ export function CompanionChatWorkspace({
                 setCompanionMood(0);
                 setMediaHistory([]);
                 setLightboxItem(null);
+                setSuggestions([]);
+                setUserFacts([]);
+                setSavedIds(new Set());
+                setSaveInfo(null);
+                setDailyUsed(null);
+                setDailyLimit(null);
                 return;
             }
 
@@ -728,6 +734,7 @@ export function CompanionChatWorkspace({
     }
 
     async function requestIntro(companionId: string) {
+        setSending(true);
         setMessages([{ role: "assistant", content: "" }]);
 
         try {
@@ -737,7 +744,10 @@ export function CompanionChatWorkspace({
                 body: JSON.stringify({ companionId }),
             });
 
-            if (!res.ok || !res.body) { setMessages([]); return; }
+            if (!res.ok || !res.body) {
+                setMessages([]);
+                return;
+            }
 
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
@@ -749,19 +759,31 @@ export function CompanionChatWorkspace({
                 buf += decoder.decode(value, { stream: true });
                 const lines = buf.split("\n");
                 buf = lines.pop() ?? "";
+
                 for (const line of lines) {
                     if (!line.startsWith("data: ")) continue;
+
                     let event: Record<string, unknown>;
                     try {
                         event = JSON.parse(line.slice(6));
-                    } catch { continue; }
-                    if (event.type === "skip") { setMessages([]); return; }
+                    } catch {
+                        continue;
+                    }
+
+                    if (event.type === "skip") {
+                        setMessages([]);
+                        return;
+                    }
+
                     if (event.type === "chunk") {
                         setMessages((prev) => {
                             const next = [...prev];
                             const last = next[next.length - 1];
                             if (last?.role === "assistant") {
-                                next[next.length - 1] = { ...last, content: last.content + (event.text as string) };
+                                next[next.length - 1] = {
+                                    ...last,
+                                    content: last.content + String(event.text ?? ""),
+                                };
                             }
                             return next;
                         });
@@ -770,6 +792,8 @@ export function CompanionChatWorkspace({
             }
         } catch {
             setMessages([]);
+        } finally {
+            setSending(false);
         }
     }
 
@@ -985,7 +1009,8 @@ export function CompanionChatWorkspace({
                 <button
                     type="button"
                     onClick={() => setSidebarOpen((o) => !o)}
-                    className="flex items-center gap-2 rounded-xl border border-zinc-700 absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% px-3 py-2 text-sm text-zinc-200 transition-all duration-200 hover:border-zinc-500 hover:bg-zinc-800 active:scale-[0.98]"
+                    // mobile companion picker button
+                    className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-all duration-200 hover:border-zinc-500 hover:bg-zinc-800 active:scale-[0.98]"
                 >
                     <svg className="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M2 4h12M2 8h8M2 12h6" strokeLinecap="round" />
@@ -1649,7 +1674,7 @@ export function CompanionChatWorkspace({
             {deleteConfirmId ? (() => {
                 const c = companions.find((x) => x.id === deleteConfirmId);
                 return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% p-4" onClick={() => setDeleteConfirmId(null)}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setDeleteConfirmId(null)}>
                         <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
                             <div className="text-base font-semibold text-zinc-100">Remove companion?</div>
                             <div className="text-sm text-zinc-400">
@@ -1691,7 +1716,8 @@ export function CompanionChatWorkspace({
             })() : null}
 
             {levelUpNotif ? (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 rounded-2xl border border-violet-500/50 absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55% px-6 py-4 shadow-2xl backdrop-blur-sm text-center min-w-[260px]">
+                <div // level-up notification
+                    className="fixed bottom-6 left-1/2 z-50 flex min-w-[260px] -translate-x-1/2 items-start gap-3 rounded-2xl border border-violet-500/50 bg-zinc-900/95 px-6 py-4 text-center shadow-2xl backdrop-blur-sm">
                     <div className="w-full">
                         <div className="text-base font-bold text-violet-300">Bond Level {levelUpNotif.level} Complete!</div>
                         <div className="text-sm text-zinc-300 mt-1">Your connection has deepened. Starting Level {levelUpNotif.nextLevel}.</div>
