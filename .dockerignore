@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+*.log
+*.swp
+*.swo
+.env*.local
+.DS_Store
