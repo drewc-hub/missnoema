@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthedUser } from "@/lib/auth";
-import { generateText } from "ai";
-import { getProvider } from "@/lib/ai-client";
+import { companionGenerate } from "@/lib/ai-client";
 
 export const runtime = "nodejs";
 
@@ -16,18 +15,9 @@ export async function POST(req: Request) {
   if (!prompt) return NextResponse.json({ error: "No prompt provided." }, { status: 400 });
   if (prompt.length <= TARGET) return NextResponse.json({ ok: true, enhanced: prompt });
 
-  const { text } = await generateText({
-    model: getProvider().chat(process.env.OPENROUTER_MODEL ?? "x-ai/grok-4.20-multi-agent"),
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert image generation prompt engineer. Compress the following prompt to under ${TARGET} characters while preserving every important visual detail — subject, style, lighting, composition, colors, mood, and any character-specific descriptors. Use efficient comma-separated tag style where possible. Remove filler words and redundancy. Output ONLY the compressed prompt, nothing else.\n\nOriginal prompt:\n${prompt}`,
-      },
-    ],
-    maxOutputTokens: 600,
-    temperature: 0.3,
-  });
-
-  const enhanced = text.trim();
+  const enhanced = await companionGenerate(
+    "You are an expert image generation prompt engineer. Compress prompts efficiently while preserving all visual detail.",
+    [{ role: "user", content: `Compress the following prompt to under ${TARGET} characters while preserving every important visual detail — subject, style, lighting, composition, colors, mood, and any character-specific descriptors. Use efficient comma-separated tag style where possible. Remove filler words and redundancy. Output ONLY the compressed prompt, nothing else.\n\nOriginal prompt:\n${prompt}` }],
+  );
   return NextResponse.json({ ok: true, enhanced, originalLength: prompt.length, enhancedLength: enhanced.length });
 }

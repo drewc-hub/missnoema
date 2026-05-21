@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthedUser } from "@/lib/auth";
-import { getProvider } from "@/lib/ai-client";
-import { generateText } from "ai";
+import { companionGenerate } from "@/lib/ai-client";
 
 export const runtime = "nodejs";
 
@@ -105,10 +104,9 @@ Return only the expanded text, no labels or explanation.`;
         return NextResponse.json({ error: "Invalid mode or missing field." }, { status: 400 });
     }
 
-    const { text } = await generateText({
-        model: getProvider().chat(process.env.OPENROUTER_MODEL ?? "x-ai/grok-4.20-multi-agent"),
-        prompt,
-    });
+    const text = await companionGenerate("You are a helpful creative writing assistant.", [
+        { role: "user", content: prompt },
+    ]);
 
     if (mode === "generate") {
         try {
