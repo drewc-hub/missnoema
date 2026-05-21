@@ -34,45 +34,60 @@ export default async function SafePage() {
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/[0.10] px-4 py-1.5 text-xs font-medium text-fuchsia-300 mb-6">
-            <Sparkles className="h-3.5 w-3.5" />
-            Adaptive AI Companion Ecosystem
+        <div className="mx-auto max-w-5xl flex items-center gap-8 sm:gap-12">
+          {/* Avatar video — plays once on load */}
+          <div className="hidden sm:flex shrink-0 w-[50%] items-center justify-center">
+            <video
+              src="/NoemaAvitar.mp4"
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-auto rounded-2xl"
+              style={{ maxHeight: "100%" }}
+            />
           </div>
 
-          <h1 className="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            AI companions that{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #c084fc 0%, #818cf8 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              remember you
-            </span>
-          </h1>
+          {/* Text content */}
+          <div className="flex-1 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/[0.10] px-4 py-1.5 text-xs font-medium text-fuchsia-300 mb-6">
+              <Sparkles className="h-3.5 w-3.5" />
+              Adaptive AI Companion Ecosystem
+            </div>
 
-          <p className="mt-5 max-w-xl mx-auto text-base leading-7 text-white/50">
-            Noema companions build real memory — emotions, preferences, milestones, and
-            relationship history — so every conversation feels personal and alive.
-          </p>
+            <h1 className="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+              AI companions that{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg, #c084fc 0%, #818cf8 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                remember you
+              </span>
+            </h1>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a
-              href="/companions"
-              className="inline-flex items-center gap-2 rounded-full bg-white/90 px-6 py-2.5 text-sm font-bold text-black hover:bg-white transition"
-            >
-              <Compass className="h-4 w-4" />
-              Explore Companions
-            </a>
-            <a
-              href="/companions/new"
-              className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-6 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
-            >
-              <Wand2 className="h-4 w-4" />
-              Create Your Own
-            </a>
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/50">
+              Noema companions build real memory — emotions, preferences, milestones, and
+              relationship history — so every conversation feels personal and alive.
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center sm:justify-start gap-3">
+              <a
+                href="/companions"
+                className="inline-flex items-center gap-2 rounded-full bg-white/90 px-6 py-2.5 text-sm font-bold text-black hover:bg-white transition"
+              >
+                <Compass className="h-4 w-4" />
+                Explore Companions
+              </a>
+              <a
+                href="/companions/new"
+                className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/[0.06] px-6 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
+              >
+                <Wand2 className="h-4 w-4" />
+                Create Your Own
+              </a>
+            </div>
           </div>
         </div>
       </section>
