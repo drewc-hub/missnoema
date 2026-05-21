@@ -35,10 +35,10 @@ export const TOGETHER_CHAT_MODEL =
     process.env.TOGETHER_CHAT_MODEL ?? "meta-llama/Llama-3.3-70B-Instruct-Turbo";
 
 export const OPENROUTER_MODEL =
-    process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.1-8b-instruct:free";
+    process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat";
 
 export const OPENROUTER_FALLBACK =
-    process.env.OPENROUTER_FALLBACK_MODEL ?? "deepseek/deepseek-v4-flash:free";
+    process.env.OPENROUTER_FALLBACK_MODEL ?? "deepseek/deepseek-chat";
 
 // repetition_penalty is native to Llama — inject when using a Llama model
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
