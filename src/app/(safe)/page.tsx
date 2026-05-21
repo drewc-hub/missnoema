@@ -36,14 +36,13 @@ export default async function SafePage() {
       >
         <div className="flex items-center gap-8 sm:gap-12">
           {/* Avatar video — plays once on load */}
-          <div className="hidden sm:flex shrink-0 w-[50%] items-center justify-start">
+          <div className="hidden sm:flex shrink-0 w-[25%] items-center justify-start">
             <video
               src="/NoemaAvitar.mp4"
               autoPlay
               muted
               playsInline
               className="w-full h-auto rounded-2xl"
-              style={{ maxHeight: "100%" }}
             />
           </div>
 
