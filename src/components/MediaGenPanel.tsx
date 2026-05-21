@@ -70,7 +70,9 @@ export function MediaGenPanel({
   const [uploadResult, setUploadResult] = useState<{ assetId: string; publicUrl: string | null } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [settingCover, setSettingCover] = useState(false);
-  const [focalPoint, setFocalPoint] = useState<{ x: number; y: number } | null>(null);
+  const [focalPoint, setFocalPoint] = useState<{ x: number; y: number }>({ x: 50, y: 25 });
+  const [isDragging, setIsDragging] = useState(false);
+  const imgPickerRef = useRef<HTMLImageElement>(null);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -258,12 +260,17 @@ export function MediaGenPanel({
     }
   }
 
-  async function handleFocalPointClick(e: React.MouseEvent<HTMLDivElement>) {
+  function getPctFromEvent(e: React.MouseEvent): { x: number; y: number } | null {
+    if (!imgPickerRef.current) return null;
+    const rect = imgPickerRef.current.getBoundingClientRect();
+    return {
+      x: Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100))),
+      y: Math.round(Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100))),
+    };
+  }
+
+  async function saveFocalPoint(x: number, y: number) {
     if (!uploadResult) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-    setFocalPoint({ x, y });
     await fetch(`/api/media/${uploadResult.assetId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -271,12 +278,34 @@ export function MediaGenPanel({
     });
   }
 
+  function handlePickerMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(true);
+    const pt = getPctFromEvent(e);
+    if (pt) setFocalPoint(pt);
+  }
+
+  function handlePickerMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isDragging) return;
+    const pt = getPctFromEvent(e);
+    if (pt) setFocalPoint(pt);
+  }
+
+  function handlePickerMouseUp(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const pt = getPctFromEvent(e);
+    const final = pt ?? focalPoint;
+    setFocalPoint(final);
+    saveFocalPoint(final.x, final.y);
+  }
+
   async function handleFileUpload(file: File) {
     setUploading(true);
     setUploadError(null);
     setUploadResult(null);
     setCoverSuccess(false);
-    setFocalPoint(null);
+    setFocalPoint({ x: 50, y: 25 });
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -586,28 +615,51 @@ export function MediaGenPanel({
                 <div className="space-y-2">
                   {uploadResult.publicUrl && (
                     <div className="space-y-1">
+                      <p className="text-[11px] text-zinc-400">
+                        Drag the frame to position what shows on cards
+                      </p>
+                      {/* Scrollable image with draggable card-ratio crop frame */}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <div
-                        className="relative max-h-64 w-full cursor-crosshair overflow-hidden rounded-xl border border-zinc-700"
-                        onClick={handleFocalPointClick}
-                        title="Click to set the face focus point for card cropping"
+                        className="relative w-full overflow-auto rounded-xl border border-zinc-700"
+                        style={{ maxHeight: "65vh", cursor: isDragging ? "grabbing" : "crosshair" }}
+                        onMouseDown={handlePickerMouseDown}
+                        onMouseMove={handlePickerMouseMove}
+                        onMouseUp={handlePickerMouseUp}
+                        onMouseLeave={(e) => { if (isDragging) handlePickerMouseUp(e); }}
                       >
                         <img
+                          ref={imgPickerRef}
                           src={uploadResult.publicUrl}
                           alt="Uploaded cover preview"
-                          className="h-full w-full object-cover"
-                          style={focalPoint ? { objectPosition: `${focalPoint.x}% ${focalPoint.y}%` } : undefined}
+                          className="block w-full select-none"
+                          style={{ height: "auto" }}
                           draggable={false}
                         />
-                        {focalPoint && (
-                          <div
-                            className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-lg ring-2 ring-fuchsia-500"
-                            style={{ left: `${focalPoint.x}%`, top: `${focalPoint.y}%` }}
-                          />
-                        )}
-                        <div className="absolute bottom-1.5 left-0 right-0 flex justify-center">
-                          <span className="rounded-full bg-black/70 px-2 py-0.5 text-[10px] text-zinc-300">
-                            {focalPoint ? `Focus: ${focalPoint.x}%, ${focalPoint.y}%` : "Click to set face focus"}
+                        {/* Crop rectangle — box-shadow darkens everything outside it */}
+                        <div
+                          className="pointer-events-none absolute rounded"
+                          style={{
+                            width: "44%",
+                            aspectRatio: "188 / 330",
+                            left: `${focalPoint.x}%`,
+                            top: `${focalPoint.y}%`,
+                            transform: "translate(-50%, -50%)",
+                            border: "2px solid rgba(255,255,255,0.9)",
+                            boxShadow: "0 0 0 9999px rgba(0,0,0,0.52)",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          {/* Corner handles */}
+                          <span className="absolute -left-[3px] -top-[3px] block h-3 w-3 rounded-tl border-l-2 border-t-2 border-white" />
+                          <span className="absolute -right-[3px] -top-[3px] block h-3 w-3 rounded-tr border-r-2 border-t-2 border-white" />
+                          <span className="absolute -bottom-[3px] -left-[3px] block h-3 w-3 rounded-bl border-b-2 border-l-2 border-white" />
+                          <span className="absolute -bottom-[3px] -right-[3px] block h-3 w-3 rounded-br border-b-2 border-r-2 border-white" />
+                          {/* Center label */}
+                          <span className="absolute bottom-1.5 left-0 right-0 flex justify-center">
+                            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] text-zinc-200">
+                              {isDragging ? "↕ dragging…" : "card frame"}
+                            </span>
                           </span>
                         </div>
                       </div>
