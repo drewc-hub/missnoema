@@ -114,7 +114,7 @@ export default async function MarketplacePage({
               },
               orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
               take: 1,
-              select: { id: true, publicUrl: true },
+              select: { id: true, publicUrl: true, metadata: true },
             },
             _count: {
               select: {
@@ -227,6 +227,8 @@ export default async function MarketplacePage({
                     ? `/media/${asset.id}`
                     : asset.publicUrl ?? `/media/${asset.id}`
                   : null;
+                const assetMeta = (asset?.metadata ?? {}) as Record<string, unknown>;
+                const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 20}%`;
                 const readiness = getMarketplaceReadiness(companion);
                 const creatorName =
                   listing.creator?.displayName ||
@@ -262,6 +264,7 @@ export default async function MarketplacePage({
                             src={thumbnailUrl}
                             alt={`${companion.name} portrait`}
                             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+                            style={{ objectPosition: objectPos }}
                             loading="lazy"
                           />
                         ) : (

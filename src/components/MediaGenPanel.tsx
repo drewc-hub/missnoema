@@ -70,6 +70,7 @@ export function MediaGenPanel({
   const [uploadResult, setUploadResult] = useState<{ assetId: string; publicUrl: string | null } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [settingCover, setSettingCover] = useState(false);
+  const [focalPoint, setFocalPoint] = useState<{ x: number; y: number } | null>(null);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -257,11 +258,25 @@ export function MediaGenPanel({
     }
   }
 
+  async function handleFocalPointClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!uploadResult) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    setFocalPoint({ x, y });
+    await fetch(`/api/media/${uploadResult.assetId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ focalX: x, focalY: y }),
+    });
+  }
+
   async function handleFileUpload(file: File) {
     setUploading(true);
     setUploadError(null);
     setUploadResult(null);
     setCoverSuccess(false);
+    setFocalPoint(null);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -570,12 +585,33 @@ export function MediaGenPanel({
               {uploadResult && (
                 <div className="space-y-2">
                   {uploadResult.publicUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={uploadResult.publicUrl}
-                      alt="Uploaded cover preview"
-                      className="max-h-48 w-full rounded-xl border border-zinc-800 object-cover"
-                    />
+                    <div className="space-y-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <div
+                        className="relative max-h-64 w-full cursor-crosshair overflow-hidden rounded-xl border border-zinc-700"
+                        onClick={handleFocalPointClick}
+                        title="Click to set the face focus point for card cropping"
+                      >
+                        <img
+                          src={uploadResult.publicUrl}
+                          alt="Uploaded cover preview"
+                          className="h-full w-full object-cover"
+                          style={focalPoint ? { objectPosition: `${focalPoint.x}% ${focalPoint.y}%` } : undefined}
+                          draggable={false}
+                        />
+                        {focalPoint && (
+                          <div
+                            className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-lg ring-2 ring-fuchsia-500"
+                            style={{ left: `${focalPoint.x}%`, top: `${focalPoint.y}%` }}
+                          />
+                        )}
+                        <div className="absolute bottom-1.5 left-0 right-0 flex justify-center">
+                          <span className="rounded-full bg-black/70 px-2 py-0.5 text-[10px] text-zinc-300">
+                            {focalPoint ? `Focus: ${focalPoint.x}%, ${focalPoint.y}%` : "Click to set face focus"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   <div className="flex items-center gap-2">
                     <button

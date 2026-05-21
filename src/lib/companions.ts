@@ -142,7 +142,7 @@ export async function listCompanions({
                         { createdAt: "desc" },
                     ],
                     take: 1,
-                    select: { id: true, publicUrl: true, contentRating: true },
+                    select: { id: true, publicUrl: true, contentRating: true, metadata: true },
                 },
             },
         });
@@ -206,6 +206,8 @@ export async function listCompanions({
                     ? `/media/${asset.id}`
                     : (asset.publicUrl ?? `/media/${asset.id}`)
                 : avatarFromProfile,
+            focalX: asset ? ((asset.metadata as Record<string, unknown>)?.focalX as number | undefined) ?? 50 : 50,
+            focalY: asset ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 20 : 20,
             imagesCount: counts.images,
             videosCount: counts.videos,
         };

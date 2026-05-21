@@ -21,6 +21,8 @@ export async function PATCH(
   const body = await req.json().catch(() => null);
   const isFavorite = typeof body?.isFavorite === "boolean" ? body.isFavorite : undefined;
   const isCover = typeof body?.isCover === "boolean" ? body.isCover : undefined;
+  const focalX = typeof body?.focalX === "number" ? Math.max(0, Math.min(100, body.focalX)) : undefined;
+  const focalY = typeof body?.focalY === "number" ? Math.max(0, Math.min(100, body.focalY)) : undefined;
 
   const asset = await prisma.companionAsset.findFirst({
     where: {
@@ -53,9 +55,19 @@ export async function PATCH(
     });
   }
 
-  const updateData: Record<string, boolean> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: Record<string, any> = {};
   if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
   if (isCover !== undefined) updateData.isCover = isCover;
+  if (focalX !== undefined || focalY !== undefined) {
+    const current = await prisma.companionAsset.findUnique({ where: { id }, select: { metadata: true } });
+    const existing = (current?.metadata ?? {}) as Record<string, unknown>;
+    updateData.metadata = {
+      ...existing,
+      ...(focalX !== undefined ? { focalX } : {}),
+      ...(focalY !== undefined ? { focalY } : {}),
+    };
+  }
 
   const updated = await prisma.companionAsset.update({
     where: { id },
@@ -64,6 +76,7 @@ export async function PATCH(
       id: true,
       isFavorite: true,
       isCover: true,
+      metadata: true,
     },
   });
 
