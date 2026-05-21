@@ -27,16 +27,16 @@ export default async function SafePage() {
 
       {/* Hero */}
       <section
-        className="relative overflow-hidden rounded-2xl px-6 py-14 sm:px-10 sm:py-20"
+        className="relative overflow-hidden rounded-2xl pl-3 pr-6 py-14 sm:pl-4 sm:pr-10 sm:py-20"
         style={{
           background:
             "radial-gradient(ellipse 100% 140% at 50% -10%, rgba(160,100,255,0.20) 0%, transparent 65%), rgba(255,255,255,0.02)",
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        <div className="mx-auto max-w-5xl flex items-center gap-8 sm:gap-12">
+        <div className="flex items-center gap-8 sm:gap-12">
           {/* Avatar video — plays once on load */}
-          <div className="hidden sm:flex shrink-0 w-[50%] items-center justify-center">
+          <div className="hidden sm:flex shrink-0 w-[50%] items-center justify-start">
             <video
               src="/NoemaAvitar.mp4"
               autoPlay
