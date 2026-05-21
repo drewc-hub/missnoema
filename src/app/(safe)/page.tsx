@@ -2,6 +2,7 @@ import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
 import { isAdultAllowed } from "@/lib/ratings";
 import { MessageSquare, Wand2, Compass, Sparkles, Brain, Heart, Zap, Shield } from "lucide-react";
+import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
 
 const FEATURES = [
   { icon: Brain, title: "Persistent Memory", desc: "Companions remember every conversation, milestone, and emotional moment." },
@@ -37,13 +38,7 @@ export default async function SafePage() {
         <div className="flex items-center gap-8 sm:gap-12">
           {/* Avatar video — plays once on load */}
           <div className="hidden sm:flex shrink-0 w-[25%] items-center justify-start">
-            <video
-              src="/NoemaAvitar.mp4"
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-auto rounded-2xl"
-            />
+            <NoemaAvatarVideo />
           </div>
 
           {/* Text content */}
