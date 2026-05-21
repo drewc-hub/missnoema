@@ -102,12 +102,3 @@ export async function companionGenerate(
     }
   }
 }
-
-// Returns a Vercel AI SDK-compatible provider (used by generateText callers)
-export function getProvider() {
-  const { createOpenAI } = require("@ai-sdk/openai");
-  return createOpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY,
-    baseURL: "https://openrouter.ai/api/v1",
-  });
-}
