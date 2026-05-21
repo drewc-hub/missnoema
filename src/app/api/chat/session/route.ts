@@ -107,8 +107,8 @@ export async function GET(req: Request) {
             companionMood: true,
             summary: true,
             messages: {
-                orderBy: { createdAt: "asc" },
-                take: 50,
+                orderBy: { createdAt: "desc" },
+                take: 100,
                 select: {
                     id: true,
                     role: true,

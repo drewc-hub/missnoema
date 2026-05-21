@@ -199,7 +199,7 @@ export function CompanionChatWorkspace({
         throw new Error(conversationData?.error || "Failed to load conversation.");
       }
 
-      const loadedMessages = conversationData?.conversation?.messages ?? [];
+      const loadedMessages = (conversationData?.conversation?.messages ?? []).slice().reverse();
       setMessages(loadedMessages);
       setMemory({
         id: conversationData.conversation.id,
