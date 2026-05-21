@@ -52,7 +52,7 @@ export default async function NewAdultCompanionPage() {
     };
 
     return (
-        <div class="custom-bg">
+        <div className="custom-bg">
             <main className="min-h-screen px-4 py-6 lg:px-8">
                 <div className="mx-auto w-full max-w-[1800px] bg-black">
                     <div className="mb-6">
