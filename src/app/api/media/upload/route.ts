@@ -3,12 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
-import { ContentRating } from "@prisma/client";
+import { ContentRating, GenerationType } from "@prisma/client";
 
 export const runtime = "nodejs";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;   // 10 MB
+const MAX_VIDEO_BYTES = 300 * 1024 * 1024;  // 300 MB
 
 function supabaseAdmin() {
   return createClient(
@@ -33,12 +36,14 @@ export async function POST(req: Request) {
   if (!companionId || typeof companionId !== "string") return NextResponse.json({ error: "Missing companionId." }, { status: 400 });
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: "File type not allowed. Use JPEG, PNG, WebP, or GIF." }, { status: 400 });
+    return NextResponse.json({ error: "File type not allowed. Images: JPEG, PNG, WebP, GIF. Videos: MP4, WebM, MOV." }, { status: 400 });
   }
 
+  const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
   const bytes = await file.arrayBuffer();
-  if (bytes.byteLength > MAX_BYTES) {
-    return NextResponse.json({ error: "File too large (max 10 MB)." }, { status: 400 });
+  if (bytes.byteLength > maxBytes) {
+    return NextResponse.json({ error: isVideo ? "Video too large (max 300 MB)." : "Image too large (max 10 MB)." }, { status: 400 });
   }
 
   const companion = await prisma.companion.findFirst({
@@ -78,7 +83,7 @@ export async function POST(req: Request) {
     data: {
       companionId: companion.id,
       ownerId: user.id,
-      type: "IMAGE",
+      type: isVideo ? GenerationType.VIDEO : GenerationType.IMAGE,
       contentRating: companion.contentRating,
       storageBucket: bucket,
       storagePath: path,

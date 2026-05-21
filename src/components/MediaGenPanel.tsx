@@ -73,6 +73,12 @@ export function MediaGenPanel({
   const [focalPoint, setFocalPoint] = useState<{ x: number; y: number }>({ x: 50, y: 25 });
   const [isDragging, setIsDragging] = useState(false);
   const imgPickerRef = useRef<HTMLImageElement>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadResult, setVideoUploadResult] = useState<{ assetId: string; publicUrl: string | null } | null>(null);
+  const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
+  const [videoCoverSuccess, setVideoCoverSuccess] = useState(false);
+  const [settingVideoCover, setSettingVideoCover] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
   const [loadingType, setLoadingType] = useState<"image" | "video" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -298,6 +304,60 @@ export function MediaGenPanel({
     const final = pt ?? focalPoint;
     setFocalPoint(final);
     saveFocalPoint(final.x, final.y);
+  }
+
+  async function handleVideoUpload(file: File) {
+    setVideoUploading(true);
+    setVideoUploadError(null);
+    setVideoUploadResult(null);
+    setVideoCoverSuccess(false);
+    try {
+      // Client-side duration check
+      const duration = await new Promise<number>((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const v = document.createElement("video");
+        v.preload = "metadata";
+        v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(v.duration); };
+        v.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read video.")); };
+        v.src = url;
+      });
+      if (duration > 10) {
+        setVideoUploadError(`Video is ${Math.round(duration)}s — max 10 seconds.`);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("companionId", companionId);
+      const res = await fetch("/api/media/upload", { method: "POST", body: fd });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.assetId) throw new Error(data?.error || "Upload failed.");
+      setVideoUploadResult({ assetId: data.assetId, publicUrl: data.publicUrl ?? null });
+    } catch (err) {
+      setVideoUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setVideoUploading(false);
+    }
+  }
+
+  async function handleSetVideoCover() {
+    if (!videoUploadResult) return;
+    setSettingVideoCover(true);
+    setVideoCoverSuccess(false);
+    try {
+      const res = await fetch(`/api/media/${videoUploadResult.assetId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isCover: true }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Failed to set cover.");
+      setVideoCoverSuccess(true);
+      onHistoryRefresh?.();
+    } catch (err) {
+      setVideoUploadError(err instanceof Error ? err.message : "Failed to set cover.");
+    } finally {
+      setSettingVideoCover(false);
+    }
   }
 
   async function handleFileUpload(file: File) {
@@ -683,6 +743,79 @@ export function MediaGenPanel({
                     </button>
                     {coverSuccess && (
                       <span className="text-[11px] text-emerald-400">Cover photo updated.</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Video upload — max 10 seconds */}
+          {loggedIn && (
+            <div className="border-t border-zinc-800 pt-4 space-y-3">
+              <div className="text-xs font-semibold text-zinc-300">Cover video</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={videoFileInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleVideoUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => videoFileInputRef.current?.click()}
+                  disabled={videoUploading}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:bg-zinc-700 disabled:opacity-50"
+                >
+                  {videoUploading ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border border-zinc-400 border-t-transparent" />
+                  ) : (
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                  {videoUploading ? "Uploading…" : "Upload video"}
+                </button>
+                <span className="text-[11px] text-zinc-500">MP4 · WebM · MOV · max 10 s · 300 MB</span>
+              </div>
+
+              {videoUploadError && (
+                <div className="text-[11px] text-red-400">{videoUploadError}</div>
+              )}
+
+              {videoUploadResult && (
+                <div className="space-y-2">
+                  {videoUploadResult.publicUrl && (
+                    <video
+                      src={videoUploadResult.publicUrl}
+                      controls
+                      className="w-full rounded-xl border border-zinc-700"
+                      style={{ maxHeight: "65vh" }}
+                    />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSetVideoCover}
+                      disabled={settingVideoCover || videoCoverSuccess}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-fuchsia-500/40 bg-fuchsia-600/10 px-3 py-1.5 text-sm font-medium text-fuchsia-300 transition hover:bg-fuchsia-600/20 disabled:opacity-50"
+                    >
+                      {settingVideoCover ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border border-fuchsia-400 border-t-transparent" />
+                      ) : (
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      )}
+                      {settingVideoCover ? "Setting…" : videoCoverSuccess ? "Cover set!" : "Set as cover video"}
+                    </button>
+                    {videoCoverSuccess && (
+                      <span className="text-[11px] text-emerald-400">Cover video updated.</span>
                     )}
                   </div>
                 </div>
