@@ -9,9 +9,6 @@ type Msg = {
 const STREAM_PARAMS = {
   max_tokens: 1400,
   temperature: 0.75,
-  top_p: 0.9,
-  frequency_penalty: 0.7,
-  presence_penalty: 0.35,
 } as const;
 
 async function* streamModel(
@@ -53,19 +50,24 @@ export async function* companionStream(
     if (hadChunks) return;
     console.warn(`[ai-client] primary ${OPENROUTER_MODEL} returned empty stream, trying fallback`);
   } catch (err: unknown) {
-    console.warn(`[ai-client] primary ${OPENROUTER_MODEL} failed:`, (err as Error)?.message ?? err);
+    const e = err as { status?: number; message?: string; error?: unknown };
+    console.error(`[ai-client] primary ${OPENROUTER_MODEL} failed — status:${e?.status} message:${e?.message}`, e?.error ?? err);
   }
 
-  // Try fallback model
-  try {
-    for await (const chunk of streamModel(OPENROUTER_FALLBACK, systemPrompt, messages)) {
-      yield chunk;
+  // Try fallback only if it differs from primary
+  if (OPENROUTER_FALLBACK !== OPENROUTER_MODEL) {
+    try {
+      for await (const chunk of streamModel(OPENROUTER_FALLBACK, systemPrompt, messages)) {
+        yield chunk;
+      }
+      return;
+    } catch (err: unknown) {
+      const e = err as { status?: number; message?: string; error?: unknown };
+      console.error(`[ai-client] fallback ${OPENROUTER_FALLBACK} also failed — status:${e?.status} message:${e?.message}`, e?.error ?? err);
     }
-    return;
-  } catch (err: unknown) {
-    console.error(`[ai-client] fallback ${OPENROUTER_FALLBACK} also failed:`, (err as Error)?.message ?? err);
-    yield "I'm having trouble connecting right now. Please try again in a moment.";
   }
+
+  yield "I'm having trouble connecting right now. Please try again in a moment.";
 }
 
 export async function companionGenerate(
