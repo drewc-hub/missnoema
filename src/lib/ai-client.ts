@@ -7,7 +7,7 @@ type Msg = {
 };
 
 const STREAM_PARAMS = {
-  max_tokens: 1400,
+  max_tokens: 3000,
   temperature: 0.75,
 } as const;
 
