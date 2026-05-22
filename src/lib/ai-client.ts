@@ -1,4 +1,4 @@
-// Streaming via raw openai client → OpenRouter (free models only)
+// Streaming via raw openai client → OpenRouter
 import { getOpenRouter, OPENROUTER_MODEL, OPENROUTER_FALLBACK } from "@/lib/together";
 
 type Msg = {
@@ -11,6 +11,10 @@ const STREAM_PARAMS = {
   temperature: 0.75,
 } as const;
 
+function logChat(event: string, data: Record<string, unknown>) {
+  console.log(`[chat] ${event}`, JSON.stringify(data));
+}
+
 async function* streamModel(
   model: string,
   systemPrompt: string,
@@ -22,6 +26,17 @@ async function* streamModel(
     ...messages,
   ];
 
+  logChat("stream_request", {
+    model,
+    systemPromptLen: systemPrompt.length,
+    messageCount: messages.length,
+    lastUserMsg: [...messages].reverse().find(m => m.role === "user")?.content?.slice(0, 120) ?? "(none)",
+  });
+
+  const t0 = Date.now();
+  let chunkCount = 0;
+  let totalChars = 0;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stream = await (client.chat.completions.create as any)({
     ...STREAM_PARAMS,
@@ -32,8 +47,14 @@ async function* streamModel(
 
   for await (const chunk of stream) {
     const text: string = chunk.choices?.[0]?.delta?.content ?? "";
-    if (text) yield text;
+    if (text) {
+      chunkCount++;
+      totalChars += text.length;
+      yield text;
+    }
   }
+
+  logChat("stream_done", { model, chunkCount, totalChars, ms: Date.now() - t0 });
 }
 
 export async function* companionStream(
@@ -48,14 +69,20 @@ export async function* companionStream(
       yield chunk;
     }
     if (hadChunks) return;
-    console.warn(`[ai-client] primary ${OPENROUTER_MODEL} returned empty stream, trying fallback`);
+    logChat("stream_empty", { model: OPENROUTER_MODEL });
   } catch (err: unknown) {
     const e = err as { status?: number; message?: string; error?: unknown };
-    console.error(`[ai-client] primary ${OPENROUTER_MODEL} failed — status:${e?.status} message:${e?.message}`, e?.error ?? err);
+    logChat("stream_error", {
+      model: OPENROUTER_MODEL,
+      status: e?.status,
+      message: e?.message,
+      error: JSON.stringify(e?.error ?? err),
+    });
   }
 
   // Try fallback only if it differs from primary
   if (OPENROUTER_FALLBACK !== OPENROUTER_MODEL) {
+    logChat("stream_fallback", { from: OPENROUTER_MODEL, to: OPENROUTER_FALLBACK });
     try {
       for await (const chunk of streamModel(OPENROUTER_FALLBACK, systemPrompt, messages)) {
         yield chunk;
@@ -63,10 +90,16 @@ export async function* companionStream(
       return;
     } catch (err: unknown) {
       const e = err as { status?: number; message?: string; error?: unknown };
-      console.error(`[ai-client] fallback ${OPENROUTER_FALLBACK} also failed — status:${e?.status} message:${e?.message}`, e?.error ?? err);
+      logChat("stream_fallback_error", {
+        model: OPENROUTER_FALLBACK,
+        status: e?.status,
+        message: e?.message,
+        error: JSON.stringify(e?.error ?? err),
+      });
     }
   }
 
+  logChat("stream_gave_up", { primary: OPENROUTER_MODEL, fallback: OPENROUTER_FALLBACK });
   yield "I'm having trouble connecting right now. Please try again in a moment.";
 }
 
@@ -81,6 +114,8 @@ export async function companionGenerate(
   ];
 
   const tryModel = async (model: string): Promise<string> => {
+    logChat("generate_request", { model, messageCount: messages.length });
+    const t0 = Date.now();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await (client.chat.completions.create as any)({
       ...STREAM_PARAMS,
@@ -88,14 +123,22 @@ export async function companionGenerate(
       messages: allMessages,
       stream: false,
     });
-    return (res.choices?.[0]?.message?.content ?? "").trim();
+    const text = (res.choices?.[0]?.message?.content ?? "").trim();
+    logChat("generate_done", { model, chars: text.length, ms: Date.now() - t0 });
+    return text;
   };
 
   try {
     const text = await tryModel(OPENROUTER_MODEL);
     return text || "I'm here with you.";
   } catch (err: unknown) {
-    console.warn(`[ai-client] generate primary failed:`, (err as Error)?.message ?? err);
+    const e = err as { status?: number; message?: string; error?: unknown };
+    logChat("generate_error", {
+      model: OPENROUTER_MODEL,
+      status: e?.status,
+      message: e?.message,
+      error: JSON.stringify(e?.error ?? err),
+    });
     try {
       const text = await tryModel(OPENROUTER_FALLBACK);
       return text || "I'm here with you.";

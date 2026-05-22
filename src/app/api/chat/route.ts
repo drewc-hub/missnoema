@@ -681,6 +681,14 @@ export async function POST(req: Request) {
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const ooc = typeof body?.ooc === "string" ? body.ooc.trim() : "";
 
+  console.log("[chat/route] POST", JSON.stringify({
+    userId: user.id,
+    companionId,
+    msgLen: message.length,
+    msgPreview: message.slice(0, 80),
+    hasOoc: !!ooc,
+  }));
+
   if (!companionId) {
     return NextResponse.json(
       { error: "Missing companionId." },
@@ -1156,7 +1164,12 @@ ${lastAssistantReplies || "(none yet)"}
         ]).catch(() => {});
       }
     } catch (error) {
-      console.error("Chat generation failed:", error);
+      const e = error as { status?: number; message?: string };
+      console.error("[chat/route] generation failed", JSON.stringify({
+        status: e?.status,
+        message: e?.message,
+        raw: String(error),
+      }));
       try { await sse({ type: "error", error: "Chat generation failed." }); } catch {}
     } finally {
       try { await writer.close(); } catch {}
