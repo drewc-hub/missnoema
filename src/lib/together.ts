@@ -35,7 +35,7 @@ export const TOGETHER_CHAT_MODEL =
     process.env.TOGETHER_CHAT_MODEL ?? "meta-llama/Llama-3.3-70B-Instruct-Turbo";
 
 export const OPENROUTER_MODEL =
-    process.env.OPENROUTER_MODEL ?? "@preset/noema-ai";
+    process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat";
 
 export const OPENROUTER_FALLBACK =
     process.env.OPENROUTER_FALLBACK_MODEL ?? "openrouter/auto";
