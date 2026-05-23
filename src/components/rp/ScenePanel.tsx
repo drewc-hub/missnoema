@@ -16,7 +16,7 @@ export function ScenePanel({
   onPushToChat,
 }: ScenePanelProps) {
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-xl">
+    <section className="rounded-3xl border border-zinc-900 bg-zinc-950 p-5 shadow-xl">
       <h2 className="text-xl font-semibold">Scene Generator</h2>
       <p className="mt-1 text-sm text-zinc-400">Set the RP tone fast.</p>
 

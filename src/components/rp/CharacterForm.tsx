@@ -22,7 +22,7 @@ export function CharacterForm({
   }
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-xl">
+    <section className="rounded-3xl border border-zinc-900 bg-zinc-950 p-5 shadow-xl">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Character Creator</h2>
