@@ -5,7 +5,7 @@ import { Volume2, VolumeX } from "lucide-react";
 
 export function NoemaAvatarVideo() {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [muted, setMuted] = useState(false);
+    const [muted, setMuted] = useState(true);
 
     function toggleMute() {
         const v = videoRef.current;
@@ -20,7 +20,6 @@ export function NoemaAvatarVideo() {
                 ref={videoRef}
                 src="/NoemaAvitar.mp4"
                 autoPlay
-                muted
                 playsInline
                 className="w-full h-auto rounded-2xl"
             />
@@ -29,7 +28,7 @@ export function NoemaAvatarVideo() {
                 aria-label={muted ? "Unmute" : "Mute"}
                 className="absolute bottom-2 right-2 flex items-center justify-center rounded-full bg-black/50 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/70"
             >
-                {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                {muted ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
             </button>
         </div>
     );
