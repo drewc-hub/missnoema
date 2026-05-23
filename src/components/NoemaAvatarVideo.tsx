@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-export function NoemaAvatarVideo() {
+export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [muted, setMuted] = useState(true);
 
@@ -18,7 +18,7 @@ export function NoemaAvatarVideo() {
         <div className="relative w-full">
             <video
                 ref={videoRef}
-                src="/NoemaAvitar.mp4"
+                src={src}
                 autoPlay
                 playsInline
                 className="w-full h-auto rounded-2xl"

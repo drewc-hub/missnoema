@@ -1,3 +1,5 @@
+import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
+
 export default function AdultPage() {
     return (
         <main className="min-h-screen overflow-hidden rounded-2xl border border-zinc-900 bg-black text-white">
@@ -5,8 +7,9 @@ export default function AdultPage() {
             <section className="relative overflow-hidden border-b border-zinc-800">
                 <div className="rounded-lg absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)]" />
 
-                <div className="relative mx-auto flex max-w-7xl flex-col gap-10 px-6 py-24 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="max-w-3xl space-y-6">
+                <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-24 lg:grid-cols-2 lg:items-start">
+                    {/* Left — title, description, buttons */}
+                    <div className="space-y-6">
                         <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-4 py-1 text-sm tracking-wide text-fuchsia-300">
                             Adaptive AI Companion Ecosystem
                         </div>
@@ -41,24 +44,31 @@ export default function AdultPage() {
                         </div>
                     </div>
 
-                    <div className="grid w-full max-w-xl grid-cols-2 gap-4">
-                        {[
-                            "Persistent Memory",
-                            "Relationship Progression",
-                            "Emotional Modeling",
-                            "RAG VectorAI DB",
-                            "Media Generation",
-                            "Adult-Gated Experiences",
-                            "Custom Personalities",
-                            "Adaptive Conversations",
-                        ].map((item) => (
-                            <div
-                                key={item}
-                                className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
-                            >
-                                <p className="text-sm font-medium text-zinc-200">{item}</p>
-                            </div>
-                        ))}
+                    {/* Right — video at top, feature tiles below */}
+                    <div className="flex flex-col gap-4">
+                        {/* Avatar video — top right */}
+                        <NoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
+
+                        {/* Feature tiles — Custom Personalities row aligns with buttons */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                "Persistent Memory",
+                                "Relationship Progression",
+                                "Emotional Modeling",
+                                "RAG VectorAI DB",
+                                "Media Generation",
+                                "Adult-Gated Experiences",
+                                "Custom Personalities",
+                                "Adaptive Conversations",
+                            ].map((item) => (
+                                <div
+                                    key={item}
+                                    className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
+                                >
+                                    <p className="text-sm font-medium text-zinc-200">{item}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
