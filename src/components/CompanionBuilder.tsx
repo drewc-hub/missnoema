@@ -455,6 +455,15 @@ export function CompanionBuilder({
             setError("Age verification is required for 18+ companions.");
             return false;
         }
+        if (name.trim().length < 2) {
+            setError("Name must be at least 2 characters.");
+            return false;
+        }
+        const descValue = description.trim();
+        if (descValue.length < 10) {
+            setError("Description must be at least 10 characters.");
+            return false;
+        }
         const payload = buildPayload(overrides);
         const endpoint =
             mode === "create"
@@ -469,7 +478,14 @@ export function CompanionBuilder({
         });
         const json = await res.json().catch(() => null);
         if (!res.ok) {
-            setError(json?.error || "Failed to save companion.");
+            let msg = json?.error || "Failed to save companion.";
+            if (json?.details?.fieldErrors) {
+                const fields = Object.entries(json.details.fieldErrors as Record<string, string[]>)
+                    .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
+                    .join(" | ");
+                if (fields) msg += ` (${fields})`;
+            }
+            setError(msg);
             return false;
         }
         if (mode === "create" && json?.editUrl) {
@@ -736,7 +752,7 @@ export function CompanionBuilder({
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div className="space-y-1">
                                         <div className="text-xs text-zinc-400">Name</div>
-                                        <Input value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nova" required />
+                                        <Input value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nova" required minLength={2} />
                                     </div>
                                     <div className="space-y-1">
                                         <div className="text-xs text-zinc-400">Slug</div>
@@ -828,7 +844,7 @@ export function CompanionBuilder({
 
                                 <div className="space-y-1">
                                     <div className="text-xs text-zinc-400">Description (required)</div>
-                                    <Textarea rows={2} value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Brief description for listings and search results..." required />
+                                    <Textarea rows={2} value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Brief description for listings and search results..." required minLength={10} />
                                 </div>
                             </div>
 
