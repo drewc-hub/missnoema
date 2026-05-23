@@ -46,8 +46,12 @@ export default function AdultPage() {
 
                     {/* Right — video at top, feature tiles below */}
                     <div className="flex flex-col gap-4">
-                        {/* Avatar video — top right */}
-                        <AdultNoemaAvatarVideo />
+                        {/* Avatar video — top right, half width */}
+                        <div className="flex justify-end">
+                            <div className="w-1/2">
+                                <AdultNoemaAvatarVideo />
+                            </div>
+                        </div>
 
                         {/* Feature tiles — Custom Personalities row aligns with buttons */}
                         <div className="grid grid-cols-2 gap-4">
