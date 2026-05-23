@@ -430,11 +430,49 @@ const ARCHETYPE_LIBRARY: Record<
     },
 };
 
-function fallbackArchetype(input?: string): string {
-    const normalized = (input ?? "").trim().toLowerCase();
-    if (!normalized) return "quiet protector";
-    const hit = Object.keys(ARCHETYPE_LIBRARY).find((key) => key === normalized);
-    return hit ?? "quiet protector";
+function selectArchetype(draft: GeneratorDraft): string {
+    const input = (draft.archetype ?? "").trim().toLowerCase();
+    const tags = parseCsvTags(draft.tags).map((t) => t.toLowerCase());
+    const keys = Object.keys(ARCHETYPE_LIBRARY);
+
+    // 1. Exact key match
+    if (input && ARCHETYPE_LIBRARY[input]) return input;
+
+    // 2. Partial match — archetype input contained in a key or vice-versa
+    if (input) {
+        const partial = keys.find((k) => k.includes(input) || input.includes(k));
+        if (partial) return partial;
+    }
+
+    // 3. Tag/theme scoring — pick the archetype whose themes + lore + name words
+    //    overlap the most with the provided tags (and any input words)
+    const queryTerms = [...tags, ...input.split(/\s+/).filter(Boolean)];
+    if (queryTerms.length > 0) {
+        let bestKey = "";
+        let bestScore = -1;
+
+        for (const [key, config] of Object.entries(ARCHETYPE_LIBRARY)) {
+            const pool = [
+                ...config.themes,
+                ...config.lore,
+                ...key.split(/\s+/),
+            ].map((t) => t.toLowerCase());
+
+            const score = queryTerms.reduce((acc, term) => {
+                return acc + (pool.some((p) => p.includes(term) || term.includes(p)) ? 1 : 0);
+            }, 0);
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestKey = key;
+            }
+        }
+
+        if (bestScore > 0) return bestKey;
+    }
+
+    // 4. Random fallback — never hardcode a single default
+    return keys[Math.floor(Math.random() * keys.length)];
 }
 
 function randomOf<T>(items: readonly T[]): T {
@@ -682,7 +720,7 @@ function buildLorebookEntries(
 
 export function generateCompanionFieldsFromDraft(draft: GeneratorDraft): GeneratedFields {
     const gender = normalizeGender(draft.gender);
-    const archetype = fallbackArchetype(draft.archetype);
+    const archetype = selectArchetype(draft);
     const name = pickName(gender, draft.name);
     const tags = buildTags(draft, archetype);
     const traits = buildTraits(draft, archetype);
