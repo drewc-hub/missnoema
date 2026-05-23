@@ -45,29 +45,30 @@ export default function AdultPage() {
                     </div>
 
                     {/* Right — video at top, feature tiles below */}
-                    <div className="hidden sm:flex shrink-0 w-[25%] items-center justify-start">
-                        <AdultNoemaAvatarVideo />
-                    </div>
+                    <div className="flex flex-col gap-4">
+                        {/* Avatar video — top right */}
+                        <AdultNoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
 
-                    {/* Feature tiles — Custom Personalities row aligns with buttons */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {[
-                            "Persistent Memory",
-                            "Relationship Progression",
-                            "Emotional Modeling",
-                            "RAG VectorAI DB",
-                            "Media Generation",
-                            "Adult-Gated Experiences",
-                            "Custom Personalities",
-                            "Adaptive Conversations",
-                        ].map((item) => (
-                            <div
-                                key={item}
-                                className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
-                            >
-                                <p className="text-sm font-medium text-zinc-200">{item}</p>
-                            </div>
-                        ))}
+                        {/* Feature tiles — Custom Personalities row aligns with buttons */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                "Persistent Memory",
+                                "Relationship Progression",
+                                "Emotional Modeling",
+                                "RAG VectorAI DB",
+                                "Media Generation",
+                                "Adult-Gated Experiences",
+                                "Custom Personalities",
+                                "Adaptive Conversations",
+                            ].map((item) => (
+                                <div
+                                    key={item}
+                                    className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl backdrop-blur"
+                                >
+                                    <p className="text-sm font-medium text-zinc-200">{item}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -237,6 +238,6 @@ export default function AdultPage() {
                     </div>
                 </div>
             </section>
-        </main >
+        </main>
     );
 }
