@@ -1,4 +1,4 @@
-import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
+import { NoemaAvatarVideo } from "@/components/AdultNoemaAvatarVideo";
 
 export default function AdultPage() {
     return (
@@ -47,7 +47,7 @@ export default function AdultPage() {
                     {/* Right — video at top, feature tiles below */}
                     <div className="flex flex-col gap-4">
                         {/* Avatar video — top right */}
-                        <NoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
+                        <AdultNoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
 
                         {/* Feature tiles — Custom Personalities row aligns with buttons */}
                         <div className="grid grid-cols-2 gap-4">
