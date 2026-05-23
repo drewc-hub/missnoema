@@ -680,7 +680,7 @@ function buildLorebookEntries(
 ): CharacterBookEntry[] {
     return [
         {
-            id: 1,
+            id: "1",
             keys: [name, archetype],
             secondary_keys: ["identity", "who are you"],
             comment: "Core identity",
@@ -692,7 +692,7 @@ function buildLorebookEntries(
             position: "before_char",
         },
         {
-            id: 2,
+            id: "2",
             keys: ["scene", "scenario", "situation"],
             secondary_keys: tags.slice(0, 4),
             comment: "Current scenario",
@@ -704,7 +704,7 @@ function buildLorebookEntries(
             position: "before_char",
         },
         {
-            id: 3,
+            id: "3",
             keys: ["goal", "motivation", "want"],
             secondary_keys: ["relationship", "desire"],
             comment: "Goals",
