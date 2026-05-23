@@ -320,6 +320,22 @@ export function CompanionBuilder({
         Array.isArray(profile.characterBook?.entries) ? profile.characterBook.entries : []
     );
 
+    const [lorebookName, setLorebookName] = useState(
+        profile.characterBook?.name ?? ""
+    );
+    const [lorebookDescription, setLorebookDescription] = useState(
+        profile.characterBook?.description ?? ""
+    );
+    const [lorebookScanDepth, setLorebookScanDepth] = useState(
+        Number(profile.characterBook?.scan_depth ?? 4)
+    );
+    const [lorebookTokenBudget, setLorebookTokenBudget] = useState(
+        Number(profile.characterBook?.token_budget ?? 2048)
+    );
+    const [lorebookRecursiveScanning, setLorebookRecursiveScanning] = useState(
+        Boolean(profile.characterBook?.recursive_scanning ?? false)
+    );
+
     const [scenePreset, setScenePreset] = useState(
         SCENE_PRESETS.includes((profile.scene ?? "") as (typeof SCENE_PRESETS)[number])
             ? (profile.scene as (typeof SCENE_PRESETS)[number])
@@ -415,11 +431,11 @@ export function CompanionBuilder({
                 avatarImageUrl: avatarImageUrl.trim(),
                 lore: lore.trim(),
                 characterBook: {
-                    name: "",
-                    description: "",
-                    scan_depth: 4,
-                    token_budget: 2048,
-                    recursive_scanning: false,
+                    name: lorebookName.trim(),
+                    description: lorebookDescription.trim(),
+                    scan_depth: Math.max(0, Math.round(lorebookScanDepth || 4)),
+                    token_budget: Math.max(0, Math.round(lorebookTokenBudget || 2048)),
+                    recursive_scanning: lorebookRecursiveScanning,
                     entries: lorebookEntries,
                 },
                 orientation: orientation.trim(),
@@ -476,24 +492,28 @@ export function CompanionBuilder({
         }
     }
 
+
+
+
     async function handleGenerate() {
         if (!name && !tagline) {
             setError("Enter a name or tagline before generating.");
             return;
         }
+
         setGenerating(true);
         setGenerateStatus("Generating character...");
         setError(null);
         setSavedMessage(null);
+
         try {
             const res = await fetch("/api/studio/character", {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
                     mode: "generate",
-                    seed: name || tagline,
                     draft: {
-                        name: name || "Character",
+                        name,
                         tagline,
                         role,
                         personality,
@@ -505,32 +525,102 @@ export function CompanionBuilder({
                         firstMessage,
                         exampleDialogue,
                         systemPrompt: aiPersonalityPrompt,
+                        description,
+                        tags: tags.split(",").map((x) => x.trim()).filter(Boolean),
+                        archetype,
+                        gender,
+                        traits: traitList,
+                        contentRating,
+                        warmth,
+                        humor,
+                        flirtiness,
+                        dominance,
+                        kink,
                     },
                 }),
             });
+
             const json = await res.json().catch(() => null);
+
             if (!json?.ok || !json.fields) {
                 setGenerateStatus("Generation failed.");
                 return;
             }
+
             const f = json.fields;
             const updates: Parameters<typeof buildPayload>[0] = {};
-            if (f.tagline) { setTagline(f.tagline); updates.tagline = f.tagline; }
-            if (f.role) { setRole(f.role); updates.role = f.role; }
-            if (f.personality) { setPersonality(f.personality); updates.personality = f.personality; }
-            if (f.appearance) { setAppearance(f.appearance); updates.appearance = f.appearance; }
-            if (f.backstory) { setBackground(f.backstory); updates.background = f.backstory; }
-            if (f.speakingStyle) { setSpeakingStyle(f.speakingStyle); updates.speakingStyle = f.speakingStyle; }
-            if (f.goals) { setGoals(f.goals); updates.goals = f.goals; }
-            if (f.scenario) { setSceneCustom(f.scenario); updates.sceneCustom = f.scenario; }
-            if (f.firstMessage) { setFirstMessage(f.firstMessage); updates.firstMessage = f.firstMessage; }
-            if (f.exampleDialogue) { setExampleDialogue(f.exampleDialogue); updates.exampleDialogue = f.exampleDialogue; }
+
+            if (f.name) setName(f.name);
+            if (f.description) setDescription(f.description);
+            if (Array.isArray(f.tags)) setTags(f.tags.join(", "));
+            if (f.archetype) setArchetype(f.archetype);
+            if (f.gender) setGender(f.gender);
+
+            if (Array.isArray(f.traits)) {
+                setTraitList(f.traits.slice(0, 10));
+            }
+
+            if (Array.isArray(f.lorebookEntries)) {
+                setLorebookEntries(f.lorebookEntries);
+                setLorebookName((prev) =>
+                    prev.trim() ? prev : `${f.name || name || "Character"} Lorebook`
+                );
+                setLorebookDescription((prev) =>
+                    prev.trim()
+                        ? prev
+                        : `Auto-generated lorebook entries for ${f.name || name || "this companion"}.`
+                );
+            }
+
+            if (f.tagline) {
+                setTagline(f.tagline);
+                updates.tagline = f.tagline;
+            }
+            if (f.role) {
+                setRole(f.role);
+                updates.role = f.role;
+            }
+            if (f.personality) {
+                setPersonality(f.personality);
+                updates.personality = f.personality;
+            }
+            if (f.appearance) {
+                setAppearance(f.appearance);
+                updates.appearance = f.appearance;
+            }
+            if (f.backstory) {
+                setBackground(f.backstory);
+                updates.background = f.backstory;
+            }
+            if (f.speakingStyle) {
+                setSpeakingStyle(f.speakingStyle);
+                updates.speakingStyle = f.speakingStyle;
+            }
+            if (f.goals) {
+                setGoals(f.goals);
+                updates.goals = f.goals;
+            }
+            if (f.scenario) {
+                setSceneCustom(f.scenario);
+                updates.sceneCustom = f.scenario;
+            }
+            if (f.firstMessage) {
+                setFirstMessage(f.firstMessage);
+                updates.firstMessage = f.firstMessage;
+            }
+            if (f.exampleDialogue) {
+                setExampleDialogue(f.exampleDialogue);
+                updates.exampleDialogue = f.exampleDialogue;
+            }
+            if (f.systemPrompt) {
+                setAiPersonalityPrompt(f.systemPrompt);
+            }
 
             if (mode === "edit") {
                 setGenerateStatus("Saving...");
                 const saved = await doSave(updates);
                 if (saved) {
-                    setGenerateStatus("Generated and saved! Check the media panel.");
+                    setGenerateStatus("Generated and saved.");
                     onGenerated?.();
                 }
             } else {
@@ -981,6 +1071,70 @@ export function CompanionBuilder({
                                     <LorebookEditor entries={lorebookEntries} onChange={setLorebookEntries} />
                                 </div>
                             </details>
+
+
+                            <div className="mb-4 space-y-3">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Lorebook name</div>
+                                        <Input
+                                            value={lorebookName}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                setLorebookName(e.target.value)
+                                            }
+                                            placeholder="Character lorebook"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Lorebook description</div>
+                                        <Input
+                                            value={lorebookDescription}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                setLorebookDescription(e.target.value)
+                                            }
+                                            placeholder="Extra world and character context"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Scan depth</div>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            value={String(lorebookScanDepth)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                setLorebookScanDepth(Number(e.target.value) || 0)
+                                            }
+                                        />
+                                    </label>
+
+                                    <label className="space-y-1">
+                                        <div className="text-xs text-zinc-400">Token budget</div>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            value={String(lorebookTokenBudget)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                setLorebookTokenBudget(Number(e.target.value) || 0)
+                                            }
+                                        />
+                                    </label>
+
+                                    <label className="flex items-end gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300">
+                                        <input
+                                            type="checkbox"
+                                            checked={lorebookRecursiveScanning}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                setLorebookRecursiveScanning(e.target.checked)
+                                            }
+                                        />
+                                        Recursive scanning
+                                    </label>
+                                </div>
+                            </div>
+
 
                             {/* Advanced */}
                             <details className="group rounded-2xl border border-zinc-800 bg-zinc-950/70">
