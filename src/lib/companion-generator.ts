@@ -681,6 +681,7 @@ function buildLorebookEntries(
     return [
         {
             id: "1",
+            name: "identity",
             keys: [name, archetype],
             comment: "Core identity",
             content: `${name} is a ${archetype}. ${backstory}`,
@@ -690,6 +691,7 @@ function buildLorebookEntries(
         },
         {
             id: "2",
+            name: "scenario",
             keys: ["scene", "scenario", "situation"],
             comment: "Current scenario",
             content: scenario,
@@ -699,6 +701,7 @@ function buildLorebookEntries(
         },
         {
             id: "3",
+            name: "goals",
             keys: ["goal", "motivation", "want"],
             comment: "Goals",
             content: goals,
