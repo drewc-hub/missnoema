@@ -41,6 +41,11 @@
     "scripts",
     "supabase",
     "eslint.config.ts",
-    "marinara-import-quarantine"
+    "marinara-import-quarantine",
+    "src/app/hooks",
+    "src/app/stores",
+    "src/app/client",
+    "src/app/shared",
+    "src/marinara-engine"
   ]
 }
