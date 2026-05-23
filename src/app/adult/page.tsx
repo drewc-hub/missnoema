@@ -1,4 +1,4 @@
-import { NoemaAvatarVideo } from "@/components/AdultNoemaAvatarVideo";
+import { AdultNoemaAvatarVideo } from "@/components/AdultNoemaAvatarVideo";
 
 export default function AdultPage() {
     return (
