@@ -25,6 +25,8 @@ type TavernCompanion = {
     tags: string[];
     contentRating: "SAFE" | "ADULT";
     thumbnailUrl: string | null;
+    focalX: number;
+    focalY: number;
 };
 
 function ActionLink({
@@ -71,6 +73,7 @@ function CompanionTile({ companion }: { companion: TavernCompanion }) {
                         src={companion.thumbnailUrl}
                         alt={`${companion.name} portrait`}
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+                        style={{ objectPosition: `${companion.focalX}% ${companion.focalY}%` }}
                         loading="lazy"
                     />
                 ) : (
@@ -191,6 +194,8 @@ export default async function TavernPage() {
         tags: companion.tags,
         contentRating: companion.contentRating,
         thumbnailUrl: companion.thumbnailUrl,
+        focalX: companion.focalX ?? 50,
+        focalY: companion.focalY ?? 5,
     }));
 
     return (

@@ -228,7 +228,7 @@ export default async function MarketplacePage({
                     : asset.publicUrl ?? `/media/${asset.id}`
                   : null;
                 const assetMeta = (asset?.metadata ?? {}) as Record<string, unknown>;
-                const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 20}%`;
+                const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 5}%`;
                 const readiness = getMarketplaceReadiness(companion);
                 const creatorName =
                   listing.creator?.displayName ||

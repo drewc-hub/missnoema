@@ -77,7 +77,7 @@ function CompanionCard({ c }: { c: ApiItem }) {
                         src={c.thumbnailUrl}
                         alt={c.name}
                         className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                        style={{ objectPosition: `${c.focalX ?? 50}% ${c.focalY ?? 20}%` }}
+                        style={{ objectPosition: `${c.focalX ?? 50}% ${c.focalY ?? 5}%` }}
                         loading="lazy"
                     />
                 ) : (

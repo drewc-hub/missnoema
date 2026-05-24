@@ -273,6 +273,19 @@ export function MediaGenPanel({
         return Math.max(min, Math.min(max, value));
     }
 
+    // Compute the frame height as % of the IMAGE's actual rendered height.
+    // The old approach used cropWidth / CROP_ASPECT which gives % of container WIDTH —
+    // correct only for square images. For portrait images it over-estimates the frame
+    // height by 30-50%, locking minY too high and preventing the box from reaching the top.
+    function getFrameHeightPct(): number {
+        const img = imgPickerRef.current;
+        if (!img) return CROP_WIDTH_PERCENT / CROP_ASPECT;
+        const { width, height } = img.getBoundingClientRect();
+        if (!width || !height) return CROP_WIDTH_PERCENT / CROP_ASPECT;
+        const frameHeightPx = (width * CROP_WIDTH_PERCENT) / 100 / CROP_ASPECT;
+        return (frameHeightPx / height) * 100;
+    }
+
     function getPctFromEvent(
         e: React.MouseEvent
     ): { x: number; y: number } | null {
@@ -282,11 +295,10 @@ export function MediaGenPanel({
         const rawX = ((e.clientX - rect.left) / rect.width) * 100;
         const rawY = ((e.clientY - rect.top) / rect.height) * 100;
 
-        const cropWidth = CROP_WIDTH_PERCENT;
-        const cropHeight = cropWidth / CROP_ASPECT;
-
-        const minX = cropWidth / 2;
-        const maxX = 100 - cropWidth / 2;
+        const cropHeight = getFrameHeightPct();
+        const minX = CROP_WIDTH_PERCENT / 2;
+        const maxX = 100 - CROP_WIDTH_PERCENT / 2;
+        // Allow frame to reach the very top and bottom edges
         const minY = cropHeight / 2;
         const maxY = 100 - cropHeight / 2;
 

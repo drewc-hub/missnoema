@@ -38,6 +38,8 @@ export type ListCompanionsResult = {
         contentRating: "SAFE" | "ADULT";
         featuredRank: number | null;
         thumbnailUrl: string | null;
+        focalX: number;
+        focalY: number;
         imagesCount: number;
         videosCount: number;
     }>;
@@ -207,7 +209,7 @@ export async function listCompanions({
                     : (asset.publicUrl ?? `/media/${asset.id}`)
                 : avatarFromProfile,
             focalX: asset ? ((asset.metadata as Record<string, unknown>)?.focalX as number | undefined) ?? 50 : 50,
-            focalY: asset ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 20 : 20,
+            focalY: asset ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 5 : 5,
             imagesCount: counts.images,
             videosCount: counts.videos,
         };
