@@ -5,7 +5,7 @@ import { Volume2, VolumeX } from "lucide-react";
 
 export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [muted, setMuted] = useState(true);
+    const [muted, setMuted] = useState(false);
 
     function toggleMute() {
         const v = videoRef.current;
