@@ -21,6 +21,7 @@ export function AdultNoemaAvatarVideo({ src = "/adult/AdultNoemaAvitar.mp4" }: {
                 src={src}
                 playsInline
                 autoPlay
+                muted
                 className="w-full h-auto rounded-2xl"
             />
             <button
