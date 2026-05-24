@@ -76,6 +76,9 @@ export async function storeConversationMemory(args: {
   const { supabaseUserId, conversationId, companionId, content, role, messageId } = args;
 
   if (content.trim().length < MIN_CONTENT_LENGTH) return;
+  // Only index user messages — assistant replies are already in contextMessages
+  // and embedding them creates a retrieval feedback loop that causes repetition.
+  if (role !== "user") return;
 
   try {
     const [embedding, sb] = await Promise.all([
@@ -133,7 +136,9 @@ export async function retrieveConversationMemories(args: {
       return [];
     }
 
-    return ((data ?? []) as { content: string }[]).map((r) => r.content);
+    return ((data ?? []) as { content: string; metadata?: { role?: string } }[])
+      .filter((r) => r.metadata?.role !== "assistant")
+      .map((r) => r.content);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[memory-rag] retrieveConversationMemories failed:", msg);
