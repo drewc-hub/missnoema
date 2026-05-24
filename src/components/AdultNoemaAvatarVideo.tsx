@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-export function AdultNoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string }) {
+export function AdultNoemaAvatarVideo({ src = "/app/NoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [muted, setMuted] = useState(false);
 
@@ -20,6 +20,7 @@ export function AdultNoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: stri
                 ref={videoRef}
                 src={src}
                 playsInline
+                AutoPlay
                 className="w-full h-auto rounded-2xl"
             />
             <button
