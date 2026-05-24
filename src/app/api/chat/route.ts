@@ -960,29 +960,19 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
-  const recentAssistantReplies = contextMessages
+  const recentOpeners = contextMessages
     .filter((m) => m.role === "assistant")
-    .slice(-3);
-
-  const lastAssistantReplies = recentAssistantReplies
-    .map((m) => `- ${m.content.slice(0, 120)}${m.content.length > 120 ? "…" : ""}`)
-    .join("\n");
-
-  const recentOpeners = recentAssistantReplies
+    .slice(-4)
     .map((m) => m.content.trim().split(/[\s,.*\n]/)[0])
     .filter(Boolean);
 
   const antiRepeatSystemPrompt = `${systemPrompt}
 
-AVOID REPETITION — check your recent replies below before writing:
-- Do NOT start with the same word or phrase as a recent reply. Recent openers: [${recentOpeners.join(", ") || "none"}]
-- Do NOT reuse the same pet names, emotional phrases, or sentence structure.
-- Do NOT re-summarize the relationship status.
-- Introduce one new element: a different action, sensory detail, question, or shift in emotional register.
-- Vary your reply length — don't produce the same word count every time.
-
-RECENT REPLIES (for reference):
-${lastAssistantReplies || "(none yet)"}
+VARIETY RULES — apply every reply:
+- Do NOT open with any of these words/phrases used recently: [${recentOpeners.join(", ") || "none"}]
+- Do NOT repeat the same pet names, emotional phrases, or sentence structure as prior replies.
+- Each reply must introduce something new: a fresh action, sensory detail, unexpected question, or emotional shift.
+- Vary reply length — short replies, longer replies, mixed — never the same length twice in a row.
 `;
 
   (async () => {
