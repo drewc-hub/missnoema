@@ -1,6 +1,4 @@
 import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
-import { useRef, useState } from "react";
-import { Volume2, VolumeX } from "lucide-react";
 
 
 export default function AdultPage() {
@@ -52,7 +50,7 @@ export default function AdultPage() {
                         {/* Avatar video — top right, half width */}
                         <div className="flex justify-end">
                             <div className="w-1/2">
-                                <NoemaAvatarVideo src="adult/AdultNoemaAvitar.mp4" />
+                                <NoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
                             </div>
                         </div>
 

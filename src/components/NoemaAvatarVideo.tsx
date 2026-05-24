@@ -5,14 +5,14 @@ import { Volume2, VolumeX } from "lucide-react";
 
 export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [muted, setMuted] = useState(false);
+    const [muted, setMuted] = useState(true);
 
-    function toggleMute() {
-        const v = videoRef.current;
-        if (!v) return;
-        v.muted = !v.muted;
-        setMuted(v.muted);
-    }
+    const toggleMute = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = !videoRef.current.muted;
+            setMuted(videoRef.current.muted);
+        }
+    };
 
     return (
         <div className="relative w-full">
@@ -20,7 +20,9 @@ export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string })
                 ref={videoRef}
                 src={src}
                 autoPlay
+                loop
                 playsInline
+                muted={muted}
                 className="w-full h-auto rounded-2xl"
             />
             <button
@@ -33,3 +35,5 @@ export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string })
         </div>
     );
 }
+
+export default NoemaAvatarVideo;
