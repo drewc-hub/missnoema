@@ -28,7 +28,7 @@ export function NoemaAvatarVideo({ src = "/NoemaAvitar.mp4" }: { src?: string })
                 aria-label={muted ? "Unmute" : "Mute"}
                 className="absolute bottom-2 right-2 flex items-center justify-center rounded-full bg-black/50 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/70"
             >
-                {muted ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
             </button>
         </div>
     );
