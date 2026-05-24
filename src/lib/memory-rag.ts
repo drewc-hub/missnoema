@@ -9,6 +9,9 @@ const DEFAULT_COUNT = 6;
 // Minimum content length worth embedding — skip very short messages
 const MIN_CONTENT_LENGTH = 20;
 
+// Max user-message embeddings kept per conversation — oldest trimmed on insert
+const MAX_RAG_ENTRIES_PER_CONVERSATION = 150;
+
 export async function embedText(text: string): Promise<number[]> {
   const res = await getOpenAI().embeddings.create({
     model: EMBEDDING_MODEL,
@@ -96,7 +99,33 @@ export async function storeConversationMemory(args: {
       metadata: { conversationId, companionId, role, messageId: messageId ?? null },
     });
 
-    if (error) console.error("[memory-rag] section insert:", error.message);
+    if (error) {
+      console.error("[memory-rag] section insert:", error.message);
+      return;
+    }
+
+    // Trim oldest entries if over the per-conversation cap
+    const { count } = await sb
+      .from("rag_document_sections")
+      .select("id", { count: "exact", head: true })
+      .eq("document_id", docId);
+
+    const over = (count ?? 0) - MAX_RAG_ENTRIES_PER_CONVERSATION;
+    if (over > 0) {
+      const { data: oldest } = await sb
+        .from("rag_document_sections")
+        .select("id")
+        .eq("document_id", docId)
+        .order("created_at", { ascending: true })
+        .limit(over);
+
+      if (oldest?.length) {
+        await sb
+          .from("rag_document_sections")
+          .delete()
+          .in("id", oldest.map((r: { id: number }) => r.id));
+      }
+    }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[memory-rag] storeConversationMemory failed:", msg);

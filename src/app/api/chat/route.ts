@@ -131,6 +131,39 @@ function computeDecay(daysSinceActive: number): { familiarity: number; trust: nu
   return { familiarity: 0, trust: 0, intimacy: 0 };
 }
 
+function detectContextLoop(messages: Array<{ role: string; content: string }>): boolean {
+  const recent = messages.filter((m) => m.role === "assistant").slice(-4);
+  if (recent.length < 3) return false;
+
+  function norm(s: string) {
+    return s.slice(0, 120).toLowerCase().replace(/[^a-z]/g, "");
+  }
+  function overlap(a: string, b: string) {
+    const na = norm(a), nb = norm(b);
+    const len = Math.min(na.length, nb.length, 60);
+    if (len < 20) return false;
+    let matches = 0;
+    for (let i = 0; i < len; i++) if (na[i] === nb[i]) matches++;
+    return matches / len > 0.60;
+  }
+
+  const pairs: Array<[typeof recent[0], typeof recent[0]]> = [
+    [recent[0], recent[1]],
+    [recent[1], recent[2]],
+    ...(recent[3] ? [[recent[2], recent[3]], [recent[0], recent[3]]] as Array<[typeof recent[0], typeof recent[0]]> : []),
+  ];
+  return pairs.filter(([a, b]) => overlap(a.content, b.content)).length >= 2;
+}
+
+function breakContextLoop(messages: Array<{ role: string; content: string }>): Array<{ role: string; content: string }> {
+  const aIdxs = messages.map((m, i) => (m.role === "assistant" ? i : -1)).filter((i) => i >= 0);
+  // Keep last 2 assistant messages verbatim; compress all older ones
+  const cutoff = aIdxs.length >= 2 ? aIdxs[aIdxs.length - 2] : -1;
+  return messages.map((m, i) =>
+    m.role === "assistant" && i < cutoff ? { role: "assistant", content: "[previous reply]" } : m,
+  );
+}
+
 function injectLorebookEntries(entries: Array<Record<string, unknown>>, recentText: string): string {
   const lower = recentText.toLowerCase();
   const matched: string[] = [];
@@ -975,11 +1008,25 @@ export async function POST(req: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   }
 
+  const loopDetected = detectContextLoop(contextMessages);
+  const modelMessages = loopDetected ? breakContextLoop(contextMessages) : contextMessages;
+
   const recentOpeners = contextMessages
     .filter((m) => m.role === "assistant")
     .slice(-4)
     .map((m) => m.content.trim().split(/[\s,.*\n]/)[0])
     .filter(Boolean);
+
+  if (loopDetected) {
+    console.log("[chat/loop] repetition loop detected — compressing context and injecting break instruction", {
+      conversationId: conversation.id,
+      recentOpeners,
+    });
+  }
+
+  const loopBreakInstruction = loopDetected
+    ? `\n\nCRITICAL — REPETITION LOOP DETECTED: Your recent replies have been nearly identical. You MUST write something completely different right now. Change the subject, emotional angle, tone, and structure entirely. Do NOT echo or continue anything from your recent replies. Start fresh.`
+    : "";
 
   const antiRepeatSystemPrompt = `${systemPrompt}
 
@@ -987,14 +1034,14 @@ VARIETY RULES — apply every reply:
 - Do NOT open with any of these words/phrases used recently: [${recentOpeners.join(", ") || "none"}]
 - Do NOT repeat the same pet names, emotional phrases, or sentence structure as prior replies.
 - Each reply must introduce something new: a fresh action, sensory detail, unexpected question, or emotional shift.
-- Vary reply length — short replies, longer replies, mixed — never the same length twice in a row.
+- Vary reply length — short replies, longer replies, mixed — never the same length twice in a row.${loopBreakInstruction}
 `;
 
   (async () => {
     try {
       const textStream = companionStream(
         antiRepeatSystemPrompt,
-        contextMessages.map((m) => ({
+        modelMessages.map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
