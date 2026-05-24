@@ -928,6 +928,21 @@ export async function POST(req: Request) {
 
   const gameState = conversation.gameState as GameState | null;
 
+  // Diagnostic — log memory fields so Railway logs can reveal corrupted DB state
+  console.log("[chat/memory]", JSON.stringify({
+    conversationId: conversation.id,
+    companionId: companion.id,
+    contextMsgCount: contextMessages.length,
+    retrievedMemoryCount: retrievedMemories.length,
+    summaryLen: conversation.summary?.length ?? 0,
+    memorySummaryLen: conversation.memorySummary?.length ?? 0,
+    emotionalMemoryLen: conversation.emotionalMemory?.length ?? 0,
+    emotionalProfileLen: conversation.emotionalProfile?.length ?? 0,
+    summarySnippet: conversation.summary?.slice(0, 120) ?? null,
+    memorySummarySnippet: conversation.memorySummary?.slice(0, 120) ?? null,
+    retrievedSnippets: retrievedMemories.map(m => m.slice(0, 80)),
+  }));
+
   const systemPrompt = buildCompanionSystemPrompt({
     companion,
     memory: {

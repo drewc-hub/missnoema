@@ -9,8 +9,6 @@ type Msg = {
 const STREAM_PARAMS = {
   max_tokens: 3000,
   temperature: 0.80,
-  frequency_penalty: 0.35,
-  presence_penalty: 0.15,
 } as const;
 
 function logChat(event: string, data: Record<string, unknown>) {
