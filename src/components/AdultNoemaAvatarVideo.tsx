@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-export function AdultNoemaAvatarVideo({ src = "/adult/AdultNoemaAvitar.mp4" }: { src?: string }) {
+export function AdultNoemaAvatarVideo({ src = "/adult/AdultSmurfetteNoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [muted, setMuted] = useState(true);
+    const [muted, setMuted] = useState(false);
 
     const toggleMute = () => {
         if (videoRef.current) {
@@ -20,9 +20,7 @@ export function AdultNoemaAvatarVideo({ src = "/adult/AdultNoemaAvitar.mp4" }: {
                 ref={videoRef}
                 src={src}
                 autoPlay
-                loop
                 playsInline
-                muted={muted}
                 className="w-full h-auto rounded-2xl"
             />
             <button
