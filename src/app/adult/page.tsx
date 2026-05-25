@@ -1,4 +1,4 @@
-import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
+import { AdultNoemaAvatarVideo } from "@/components/AdultNoemaAvatarVideo";
 
 
 export default function AdultPage() {
@@ -49,8 +49,8 @@ export default function AdultPage() {
                     <div className="flex flex-col gap-4">
                         {/* Avatar video — top right, half width */}
                         <div className="flex justify-end">
-                            <div className="w-1/2">
-                                <NoemaAvatarVideo src="/NoemaAvitar.mp4" />
+                            <div className="l-1/2">
+                                <AdultNoemaAvatarVideo />
                             </div>
                         </div>
 
