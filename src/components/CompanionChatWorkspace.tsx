@@ -129,6 +129,8 @@ export function CompanionChatWorkspace({
     const [error, setError] = useState<string | null>(null);
 
     const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+    const [deepReply, setDeepReply] = useState("");
+    const [loadingDeepReply, setLoadingDeepReply] = useState(false);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -820,6 +822,30 @@ export function CompanionChatWorkspace({
         }
     }
 
+    async function generateDeepReply() {
+        if (!activeCompanion || loadingDeepReply) return;
+        setLoadingDeepReply(true);
+        setDeepReply("");
+        try {
+            const res = await fetch("/api/chat/deep-reply", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    companionId: activeCompanion.id,
+                    messages: messages.slice(-10),
+                }),
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && typeof data?.reply === "string") {
+                setDeepReply(data.reply);
+            }
+        } catch {
+            // silently fail
+        } finally {
+            setLoadingDeepReply(false);
+        }
+    }
+
     async function rerunReply(message?: ChatMessage) {
         if (sending || !memory) return;
 
@@ -1471,6 +1497,15 @@ export function CompanionChatWorkspace({
                                             </button>
                                             <button
                                                 type="button"
+                                                onClick={generateDeepReply}
+                                                disabled={loadingDeepReply || !activeCompanion || messages.length === 0}
+                                                className="rounded-lg border border-fuchsia-900/60 bg-fuchsia-950/40 px-2.5 py-1 text-xs text-fuchsia-300 hover:bg-fuchsia-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                title="Generate a detailed, action-specific response for the current scene"
+                                            >
+                                                {loadingDeepReply ? "Writing…" : "✦ Deep reply"}
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={insertPhotoRequest}
                                                 disabled={!activeCompanion}
                                                 className="rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
@@ -1513,6 +1548,40 @@ export function CompanionChatWorkspace({
                                         </div>
                                     )}
                                 </div>
+
+                                {(deepReply || loadingDeepReply) && (
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-zinc-400">Deep reply</div>
+                                            {deepReply && (
+                                                <div className="flex gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setInput(deepReply); setDeepReply(""); }}
+                                                        className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                                                    >
+                                                        Use
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeepReply("")}
+                                                        className="rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <textarea
+                                            value={loadingDeepReply ? "" : deepReply}
+                                            onChange={(e) => setDeepReply(e.target.value)}
+                                            rows={2}
+                                            placeholder={loadingDeepReply ? "Writing detailed reply…" : ""}
+                                            readOnly={loadingDeepReply}
+                                            className="w-full resize-none rounded-xl border border-fuchsia-900/40 bg-fuchsia-950/20 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/40"
+                                        />
+                                    </div>
+                                )}
 
                                 {activeCompanion ? (
                                     <div>
