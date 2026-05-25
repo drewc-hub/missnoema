@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-export function AdultNoemaAvatarVideo({ src = "/adult/AdultSmurfetteNoemaAvitar.mp4" }: { src?: string }) {
+export function AdultNoemaAvatarVideo({ src = "/adult/AdultNoemaAvitar.mp4" }: { src?: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [muted, setMuted] = useState(false);
 
