@@ -66,7 +66,7 @@ function CompanionTile({ companion }: { companion: TavernCompanion }) {
             href={chatHref}
             className="group block overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition hover:-translate-y-0.5 hover:border-fuchsia-500/60"
         >
-            <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
+            <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
                 {companion.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
