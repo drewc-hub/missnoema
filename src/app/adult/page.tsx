@@ -50,7 +50,7 @@ export default function AdultPage() {
                         {/* Avatar video — top right, half width */}
                         <div className="flex justify-end">
                             <div className="l-1/2">
-                                <AdultNoemaAvatarVideo src="/adult/Adult/SmurfetteNoemaAvitar.mp4" />
+                                <AdultNoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
                             </div>
                         </div>
 

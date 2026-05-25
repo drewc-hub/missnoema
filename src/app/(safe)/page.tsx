@@ -38,7 +38,7 @@ export default async function SafePage() {
                 <div className="flex items-center gap-8 sm:gap-12">
                     {/* Avatar video — plays once on load */}
                     <div className="hidden sm:flex shrink-0 w-[25%] items-center justify-start">
-                        <NoemaAvatarVideo src="SmurfetteNoemaAvitar.mp4" />
+                        <NoemaAvatarVideo src="/NoemaAvitar.mp4" />
                     </div>
 
                     {/* Text content */}
