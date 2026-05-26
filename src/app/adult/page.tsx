@@ -48,8 +48,8 @@ export default function AdultPage() {
                     {/* Right — video at top, feature tiles below */}
                     <div className="flex flex-col gap-4">
                         {/* Avatar video — top right, half width */}
-                        <div className="flex justify-end irems-center">
-                            <div className="l-1/2 w-1/2">
+                        <div className="flex justify-end">
+                            <div className="w-1/3">
                                 <AdultNoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
                             </div>
                         </div>
