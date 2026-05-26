@@ -203,18 +203,22 @@ export default async function TavernPage() {
             <section className="overflow-hidden rounded-[1rem] border border-zinc-800 bg-black">
                 <div className="relative min-h-[360px]">
                     <div className="absolute inset-0">
-                        <div className="grid h-full grid-cols-3 opacity-50">
+                        <div className="grid h-full grid-cols-3 opacity-60">
                             {tavernCompanions.slice(0, 3).map((companion) => (
-                                <div key={companion.id} className="relative hidden overflow-hidden bg-zinc-950 sm:block">
+                                <a
+                                    key={companion.id}
+                                    href="/rpg"
+                                    className="relative hidden overflow-hidden bg-zinc-950 transition-opacity hover:opacity-80 sm:block"
+                                >
                                     {companion.thumbnailUrl ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={companion.thumbnailUrl}
-                                            alt=""
-                                            className="h-full w-full object-cover"
+                                            alt={companion.name}
+                                            className="h-full w-full object-cover object-top"
                                         />
                                     ) : null}
-                                </div>
+                                </a>
                             ))}
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/30" />
