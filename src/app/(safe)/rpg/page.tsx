@@ -1,7 +1,7 @@
 // app/page.tsx
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CharacterForm } from '@/components/rp/CharacterForm';
 import { ChatPanel } from '@/components/rp/ChatPanel';
@@ -21,6 +21,14 @@ import {
 type SessionMedia = { url: string; type: 'image' | 'video' };
 
 export default function Page() {
+    return (
+        <Suspense>
+            <RpgPage />
+        </Suspense>
+    );
+}
+
+function RpgPage() {
     const searchParams = useSearchParams();
     const companionSlug = searchParams.get('companion');
 
