@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     const companion = await prisma.companion.findFirst({
         where: { slug, visibility: Visibility.PUBLIC },
         select: {
+            id: true,
             name: true,
             archetype: true,
             gender: true,

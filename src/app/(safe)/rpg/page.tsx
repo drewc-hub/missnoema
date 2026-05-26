@@ -52,6 +52,15 @@ export default function Page() {
             .catch(() => {});
     }, []);
 
+    // Companion DB id — populated when loading via ?companion= slug
+    const [companionId, setCompanionId] = useState('');
+
+    // Whether a profile has been generated/loaded (controls Import↔Export toggle)
+    const [profileReady, setProfileReady] = useState(false);
+
+    // Hidden file input ref for Import
+    const importInputRef = useRef<HTMLInputElement>(null);
+
     // Pre-load companion from ?companion=slug
     useEffect(() => {
         if (!companionSlug) return;
@@ -75,6 +84,8 @@ export default function Page() {
                     openingLine: data.profile?.greeting || `Hello, I'm ${data.name}.`,
                 };
                 setCharacter(loaded);
+                setCompanionId(data.id ?? '');
+                setProfileReady(true);
                 setMessages([
                     { id: createId(), role: 'system', content: `RP session initialized with ${data.name}.` },
                     { id: createId(), role: 'character', content: loaded.openingLine },
@@ -139,7 +150,42 @@ export default function Page() {
         const nextScene = randomOf(SCENARIOS);
         setCharacter(nextCharacter);
         setScene(nextScene);
+        setCompanionId('');
+        setProfileReady(true);
         resetConversation(nextCharacter, nextScene);
+    }
+
+    function handleImportProfile() {
+        importInputRef.current?.click();
+    }
+
+    function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const parsed = JSON.parse(ev.target?.result as string) as CharacterProfile;
+                if (!parsed.name) return;
+                setCharacter(parsed);
+                setCompanionId('');
+                setProfileReady(true);
+                resetConversation(parsed, scene);
+            } catch { }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    }
+
+    function handleExportProfile() {
+        const json = JSON.stringify(character, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${character.name || 'character'}-profile.json`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     function handleClearChat() {
@@ -224,7 +270,7 @@ export default function Page() {
                         <MediaGenPanel
                             allowAdult={false}
                             loggedIn={loggedIn}
-                            companionId=""
+                            companionId={companionId}
                             contentRating="SAFE"
                             onGenerated={handleMediaGenerated}
                         />
@@ -317,6 +363,28 @@ export default function Page() {
                             >
                                 Generate All
                             </button>
+                            {profileReady ? (
+                                <button
+                                    onClick={handleExportProfile}
+                                    className="rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                >
+                                    Export Profile
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleImportProfile}
+                                    className="rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
+                                >
+                                    Import Profile
+                                </button>
+                            )}
+                            <input
+                                ref={importInputRef}
+                                type="file"
+                                accept=".json,application/json"
+                                className="hidden"
+                                onChange={handleImportFile}
+                            />
                             <button
                                 onClick={() => setScene(randomOf(SCENARIOS))}
                                 className="rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-800"
