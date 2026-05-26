@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/auth";
+import { isAdultAllowed } from "@/lib/ratings";
 import { CompanionBuilder } from "@/components/CompanionBuilder";
 
 export default async function NewSafeCompanionPage() {
@@ -7,6 +8,8 @@ export default async function NewSafeCompanionPage() {
     if (!user) {
         redirect("/login");
     }
+
+    const allowAdult = isAdultAllowed(user);
 
     const draftCompanion = {
         id: "",
@@ -58,7 +61,7 @@ export default async function NewSafeCompanionPage() {
                 <div className="w-full">
                     <CompanionBuilder
                         mode="create"
-                        allowAdult={false}
+                        allowAdult={allowAdult}
                         userEmail={user.email ?? null}
                         companion={draftCompanion}
                         fullPageMode

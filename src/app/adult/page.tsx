@@ -49,7 +49,7 @@ export default function AdultPage() {
                     <div className="flex flex-col gap-4">
                         {/* Avatar video — top right, half width */}
                         <div className="flex justify-end">
-                            <div className="w-1/3">
+                            <div className="hidden sm:flex shrink-0 w-[60%]">
                                 <AdultNoemaAvatarVideo src="/adult/AdultNoemaAvitar.mp4" />
                             </div>
                         </div>

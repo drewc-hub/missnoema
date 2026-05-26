@@ -428,12 +428,38 @@ const ARCHETYPE_LIBRARY: Record<
         ],
         lore: ["devotion", "jealousy", "promises", "fixation"],
     },
+    "custom": {
+        role: "A distinctive character defined by their unique nature.",
+        themes: ["character-driven", "drama", "romance"],
+        personality: [
+            "complex and layered, shaped by their particular nature and history",
+            "memorable and distinct, driven by their own inner logic",
+            "a presence that leaves a lasting impression in ways that are hard to predict",
+        ],
+        appearance: [
+            "a striking presence shaped by their nature, with details that hint at something beyond the ordinary",
+            "notable features that reflect who and what they are, immediately recognizable",
+        ],
+        scenarios: [
+            "{{char}} crosses paths with {{user}} in circumstances shaped entirely by {{char}}'s nature.",
+            "{{user}} encounters {{char}} at a moment when the truth of what they are becomes impossible to ignore.",
+        ],
+        goals: [
+            "pursue what matters most to them, on their own terms",
+            "build connections that can withstand the full truth of who they are",
+        ],
+        speech: [
+            "a voice and manner shaped by their nature, immediately recognizable as their own",
+            "expressive in ways that are distinctly and memorably theirs",
+        ],
+        lore: ["identity", "nature", "purpose", "origins"],
+    },
 };
 
 function selectArchetype(draft: GeneratorDraft): string {
     const input = (draft.archetype ?? "").trim().toLowerCase();
     const tags = parseCsvTags(draft.tags).map((t) => t.toLowerCase());
-    const keys = Object.keys(ARCHETYPE_LIBRARY);
+    const keys = Object.keys(ARCHETYPE_LIBRARY).filter((k) => k !== "custom");
 
     // 1. Exact key match
     if (input && ARCHETYPE_LIBRARY[input]) return input;
@@ -444,21 +470,24 @@ function selectArchetype(draft: GeneratorDraft): string {
         if (partial) return partial;
     }
 
-    // 3. Tag/theme scoring — pick the archetype whose themes + lore + name words
-    //    overlap the most with the provided tags (and any input words)
-    const queryTerms = [...tags, ...input.split(/\s+/).filter(Boolean)];
-    if (queryTerms.length > 0) {
+    // 3. User provided an explicit archetype that didn't match the library → use
+    //    the generic "custom" template and preserve their text in the output
+    if (input) return "custom";
+
+    // 4. No archetype input — score by tags alone
+    if (tags.length > 0) {
         let bestKey = "";
         let bestScore = -1;
 
         for (const [key, config] of Object.entries(ARCHETYPE_LIBRARY)) {
+            if (key === "custom") continue;
             const pool = [
                 ...config.themes,
                 ...config.lore,
                 ...key.split(/\s+/),
             ].map((t) => t.toLowerCase());
 
-            const score = queryTerms.reduce((acc, term) => {
+            const score = tags.reduce((acc, term) => {
                 return acc + (pool.some((p) => p.includes(term) || term.includes(p)) ? 1 : 0);
             }, 0);
 
@@ -471,7 +500,7 @@ function selectArchetype(draft: GeneratorDraft): string {
         if (bestScore > 0) return bestKey;
     }
 
-    // 4. Random fallback — never hardcode a single default
+    // 5. Random fallback
     return keys[Math.floor(Math.random() * keys.length)];
 }
 
@@ -545,14 +574,16 @@ function buildTags(draft: GeneratorDraft, archetype: string): string[] {
     return mergeDistinct(existing, [...config.themes, ...archetypeTags, ...contentTags]).slice(0, 8);
 }
 
-function buildTagline(name: string, archetype: string, draft: GeneratorDraft): string {
+function buildTagline(name: string, archetype: string, rawArchetype: string, draft: GeneratorDraft): string {
     if (draft.tagline?.trim()) return draft.tagline.trim();
+    if (archetype === "custom") return `${name} — ${rawArchetype}.`;
     const config = ARCHETYPE_LIBRARY[archetype];
     return `${name} is ${config.role[0].toLowerCase()}${config.role.slice(1)}`;
 }
 
-function buildRole(archetype: string, draft: GeneratorDraft): string {
+function buildRole(archetype: string, rawArchetype: string, draft: GeneratorDraft): string {
     if (draft.role?.trim()) return draft.role.trim();
+    if (archetype === "custom") return rawArchetype;
     return ARCHETYPE_LIBRARY[archetype].role;
 }
 
@@ -586,9 +617,13 @@ function buildAppearance(draft: GeneratorDraft, archetype: string): string {
     return sampleUnique(config.appearance, 2).join(" ");
 }
 
-function buildBackstory(draft: GeneratorDraft, archetype: string, name: string): string {
+function buildBackstory(draft: GeneratorDraft, archetype: string, rawArchetype: string, name: string): string {
     if (draft.backstory?.trim().length && draft.backstory.trim().length > 40) {
         return draft.backstory.trim();
+    }
+
+    if (archetype === "custom") {
+        return `${name} is a ${rawArchetype}. Their past left them with strong instincts around trust, desire, and self-protection, which now color every new relationship they enter.`;
     }
 
     const lore = ARCHETYPE_LIBRARY[archetype].lore;
@@ -650,7 +685,7 @@ function buildExampleDialogue(draft: GeneratorDraft, name: string, gender: Gende
 
 function buildSystemPrompt(
     name: string,
-    archetype: string,
+    rawArchetype: string,
     personality: string,
     speakingStyle: string,
     contentRating: ContentRating
@@ -662,7 +697,7 @@ function buildSystemPrompt(
 
     return [
         `You are ${name}.`,
-        `Archetype: ${titleCase(archetype)}.`,
+        `Archetype: ${rawArchetype}.`,
         `Personality: ${personality}`,
         `Speaking style: ${speakingStyle}`,
         safety,
@@ -672,8 +707,7 @@ function buildSystemPrompt(
 
 function buildLorebookEntries(
     name: string,
-    archetype: string,
-    tags: string[],
+    rawArchetype: string,
     scenario: string,
     backstory: string,
     goals: string
@@ -682,9 +716,9 @@ function buildLorebookEntries(
         {
             id: "1",
             name: "identity",
-            keys: [name, archetype],
+            keys: [name, rawArchetype],
             comment: "Core identity",
-            content: `${name} is a ${archetype}. ${backstory}`,
+            content: `${name} is a ${rawArchetype}. ${backstory}`,
             enabled: true,
             insertion_order: 10,
             constant: true,
@@ -715,28 +749,29 @@ function buildLorebookEntries(
 export function generateCompanionFieldsFromDraft(draft: GeneratorDraft): GeneratedFields {
     const gender = normalizeGender(draft.gender);
     const archetype = selectArchetype(draft);
+    const rawArchetype = draft.archetype?.trim() || titleCase(archetype);
     const name = pickName(gender, draft.name);
     const tags = buildTags(draft, archetype);
     const traits = buildTraits(draft, archetype);
-    const tagline = buildTagline(name, archetype, draft);
-    const role = buildRole(archetype, draft);
+    const tagline = buildTagline(name, archetype, rawArchetype, draft);
+    const role = buildRole(archetype, rawArchetype, draft);
     const personality = buildPersonality(draft, archetype);
     const appearance = buildAppearance(draft, archetype);
-    const backstory = buildBackstory(draft, archetype, name);
+    const backstory = buildBackstory(draft, archetype, rawArchetype, name);
     const speakingStyle = buildSpeakingStyle(draft, archetype);
     const goals = buildGoals(draft, archetype);
     const scenario = buildScenario(draft, archetype);
     const description = buildDescription(tagline, tags, draft);
     const firstMessage = buildFirstMessage(draft, name, scenario);
     const exampleDialogue = buildExampleDialogue(draft, name, gender);
-    const systemPrompt = buildSystemPrompt(name, archetype, personality, speakingStyle, draft.contentRating ?? "SAFE");
-    const lorebookEntries = buildLorebookEntries(name, archetype, tags, scenario, backstory, goals);
+    const systemPrompt = buildSystemPrompt(name, rawArchetype, personality, speakingStyle, draft.contentRating ?? "SAFE");
+    const lorebookEntries = buildLorebookEntries(name, rawArchetype, scenario, backstory, goals);
 
     return {
         name,
         description,
         tags,
-        archetype: titleCase(archetype),
+        archetype: rawArchetype,
         gender: draft.gender?.trim() || gender,
         tagline,
         role,
