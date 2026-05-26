@@ -1,7 +1,7 @@
 import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
 import { isAdultAllowed } from "@/lib/ratings";
-import { MessageSquare, Wand2, Compass, Sparkles, Brain, Heart, Zap, Shield } from "lucide-react";
+import { Wand2, Compass, Sparkles, Brain, Heart, Zap, Shield } from "lucide-react";
 import { NoemaAvatarVideo } from "@/components/NoemaAvatarVideo";
 
 const FEATURES = [
@@ -96,47 +96,47 @@ export default async function SafePage() {
                         </a>
                     </div>
 
-                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-3">
                         {featured.map((c) => {
-                            const viewHref = `/companions/${encodeURIComponent(c.slug)}`;
                             const chatHref = `/chat?companion=${encodeURIComponent(c.slug)}`;
                             return (
-                                <div
+                                <a
                                     key={c.id}
-                                    className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0d1a] transition-all duration-300 hover:border-white/20 hover:shadow-2xl hover:shadow-black/50"
-                                    style={{ aspectRatio: "188/330" }}
+                                    href={chatHref}
+                                    className="group block overflow-hidden rounded-lg border border-white/[0.08] bg-[#0d0d1a] transition hover:-translate-y-0.5 hover:border-fuchsia-500/60"
                                 >
-                                    {/* Clickable image area → companion profile */}
-                                    <a href={viewHref} className="absolute inset-0 block">
+                                    <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
                                         {c.thumbnailUrl ? (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={c.thumbnailUrl}
                                                 alt={c.name}
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+                                                style={{ objectPosition: `${c.focalX}% ${c.focalY}%` }}
                                                 loading="lazy"
                                             />
                                         ) : (
-                                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#1a1a2e] to-[#0d0d1a] text-4xl font-black text-white/10 select-none">
-                                                {c.name[0]}
+                                            <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-zinc-700">
+                                                {c.name.slice(0, 1)}
                                             </div>
                                         )}
-                                    </a>
-                                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0d0d1a] via-[#0d0d1a]/40 to-transparent" />
-                                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-3">
-                                        <div className="truncate text-sm font-semibold text-white leading-tight">{c.name}</div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                                            <div className="truncate text-sm font-semibold text-white">{c.name}</div>
+                                            <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-300">{c.description}</div>
+                                        </div>
                                     </div>
-                                    {/* Chat button sits above the gradient, pointer-events re-enabled */}
-                                    <div className="absolute bottom-3 left-3 right-3 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
-                                        <a
-                                            href={chatHref}
-                                            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[20px] bg-white/90 text-xs font-bold text-black hover:bg-white transition"
-                                        >
-                                            <MessageSquare className="h-3 w-3" />
-                                            Chat
-                                        </a>
+                                    <div className="flex min-h-12 flex-wrap gap-1.5 p-3">
+                                        {c.tags.slice(0, 3).map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[11px] text-zinc-400"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
                                     </div>
-                                </div>
+                                </a>
                             );
                         })}
                     </div>
