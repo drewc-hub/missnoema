@@ -54,13 +54,18 @@ export default async function NewAdultCompanionPage() {
     return (
         <div className="custom-bg">
             <main className="min-h-screen px-4 py-6 lg:px-8">
-                <div className="mx-auto w-full max-w-[1800px] bg-black">
+                <div className="mx-auto w-full max-w-[1800px]">
                     <div className="mb-6">
-                        <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-black-500/10 px-3 py-1 text-xs tracking-wide text-blue-300 mb-3">
-                            18+ verified access
+                        <div className="inline-flex items-center rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs tracking-wide text-fuchsia-300 mb-3">
+                            18+ Creator Studio
                         </div>
 
-                        <p className="mt-2 text-sm text-blue-100/70">
+                        <h1 className="text-3xl font-black tracking-tight text-white">
+                            Create{" "}
+                            <span className="text-zinc-300">companion</span>
+                        </h1>
+
+                        <p className="mt-2 text-sm text-zinc-400">
                             Build immersive AI companions with advanced personality,
                             dialogue, emotional sliders, and Character Card V2 support.
                         </p>
