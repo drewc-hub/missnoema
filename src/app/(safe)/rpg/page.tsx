@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CharacterForm } from '@/components/rp/CharacterForm';
 import { ChatPanel } from '@/components/rp/ChatPanel';
 import { QuickCharacterCard } from '@/components/rp/QuickCharacterCard';
@@ -20,6 +21,9 @@ import {
 type SessionMedia = { url: string; type: 'image' | 'video' };
 
 export default function Page() {
+    const searchParams = useSearchParams();
+    const companionSlug = searchParams.get('companion');
+
     const [character, setCharacter] = useState<CharacterProfile>(() => createRandomCharacter());
     const [scene, setScene] = useState<string>(() => randomOf(SCENARIOS));
     const [input, setInput] = useState('');
@@ -47,6 +51,38 @@ export default function Page() {
             .then((r) => { if (r.ok) setLoggedIn(true); })
             .catch(() => {});
     }, []);
+
+    // Pre-load companion from ?companion=slug
+    useEffect(() => {
+        if (!companionSlug) return;
+        fetch(`/api/companions/profile?slug=${encodeURIComponent(companionSlug)}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+                if (!data) return;
+                const loaded: CharacterProfile = {
+                    name: data.name ?? '',
+                    title: data.profile?.tagline || data.profile?.role || data.archetype || '',
+                    archetype: data.archetype ?? '',
+                    age: '',
+                    pronouns: data.gender === 'male' ? 'he/him' : data.gender === 'non-binary' ? 'they/them' : 'she/her',
+                    origin: data.profile?.background ?? '',
+                    personality: data.profile?.personality ?? '',
+                    appearance: data.profile?.appearance || data.profile?.wardrobe || '',
+                    likes: '',
+                    dislikes: '',
+                    secret: '',
+                    goal: data.profile?.goals ?? '',
+                    openingLine: data.profile?.greeting || `Hello, I'm ${data.name}.`,
+                };
+                setCharacter(loaded);
+                setMessages([
+                    { id: createId(), role: 'system', content: `RP session initialized with ${data.name}.` },
+                    { id: createId(), role: 'character', content: loaded.openingLine },
+                ]);
+            })
+            .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [companionSlug]);
 
     // Media modal
     const [showMediaModal, setShowMediaModal] = useState(false);

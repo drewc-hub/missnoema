@@ -55,9 +55,10 @@ function ActionLink({
     );
 }
 
-function CompanionTile({ companion }: { companion: TavernCompanion }) {
-    const chatHref =
-        companion.contentRating === "ADULT"
+function CompanionTile({ companion, isPremium }: { companion: TavernCompanion; isPremium: boolean }) {
+    const chatHref = isPremium
+        ? `/rpg?companion=${encodeURIComponent(companion.slug)}`
+        : companion.contentRating === "ADULT"
             ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
             : `/chat?companion=${encodeURIComponent(companion.slug)}`;
 
@@ -129,6 +130,7 @@ export default async function TavernPage() {
     const allowedRatings = allowAdult
         ? [ContentRating.SAFE, ContentRating.ADULT]
         : [ContentRating.SAFE];
+    const isPremium = user?.plan === "PRO" || user?.plan === "UNLIMITED";
 
     const [companions, account, recentConversations, totalCompanions] =
         await Promise.all([
@@ -291,7 +293,7 @@ export default async function TavernPage() {
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {tavernCompanions.map((companion) => (
-                            <CompanionTile key={companion.id} companion={companion} />
+                            <CompanionTile key={companion.id} companion={companion} isPremium={isPremium} />
                         ))}
                     </div>
                 </div>
