@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { CharacterForm } from '@/components/rp/CharacterForm';
 import { ChatPanel } from '@/components/rp/ChatPanel';
 import { QuickCharacterCard } from '@/components/rp/QuickCharacterCard';
-import { ScenePanel } from '@/components/rp/ScenePanel';
+import { SceneBuilder } from '@/components/rp/SceneBuilder';
 import { StarterPrompts } from '@/components/rp/StarterPrompts';
 import { MediaGenPanel } from '@/components/MediaGenPanel';
 import type { CharacterProfile, ChatMessage } from '@/lib/rp-types';
@@ -32,6 +32,8 @@ function RpgPage() {
     const searchParams = useSearchParams();
     const companionSlug = searchParams.get('companion');
 
+    // Defer random initialization to the client to avoid SSR/hydration mismatch
+    const [mounted, setMounted] = useState(false);
     const [character, setCharacter] = useState<CharacterProfile>(() => createRandomCharacter());
     const [scene, setScene] = useState<string>(() => randomOf(SCENARIOS));
     const [input, setInput] = useState('');
@@ -51,6 +53,7 @@ function RpgPage() {
             },
         ];
     });
+    useEffect(() => { setMounted(true); }, []);
 
     // Auth state — checked once on mount
     const [loggedIn, setLoggedIn] = useState(false);
@@ -260,6 +263,8 @@ function RpgPage() {
         }
     }
 
+    if (!mounted) return <div className="min-h-screen bg-zinc-950" />;
+
     return (
         <main className="min-h-screen bg-zinc-950 text-zinc-100">
             {/* ── Media generation full-page modal ── */}
@@ -417,7 +422,7 @@ function RpgPage() {
                     />
 
                     <div className="flex flex-col gap-6">
-                        <ScenePanel
+                        <SceneBuilder
                             scene={scene}
                             onChange={setScene}
                             onRandomize={() => setScene(randomOf(SCENARIOS))}
