@@ -245,13 +245,13 @@ export async function POST(req: Request) {
     if (rerun && target.role === "user") {
         const recentMessages = await prisma.chatMessage.findMany({
             where: { conversationId: target.conversationId },
-            orderBy: { createdAt: "asc" },
-            take: 20,
+            orderBy: { createdAt: "desc" },
+            take: 25,
             select: {
                 role: true,
                 content: true,
             },
-        });
+        }).then((msgs) => msgs.reverse());
 
         const systemPrompt = buildCompanionSystemPrompt({
             companion: target.conversation.companion,

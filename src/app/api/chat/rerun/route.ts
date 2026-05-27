@@ -128,10 +128,10 @@ export async function POST(req: Request) {
 
     const recentMessages = await prisma.chatMessage.findMany({
         where: { conversationId },
-        orderBy: { createdAt: "asc" },
-        take: 14,
+        orderBy: { createdAt: "desc" },
+        take: 25,
         select: { role: true, content: true },
-    });
+    }).then((msgs) => msgs.reverse());
 
     if (recentMessages.length === 0) {
         return NextResponse.json(
