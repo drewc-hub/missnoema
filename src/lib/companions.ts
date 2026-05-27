@@ -222,3 +222,111 @@ export async function listCompanions({
         total,
     };
 }
+
+export type SlideCompanion = {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    tags: string[];
+    contentRating: "SAFE" | "ADULT";
+    thumbnailUrl: string | null;
+    focalX: number;
+    focalY: number;
+};
+
+export async function listSlideCompanions({
+    user,
+    includeAdult = false,
+    limit = 6,
+}: {
+    user: AuthedUser;
+    includeAdult?: boolean;
+    limit?: number;
+}): Promise<SlideCompanion[]> {
+    const allowedRatings: ContentRating[] = [ContentRating.SAFE];
+    if (includeAdult) {
+        if (!isAdultAllowed(user)) return [];
+        allowedRatings.push(ContentRating.ADULT);
+    }
+
+    const rows = await prisma.companion.findMany({
+        where: {
+            visibility: Visibility.PUBLIC,
+            contentRating: { in: allowedRatings },
+            featuredRank: { not: null },
+        },
+        orderBy: { featuredRank: "asc" },
+        take: limit,
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            tags: true,
+            contentRating: true,
+            assets: {
+                where: {
+                    type: "IMAGE",
+                    contentRating: { in: allowedRatings },
+                },
+                orderBy: [{ contentRating: "asc" }, { createdAt: "desc" }],
+                take: 1,
+                select: { id: true, publicUrl: true, contentRating: true, metadata: true },
+            },
+        },
+    });
+
+    // Fallback: if fewer than 2 featured, grab top companions with photos
+    const source =
+        rows.length >= 2
+            ? rows
+            : await prisma.companion.findMany({
+                  where: {
+                      visibility: Visibility.PUBLIC,
+                      contentRating: { in: allowedRatings },
+                      assets: { some: { type: "IMAGE", contentRating: { in: allowedRatings } } },
+                  },
+                  orderBy: { createdAt: "desc" },
+                  take: limit,
+                  select: {
+                      id: true,
+                      name: true,
+                      slug: true,
+                      description: true,
+                      tags: true,
+                      contentRating: true,
+                      assets: {
+                          where: { type: "IMAGE", contentRating: { in: allowedRatings } },
+                          orderBy: [{ contentRating: "asc" }, { createdAt: "desc" }],
+                          take: 1,
+                          select: { id: true, publicUrl: true, contentRating: true, metadata: true },
+                      },
+                  },
+              });
+
+    return source.map((c) => {
+        const asset = c.assets[0];
+        return {
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            description: c.description,
+            tags: c.tags,
+            contentRating: c.contentRating as "SAFE" | "ADULT",
+            thumbnailUrl: asset
+                ? asset.contentRating === ContentRating.ADULT
+                    ? `/media/${asset.id}`
+                    : (asset.publicUrl ?? `/media/${asset.id}`)
+                : null,
+            focalX:
+                asset
+                    ? ((asset.metadata as Record<string, unknown>)?.focalX as number | undefined) ?? 50
+                    : 50,
+            focalY:
+                asset
+                    ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 0
+                    : 0,
+        };
+    });
+}

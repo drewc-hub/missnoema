@@ -1,9 +1,10 @@
 import React from "react";
 import { getAuthedUser } from "@/lib/auth";
-import { listCompanions } from "@/lib/companions";
+import { listCompanions, listSlideCompanions } from "@/lib/companions";
 import { isAdultAllowed } from "@/lib/ratings";
 import { Pagination } from "@/components/Pagination";
 import { CompanionFilterPanel } from "@/components/CompanionFilterPanel";
+import { CompanionHeroSlideshow } from "@/components/CompanionHeroSlideshow";
 import { MessageSquare } from "lucide-react";
 
 type SearchParams = {
@@ -122,18 +123,21 @@ export default async function SafeCompanionsPage({
     const page = Math.max(1, Number(sp.page ?? "1") || 1);
     const pageSize = 20;
 
-    const data = await listCompanions({
-        user,
-        q,
-        tags,
-        gender,
-        minAge,
-        maxAge,
-        hasPhoto,
-        page,
-        pageSize,
-        includeAdult: allowAdult,
-    });
+    const [data, slides] = await Promise.all([
+        listCompanions({
+            user,
+            q,
+            tags,
+            gender,
+            minAge,
+            maxAge,
+            hasPhoto,
+            page,
+            pageSize,
+            includeAdult: allowAdult,
+        }),
+        listSlideCompanions({ user, includeAdult: allowAdult, limit: 6 }),
+    ]);
     const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
     const baseParams = {
         q,
@@ -149,6 +153,9 @@ export default async function SafeCompanionsPage({
 
     return (
         <div className="space-y-5">
+            {/* Slideshow hero */}
+            {slides.length > 0 && <CompanionHeroSlideshow items={slides} />}
+
             {/* Header */}
             <div className="flex items-center justify-between gap-3">
                 <div>
