@@ -228,7 +228,7 @@ export default async function MarketplacePage({
                     : asset.publicUrl ?? `/media/${asset.id}`
                   : null;
                 const assetMeta = (asset?.metadata ?? {}) as Record<string, unknown>;
-                const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 5}%`;
+                const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 0}%`;
                 const readiness = getMarketplaceReadiness(companion);
                 const creatorName =
                   listing.creator?.displayName ||
@@ -257,7 +257,7 @@ export default async function MarketplacePage({
                     className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
                   >
                     <a href={viewHref} className="group block">
-                      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
+                      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
                         {thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
