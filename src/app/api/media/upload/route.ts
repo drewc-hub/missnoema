@@ -88,6 +88,7 @@ export async function POST(req: Request) {
       storageBucket: bucket,
       storagePath: path,
       publicUrl: publicUrl || null,
+      metadata: isVideo ? {} : { focalX: 50, focalY: 0 },
     },
     select: { id: true, publicUrl: true },
   });

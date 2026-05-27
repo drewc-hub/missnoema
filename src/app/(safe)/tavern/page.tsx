@@ -197,7 +197,7 @@ export default async function TavernPage() {
         contentRating: companion.contentRating,
         thumbnailUrl: companion.thumbnailUrl,
         focalX: companion.focalX ?? 50,
-        focalY: companion.focalY ?? 5,
+        focalY: companion.focalY ?? 0,
     }));
 
     return (

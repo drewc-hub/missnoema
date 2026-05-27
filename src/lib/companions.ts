@@ -209,7 +209,7 @@ export async function listCompanions({
                     : (asset.publicUrl ?? `/media/${asset.id}`)
                 : avatarFromProfile,
             focalX: asset ? ((asset.metadata as Record<string, unknown>)?.focalX as number | undefined) ?? 50 : 50,
-            focalY: asset ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 5 : 5,
+            focalY: asset ? ((asset.metadata as Record<string, unknown>)?.focalY as number | undefined) ?? 0 : 0,
             imagesCount: counts.images,
             videosCount: counts.videos,
         };
