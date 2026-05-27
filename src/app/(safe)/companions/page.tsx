@@ -3,6 +3,7 @@ import { getAuthedUser } from "@/lib/auth";
 import { listCompanions } from "@/lib/companions";
 import { isAdultAllowed } from "@/lib/ratings";
 import { Pagination } from "@/components/Pagination";
+import { CompanionFilterPanel } from "@/components/CompanionFilterPanel";
 import { MessageSquare } from "lucide-react";
 
 type SearchParams = {
@@ -29,23 +30,6 @@ type ApiItem = {
     videosCount?: number;
 };
 
-const CATEGORY_TAGS = [
-    { label: "All", value: "" },
-    { label: "Fantasy", value: "fantasy" },
-    { label: "Romance", value: "romance" },
-    { label: "Anime", value: "anime" },
-    { label: "Sci-Fi", value: "sci-fi" },
-    { label: "Adventure", value: "adventure" },
-    { label: "Comedy", value: "comedy" },
-    { label: "Mystery", value: "mystery" },
-    { label: "Horror", value: "horror" },
-    { label: "Slice of Life", value: "slice-of-life" },
-    { label: "Historical", value: "historical" },
-    { label: "Roleplay", value: "roleplay" },
-    { label: "Tsundere", value: "tsundere" },
-    { label: "Yandere", value: "yandere" },
-];
-
 function qs(params: Record<string, string | undefined>) {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {
@@ -54,6 +38,7 @@ function qs(params: Record<string, string | undefined>) {
     const s = p.toString();
     return s ? `?${s}` : "";
 }
+
 function CompanionCard({ c }: { c: ApiItem }) {
     const viewHref =
         c.contentRating === "ADULT"
@@ -133,8 +118,9 @@ export default async function SafeCompanionsPage({
     const minAge = sp.minAge ? Number(sp.minAge) : undefined;
     const maxAge = sp.maxAge ? Number(sp.maxAge) : undefined;
     const hasPhoto = sp.hasPhoto === "0" ? false : sp.hasPhoto === "all" ? undefined : true;
+    const hasPhotoParam = sp.hasPhoto ?? "1";
     const page = Math.max(1, Number(sp.page ?? "1") || 1);
-    const pageSize = 24;
+    const pageSize = 20;
 
     const data = await listCompanions({
         user,
@@ -155,8 +141,11 @@ export default async function SafeCompanionsPage({
         gender,
         minAge: minAge?.toString(),
         maxAge: maxAge?.toString(),
-        hasPhoto: sp.hasPhoto ?? "1",
+        hasPhoto: hasPhotoParam,
     };
+
+    const activeFilterCount = [q, tags, gender, minAge, maxAge].filter(Boolean).length
+        + (hasPhotoParam === "all" ? 1 : 0);
 
     return (
         <div className="space-y-5">
@@ -171,59 +160,43 @@ export default async function SafeCompanionsPage({
                         {allowAdult ? " · SAFE + 18+" : " · Safe for work"}
                     </p>
                 </div>
-                <a
-                    href="/companions/new"
-                    className="hidden sm:flex h-9 items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.06] px-4 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition"
-                >
-                    + Create
-                </a>
-            </div>
-
-            {/* Category pills — horizontal scroll */}
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {CATEGORY_TAGS.map((cat) => {
-                    const isActive = tags === cat.value;
-                    return (
-                        <a
-                            key={cat.value}
-                            href={`/companions${qs({ ...baseParams, tags: cat.value, page: "1" })}`}
-                            className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-150
-                ${isActive
-                                    ? "bg-white/[0.15] text-white"
-                                    : "text-white/50 hover:bg-white/[0.08] hover:text-white/80"
-                                }
-              `}
-                            style={isActive ? { border: "1px solid rgba(255,255,255,0.15)" } : {}}
-                        >
-                            {cat.label}
-                        </a>
-                    );
-                })}
-
-                {/* Search form inline */}
-                <form
-                    method="get"
-                    action="/companions"
-                    className="ml-auto flex shrink-0 items-center gap-2"
-                >
-                    <input type="hidden" name="hasPhoto" value={sp.hasPhoto ?? "1"} />
-                    <input
-                        name="q"
-                        defaultValue={q}
-                        placeholder="Search..."
-                        className="h-8 w-40 rounded-full border border-white/[0.10] bg-white/[0.06] px-3 text-xs text-white placeholder-white/30 outline-none focus:border-white/20 transition"
-                    />
-                    <button
-                        type="submit"
-                        className="h-8 rounded-full bg-white/[0.08] px-3 text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.12] transition"
+                <div className="flex items-center gap-2">
+                    <a
+                        href="/companions/new"
+                        className="hidden sm:flex h-9 items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.06] px-4 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition"
                     >
-                        Go
-                    </button>
-                </form>
+                        + Create
+                    </a>
+                    <CompanionFilterPanel
+                        basePath="/companions"
+                        currentQ={q}
+                        currentTags={tags}
+                        currentHasPhoto={hasPhotoParam}
+                        activeCount={activeFilterCount}
+                    />
+                </div>
             </div>
 
-            {/* Card grid */}
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {/* Active filter chips */}
+            {(q || tags) && (
+                <div className="flex flex-wrap gap-2">
+                    {q && (
+                        <span className="flex items-center gap-1.5 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/[0.08] px-3 py-1 text-xs text-fuchsia-300">
+                            &ldquo;{q}&rdquo;
+                            <a href={`/companions${qs({ ...baseParams, q: undefined, page: "1" })}`} className="text-fuchsia-400 hover:text-white">×</a>
+                        </span>
+                    )}
+                    {tags && (
+                        <span className="flex items-center gap-1.5 rounded-full border border-white/[0.10] bg-white/[0.05] px-3 py-1 text-xs text-white/60">
+                            {tags}
+                            <a href={`/companions${qs({ ...baseParams, tags: undefined, page: "1" })}`} className="text-white/40 hover:text-white">×</a>
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* Card grid — 5 columns max */}
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {data.items.map((c) => (
                     <CompanionCard key={c.id} c={c} />
                 ))}

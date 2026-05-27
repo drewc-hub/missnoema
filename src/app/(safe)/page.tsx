@@ -96,7 +96,7 @@ export default async function SafePage() {
                         </a>
                     </div>
 
-                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-3">
+                    <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
                         {featured.map((c) => {
                             const chatHref = `/chat?companion=${encodeURIComponent(c.slug)}`;
                             return (
@@ -120,21 +120,10 @@ export default async function SafePage() {
                                                 {c.name.slice(0, 1)}
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                                            <div className="truncate text-sm font-semibold text-white">{c.name}</div>
-                                            <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-300">{c.description}</div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-2">
+                                            <div className="truncate text-xs font-semibold text-white">{c.name}</div>
                                         </div>
-                                    </div>
-                                    <div className="flex min-h-12 flex-wrap gap-1.5 p-3">
-                                        {c.tags.slice(0, 3).map((tag) => (
-                                            <span
-                                                key={tag}
-                                                className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[11px] text-zinc-400"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
                                     </div>
                                 </a>
                             );

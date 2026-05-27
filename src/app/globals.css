@@ -25,7 +25,7 @@
 
   body {
     @apply text-zinc-100 antialiased;
-    background: linear-gradient(#000000 100%);
+    background: linear-gradient(#040d0d 100%);
     background-attachment: fixed;
     min-height: 100dvh;
     /* Prevent elastic bounce-scroll on iOS at the body level */
@@ -77,7 +77,7 @@
 .createSection {
   padding: 30px;
   border-radius: var(--radius-lg);
-  background: rgba(20, 20, 28, 0.6);
+  background: rgba(5, 18, 18, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(14px);
 }
@@ -96,10 +96,10 @@
 .generatorPanel {
   padding: 30px;
   backdrop-filter: blur(18px);
-  background: rgba(20, 20, 35, 0.6);
-  border: 1px solid rgba(120, 90, 255, 0.3);
+  background: rgba(5, 18, 18, 0.6);
+  border: 1px solid rgba(126, 207, 207, 0.3);
   border-radius: 16px;
-  box-shadow: 0 0 40px rgba(120, 90, 255, 0.15);
+  box-shadow: 0 0 40px rgba(126, 207, 207, 0.15);
   max-width: 650px;
   margin: 0 auto;
 }
@@ -109,8 +109,8 @@
   min-height: 100px;
   margin: 15px 0;
   padding: 14px;
-  background: rgba(10, 10, 20, 0.8);
-  border: 1px solid rgba(120, 90, 255, 0.4);
+  background: rgba(4, 13, 13, 0.8);
+  border: 1px solid rgba(126, 207, 207, 0.4);
   border-radius: 8px;
   color: white;
   resize: vertical;
@@ -128,14 +128,14 @@
 
 .progressBar {
   height: 8px;
-  background: rgba(40, 40, 60, 0.7);
+  background: rgba(5, 18, 18, 0.7);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #6a5acd, #a855f7);
+  background: linear-gradient(90deg, #1a7a7a, #e879a0);
   transition: width 0.4s ease;
 }
 
@@ -147,13 +147,13 @@
 .generatedImage {
   max-width: 100%;
   border-radius: 12px;
-  box-shadow: 0 0 30px rgba(120, 90, 255, 0.3);
+  box-shadow: 0 0 30px rgba(126, 207, 207, 0.3);
 }
 
 .generatedVideo {
   width: 100%;
   border-radius: 12px;
-  box-shadow: 0 0 40px rgba(120, 90, 255, 0.3);
+  box-shadow: 0 0 40px rgba(126, 207, 207, 0.3);
   margin-top: 20px;
 }
 
@@ -209,7 +209,7 @@
 
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #15151c 0%, #111118 100%);
+  background: linear-gradient(180deg, #061414 0%, #070f0f 100%);
   border-right: 1px solid var(--border-soft);
   padding: var(--space-3);
 }
@@ -228,7 +228,7 @@
 }
 
 .primaryBtn {
-  background: #6a5acd;
+  background: #1a7a7a;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -236,19 +236,19 @@
 .ghostBtn {
   background: transparent;
   color: #e6e6e6;
-  border: 1px solid #2f2f3a;
+  border: 1px solid #122525;
 }
 
 .ghostBtn:hover {
-  border-color: #444457;
+  border-color: #1e3535;
 }
 
 input,
 select {
   width: 100%;
   padding: 10px;
-  background: #101016;
-  border: 1px solid #2f2f3a;
+  background: #050f0f;
+  border: 1px solid #122525;
   color: #e6e6e6;
   border-radius: 10px;
 }
@@ -299,7 +299,7 @@ button {
   height: 46px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #2f2f3a;
+  border: 1px solid #122525;
 }
 
 .rpName {
@@ -313,7 +313,7 @@ button {
 
 .rpSection {
   padding-top: 10px;
-  border-top: 1px solid #25252d;
+  border-top: 1px solid #0f2020;
 }
 .rpLabel {
   font-size: 12px;
@@ -332,7 +332,7 @@ button {
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid #2f2f3a;
+  border: 1px solid #122525;
   opacity: 0.85;
 }
 
@@ -346,8 +346,8 @@ button {
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #101016;
-  border: 1px solid #2f2f3a;
+  background: #050f0f;
+  border: 1px solid #122525;
 }
 
 .rpBtns {
