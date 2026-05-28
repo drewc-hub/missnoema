@@ -1,7 +1,12 @@
 import { AdultNoemaAvatarVideo } from "@/components/AdultNoemaAvatarVideo";
+import { CompanionHeroSlideshow } from "@/components/CompanionHeroSlideshow";
+import { listSlideCompanions } from "@/lib/companions";
+import { getAuthedUser } from "@/lib/auth";
 
+export default async function AdultPage() {
+    const user = await getAuthedUser();
+    const slides = await listSlideCompanions({ user, includeAdult: true, limit: 6 });
 
-export default function AdultPage() {
     return (
         <main className="min-h-screen overflow-hidden rounded-2xl border border-zinc-900 bg-black text-white">
             {/* HERO */}
@@ -77,6 +82,21 @@ export default function AdultPage() {
                     </div>
                 </div>
             </section>
+
+            {/* FEATURED COMPANIONS SLIDESHOW */}
+            {slides.length > 0 && (
+                <section className="mx-auto max-w-7xl px-6 pt-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-bold uppercase tracking-widest text-white/40">
+                            Featured Companions
+                        </h2>
+                        <a href="/adult/companions" className="text-xs text-white/30 hover:text-white/60 transition">
+                            View all →
+                        </a>
+                    </div>
+                    <CompanionHeroSlideshow items={slides} />
+                </section>
+            )}
 
             {/* STORY */}
             <section className="mx-auto max-w-7xl px-6 py-24">

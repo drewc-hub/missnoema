@@ -412,6 +412,22 @@ button {
 }
 
 /* ============================================================
+   SLIDESHOW — animated grid background
+   ============================================================ */
+@keyframes grid-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 48px 48px; }
+}
+
+.slideshow-grid {
+  background-image:
+    linear-gradient(rgba(168, 85, 247, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 85, 247, 0.055) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-drift 12s linear infinite;
+}
+
+/* ============================================================
    TOUCH DEVICES — pointer:coarse targets finger-driven screens
    (phones AND tablets, regardless of width)
    ============================================================ */
