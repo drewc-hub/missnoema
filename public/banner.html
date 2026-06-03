@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NOEMA Banner</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; display: flex; flex-direction: column; gap: 20px; padding: 30px; align-items: center; }
+  body > p { color: #666; font-family: sans-serif; font-size: 12px; }
+
+  /* ─── BANNER ─── */
+  .banner {
+    width: 1200px;
+    height: 240px;
+    background: #04040f;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  /* Background circuit texture */
+  .banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 20% 50%, rgba(59,130,246,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 300px 300px at 5% 80%, rgba(139,92,246,0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Fade gradient so characters blend into dark bg on left */
+  .char-fade {
+    position: absolute;
+    top: 0; right: 0;
+    width: 750px;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      #04040f 0%,
+      transparent 18%,
+      transparent 85%,
+      #04040f 100%
+    );
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* Bottom fade so characters don't hard-cut */
+  .char-fade-bottom {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 750px;
+    height: 60px;
+    background: linear-gradient(to top, #04040f 0%, transparent 100%);
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  /* ─── LEFT CONTENT ─── */
+  .left {
+    position: relative;
+    z-index: 10;
+    padding-left: 52px;
+    flex: 0 0 480px;
+  }
+
+  .noema-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  .noema-logo svg.icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+
+  .noema-logo svg.wordmark {
+    width: 180px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+
+  .tagline {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: rgba(180,200,255,0.75);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    margin-left: 2px;
+  }
+
+  .headline {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #fff;
+    margin-bottom: 6px;
+    text-shadow: 0 0 30px rgba(59,130,246,0.5);
+  }
+
+  .headline span {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .sub {
+    font-size: 12.5px;
+    color: rgba(180,200,255,0.55);
+    letter-spacing: 0.5px;
+    margin-bottom: 22px;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 0 20px rgba(59,130,246,0.5), 0 0 40px rgba(139,92,246,0.25);
+  }
+
+  .cta::after {
+    content: '→';
+    font-size: 15px;
+  }
+
+  /* ─── DIVIDER GLOW LINE ─── */
+  .divider {
+    position: absolute;
+    left: 440px;
+    top: 10%;
+    width: 1px;
+    height: 80%;
+    background: linear-gradient(to bottom, transparent, rgba(99,102,241,0.5) 30%, rgba(139,92,246,0.5) 70%, transparent);
+    z-index: 7;
+  }
+
+  /* ─── CHARACTERS ─── */
+  .chars {
+    position: absolute;
+    right: 0;
+    bottom: -10px;
+    height: 115%;
+    display: flex;
+    align-items: flex-end;
+    z-index: 4;
+    gap: 0;
+  }
+
+  .chars img {
+    height: 100%;
+    width: auto;
+    object-fit: cover;
+    object-position: top center;
+    filter: drop-shadow(-4px 0 12px rgba(59,130,246,0.35));
+  }
+
+  /* Each character gets a slightly different sizing so they feel layered */
+  .chars img:nth-child(1) { height: 90%;  margin-right: -35px; filter: brightness(0.75) drop-shadow(-4px 0 10px rgba(139,92,246,0.4)); }
+  .chars img:nth-child(2) { height: 98%;  margin-right: -25px; filter: brightness(0.85) drop-shadow(-4px 0 12px rgba(59,130,246,0.4)); }
+  .chars img:nth-child(3) { height: 105%; margin-right: -20px; filter: drop-shadow(-4px 0 14px rgba(59,130,246,0.5)); }
+  .chars img:nth-child(4) { height: 115%; filter: drop-shadow(-2px 0 18px rgba(139,92,246,0.6)); }
+
+  /* Subtle scan-line texture over whole banner */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.04) 3px,
+      rgba(0,0,0,0.04) 4px
+    );
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* ─── CORNER ACCENTS ─── */
+  .corner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: rgba(99,102,241,0.6);
+    border-style: solid;
+    z-index: 15;
+  }
+  .corner.tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+  .corner.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+  .corner.bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+  .corner.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+</style>
+</head>
+<body>
+
+<p>1200 × 240 — wide banner</p>
+
+<div class="banner">
+  <!-- corner accents -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <!-- scanlines -->
+  <div class="scanlines"></div>
+
+  <!-- vertical divider -->
+  <div class="divider"></div>
+
+  <!-- left brand content -->
+  <div class="left">
+    <div class="noema-logo">
+      <!-- icon -->
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="ig" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+        <!-- bowl shape -->
+        <g fill="none" stroke="url(#ig)" stroke-width="5" stroke-linecap="round">
+          <path d="M 20,55 Q 50,80 80,55"/>
+          <path d="M 15,45 Q 50,75 85,45"/>
+          <path d="M 25,35 Q 50,55 75,35"/>
+          <path d="M 30,27 Q 50,40 70,27"/>
+          <path d="M 35,20 Q 50,30 65,20"/>
+          <path d="M 20,55 Q 50,65 80,55 Q 85,55 82,70 Q 70,82 30,82 Q 18,70 20,55"/>
+          <!-- sparkle -->
+          <path d="M 50,8 L 53,14 L 59,14 L 54,18 L 56,24 L 50,20 L 44,24 L 46,18 L 41,14 L 47,14 Z" stroke-width="2" fill="url(#ig)" stroke="none"/>
+        </g>
+      </svg>
+      <!-- wordmark -->
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56">
+        <defs>
+          <linearGradient id="gw" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+          <linearGradient id="gt" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.8"/>
+          </linearGradient>
+        </defs>
+        <path d="M 12,10 C 60,-8 175,-8 218,10" fill="none" stroke="url(#gt)" stroke-width="1.5" stroke-linecap="round"/>
+        <text x="8" y="48" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-weight="600" font-size="40" letter-spacing="6" fill="url(#gw)">NOEMA</text>
+      </svg>
+    </div>
+
+    <div class="tagline">AI Companion Universe</div>
+
+    <div class="headline">Imagine Anyone.<br><span>Meet Them Here.</span></div>
+    <div class="sub">Generate · Chat · Explore — No limits on your imagination.</div>
+
+    <a class="cta" href="#">Try for Free</a>
+  </div>
+
+  <!-- characters (back to front: elf, nun, mech, blue android) -->
+  <div class="chars">
+    <img src="images/banner/char-elf.png"          alt="">
+    <img src="images/banner/char-nun.png"           alt="">
+    <img src="images/banner/char-mech.jpg"          alt="">
+    <img src="images/banner/char-android-blue.jpg"  alt="">
+  </div>
+
+  <!-- fade overlays -->
+  <div class="char-fade"></div>
+  <div class="char-fade-bottom"></div>
+</div>
+
+<p>728 × 200 — leaderboard / mid-size</p>
+
+<!-- 728px leaderboard variant -->
+<div class="banner" style="width:728px; height:200px;">
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div class="scanlines"></div>
+  <div class="divider" style="left:280px;"></div>
+  <div class="left" style="flex: 0 0 300px; padding-left: 30px;">
+    <div class="noema-logo" style="margin-bottom:6px;">
+      <svg class="icon" style="width:32px;height:32px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <defs><linearGradient id="ig2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+        <g fill="none" stroke="url(#ig2)" stroke-width="5" stroke-linecap="round">
+          <path d="M 20,55 Q 50,80 80,55"/><path d="M 15,45 Q 50,75 85,45"/><path d="M 25,35 Q 50,55 75,35"/>
+          <path d="M 30,27 Q 50,40 70,27"/><path d="M 35,20 Q 50,30 65,20"/>
+          <path d="M 20,55 Q 50,65 80,55 Q 85,55 82,70 Q 70,82 30,82 Q 18,70 20,55"/>
+          <path d="M 50,8 L 53,14 L 59,14 L 54,18 L 56,24 L 50,20 L 44,24 L 46,18 L 41,14 L 47,14 Z" stroke-width="2" fill="url(#ig2)" stroke="none"/>
+        </g>
+      </svg>
+      <svg class="wordmark" style="width:130px;height:32px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56">
+        <defs>
+          <linearGradient id="gw2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient>
+          <linearGradient id="gt2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/><stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.8"/></linearGradient>
+        </defs>
+        <path d="M 12,10 C 60,-8 175,-8 218,10" fill="none" stroke="url(#gt2)" stroke-width="1.5" stroke-linecap="round"/>
+        <text x="8" y="48" font-family="system-ui,-apple-system,sans-serif" font-weight="600" font-size="40" letter-spacing="6" fill="url(#gw2)">NOEMA</text>
+      </svg>
+    </div>
+    <div class="tagline" style="font-size:11px;margin-bottom:12px;">AI Companion Universe</div>
+    <div class="headline" style="font-size:19px;margin-bottom:4px;">Imagine Anyone.<br><span>Meet Them Here.</span></div>
+    <div class="sub" style="font-size:11px;margin-bottom:14px;">Generate · Chat · Explore</div>
+    <a class="cta" style="font-size:11px;padding:8px 18px;" href="#">Try for Free</a>
+  </div>
+  <div class="chars">
+    <img src="images/banner/char-elf.png"         alt="">
+    <img src="images/banner/char-nun.png"          alt="">
+    <img src="images/banner/char-mech.jpg"         alt="">
+    <img src="images/banner/char-android-blue.jpg" alt="">
+  </div>
+  <div class="char-fade" style="width:500px;"></div>
+  <div class="char-fade-bottom" style="width:500px;"></div>
+</div>
+
+</body>
+</html>
