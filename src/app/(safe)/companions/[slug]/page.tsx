@@ -1,6 +1,14 @@
 import { redirect } from "next/navigation";
 import { ContentRating, Visibility } from "@prisma/client";
-import { ArrowLeft, BadgeCheck, Compass, ImageIcon, MessageCircle, Shield, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Compass,
+  ImageIcon,
+  MessageCircle,
+  Shield,
+  Sparkles,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { isAdultAllowed } from "@/lib/ratings";
@@ -95,11 +103,12 @@ export default async function SafeCompanionDetailPage({
     (companion.ownerId ? "Creator" : "Noema");
   const primaryAsset = companion.assets[0];
   const avatarImageUrl =
-    typeof profile.avatarImageUrl === "string" && profile.avatarImageUrl.trim().length > 0
+    typeof profile.avatarImageUrl === "string" &&
+    profile.avatarImageUrl.trim().length > 0
       ? profile.avatarImageUrl.trim()
       : null;
   const primaryUrl = primaryAsset
-    ? primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`
+    ? (primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`)
     : avatarImageUrl;
   const stats =
     profile.stats && typeof profile.stats === "object"
@@ -150,7 +159,9 @@ export default async function SafeCompanionDetailPage({
               <h1 className="mt-5 text-4xl font-black tracking-tight text-white">
                 {companion.name}
               </h1>
-              <p className="mt-4 text-sm leading-7 text-zinc-300">{companion.description}</p>
+              <p className="mt-4 text-sm leading-7 text-zinc-300">
+                {companion.description}
+              </p>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {companion.tags.slice(0, 10).map((tag) => (
@@ -173,14 +184,18 @@ export default async function SafeCompanionDetailPage({
                 Back
               </a>
               <a
-                href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
+                href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
               >
                 <MessageCircle className="h-4 w-4" />
-                Chat
+                Roleplay
               </a>
               <a
-                href={isOwner ? `/companions/${companion.slug}/edit` : "/marketplace"}
+                href={
+                  isOwner
+                    ? `/companions/${companion.slug}/edit`
+                    : "/marketplace"
+                }
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
               >
                 <Compass className="h-4 w-4" />
@@ -202,15 +217,20 @@ export default async function SafeCompanionDetailPage({
                   <p className="mt-1">{profile.scene}</p>
                 </div>
               ) : null}
-              {typeof profile.personality === "string" && profile.personality ? (
+              {typeof profile.personality === "string" &&
+              profile.personality ? (
                 <div>
-                  <div className="text-xs uppercase text-zinc-600">Personality</div>
+                  <div className="text-xs uppercase text-zinc-600">
+                    Personality
+                  </div>
                   <p className="mt-1">{profile.personality}</p>
                 </div>
               ) : null}
               {typeof profile.background === "string" && profile.background ? (
                 <div>
-                  <div className="text-xs uppercase text-zinc-600">Background</div>
+                  <div className="text-xs uppercase text-zinc-600">
+                    Background
+                  </div>
                   <p className="mt-1">{profile.background}</p>
                 </div>
               ) : null}
@@ -219,9 +239,14 @@ export default async function SafeCompanionDetailPage({
                   <div className="text-xs uppercase text-zinc-600">Stats</div>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {stats.map(([label, value]) => (
-                      <div key={label} className="rounded-md border border-zinc-800 bg-black px-2 py-1.5 text-xs">
+                      <div
+                        key={label}
+                        className="rounded-md border border-zinc-800 bg-black px-2 py-1.5 text-xs"
+                      >
                         <div className="text-zinc-500">{label}</div>
-                        <div className="font-semibold text-zinc-200">{Math.round(Number(value))}</div>
+                        <div className="font-semibold text-zinc-200">
+                          {Math.round(Number(value))}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -233,7 +258,10 @@ export default async function SafeCompanionDetailPage({
           {companion.assets.length > 1 ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {companion.assets.slice(1).map((asset) => (
-                <div key={asset.id} className="aspect-[4/3] overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
+                <div
+                  key={asset.id}
+                  className="aspect-[4/3] overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={asset.publicUrl ?? `/media/${asset.id}`}
@@ -249,23 +277,33 @@ export default async function SafeCompanionDetailPage({
 
         <aside className="space-y-4">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-            <h2 className="text-sm font-semibold text-white">Marketplace stats</h2>
+            <h2 className="text-sm font-semibold text-white">
+              Marketplace stats
+            </h2>
             <div className="mt-4 grid gap-3 text-sm">
               <div className="flex justify-between gap-3">
                 <span className="text-zinc-500">Views</span>
-                <span className="font-semibold text-zinc-100">{companion.views.toLocaleString()}</span>
+                <span className="font-semibold text-zinc-100">
+                  {companion.views.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-zinc-500">Saves</span>
-                <span className="font-semibold text-zinc-100">{companion.saves.toLocaleString()}</span>
+                <span className="font-semibold text-zinc-100">
+                  {companion.saves.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-zinc-500">Chats</span>
-                <span className="font-semibold text-zinc-100">{companion._count.conversations}</span>
+                <span className="font-semibold text-zinc-100">
+                  {companion._count.conversations}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-zinc-500">Media</span>
-                <span className="font-semibold text-zinc-100">{companion._count.assets}</span>
+                <span className="font-semibold text-zinc-100">
+                  {companion._count.assets}
+                </span>
               </div>
             </div>
           </div>
@@ -276,8 +314,8 @@ export default async function SafeCompanionDetailPage({
               Safe listing
             </div>
             <p className="mt-2">
-              This companion is listed in the safe marketplace and can be used in
-              chat or discovery.
+              This companion is listed in the safe marketplace and can be used
+              in roleplay scenes, chat, or discovery.
             </p>
           </div>
         </aside>

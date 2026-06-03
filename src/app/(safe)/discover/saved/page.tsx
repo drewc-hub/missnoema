@@ -17,7 +17,8 @@ export default async function SavedDiscoveriesPage() {
             Saved companions
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
-            Log in to keep a persistent shelf of companions you save while discovering.
+            Log in to keep a persistent shelf of companions you save while
+            discovering.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <a
@@ -95,8 +96,8 @@ export default async function SavedDiscoveriesPage() {
               Your saved companions
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Return to companions you marked while discovering, then start a chat when
-              one feels right.
+              Return to companions you marked while discovering, then start a
+              chat when one feels right.
             </p>
           </div>
           <a
@@ -113,7 +114,9 @@ export default async function SavedDiscoveriesPage() {
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {companions.map((companion) => {
             const asset = companion.assets[0];
-            const thumbnailUrl = asset ? asset.publicUrl ?? `/media/${asset.id}` : null;
+            const thumbnailUrl = asset
+              ? (asset.publicUrl ?? `/media/${asset.id}`)
+              : null;
             const savedAt = savedAtByCompanionId.get(companion.id);
 
             return (
@@ -122,7 +125,7 @@ export default async function SavedDiscoveriesPage() {
                 className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
               >
                 <a
-                  href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
+                  href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
                   className="group block"
                 >
                   <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
@@ -141,7 +144,9 @@ export default async function SavedDiscoveriesPage() {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <div className="text-lg font-semibold text-white">{companion.name}</div>
+                      <div className="text-lg font-semibold text-white">
+                        {companion.name}
+                      </div>
                       <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-300">
                         {companion.description}
                       </div>
@@ -175,11 +180,11 @@ export default async function SavedDiscoveriesPage() {
                   </div>
 
                   <a
-                    href={`/chat?companion=${encodeURIComponent(companion.slug)}`}
+                    href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
                     className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    Chat
+                    Roleplay
                   </a>
                 </div>
               </article>
@@ -191,7 +196,9 @@ export default async function SavedDiscoveriesPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-black text-zinc-300">
             <Bookmark className="h-5 w-5" />
           </div>
-          <h2 className="mt-5 text-2xl font-semibold text-white">No saves yet</h2>
+          <h2 className="mt-5 text-2xl font-semibold text-white">
+            No saves yet
+          </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
             Save companions from the discovery deck and they will appear here.
           </p>
