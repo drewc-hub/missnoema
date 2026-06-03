@@ -30,7 +30,17 @@ type SlideItem = {
     focalY: number;
 };
 
-type FilmSlide = { type: "banner" } | (SlideItem & { type: "companion" });
+type VideoSlide = {
+    type: "video";
+    id: string;
+    src: string;
+    title: string;
+};
+
+type FilmSlide =
+    | { type: "banner" }
+    | VideoSlide
+    | (SlideItem & { type: "companion" });
 
 function BannerSlide() {
     return (
@@ -102,6 +112,23 @@ function BannerSlide() {
                     </a>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function FeatureVideoSlide({ slide }: { slide: VideoSlide }) {
+    return (
+        <div className="relative h-full w-full overflow-hidden bg-black">
+            <video
+                src={slide.src}
+                aria-label={slide.title}
+                className="h-full w-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+            />
         </div>
     );
 }
@@ -182,6 +209,12 @@ export function CompanionHeroSlideshow({ items }: { items: SlideItem[] }) {
 
     const allSlides: FilmSlide[] = [
         { type: "banner" },
+        {
+            type: "video",
+            id: "other-feats",
+            src: "/images/other-feats.mp4",
+            title: "Noema AI features",
+        },
         ...items.map((item) => ({ ...item, type: "companion" as const })),
     ];
 
@@ -263,10 +296,12 @@ export function CompanionHeroSlideshow({ items }: { items: SlideItem[] }) {
                     >
                         {slide.type === "banner" ? (
                             <BannerSlide />
+                        ) : slide.type === "video" ? (
+                            <FeatureVideoSlide slide={slide} />
                         ) : (
                             <CompanionSlide
                                 item={slide}
-                                feature={NOEMA_FEATURES[(index - 1) % NOEMA_FEATURES.length]}
+                                feature={NOEMA_FEATURES[(index - 2) % NOEMA_FEATURES.length]}
                             />
                         )}
                     </div>
