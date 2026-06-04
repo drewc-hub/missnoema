@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 type SpeakerType = "USER" | "COMPANION" | "NARRATOR" | "SYSTEM" | "IMAGE";
@@ -91,7 +91,7 @@ export default function RpChatWorkspace({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesRef = useRef<HTMLElement | null>(null);
 
   const sceneTitle = useMemo(() => {
     if (!scene) return "Roleplay Scene";
@@ -113,6 +113,16 @@ export default function RpChatWorkspace({
 
     return notes.slice(0, 3);
   }, [memory?.latestSceneSummary, memory?.sessionSummary, scene?.imagePrompt]);
+
+  useEffect(() => {
+    const panel = messagesRef.current;
+    if (!panel) return;
+
+    panel.scrollTo({
+      top: panel.scrollHeight,
+      behavior: messages.length > initialMessages.length ? "smooth" : "auto",
+    });
+  }, [messages, pending, initialMessages.length]);
 
   async function sendAction() {
     const content = input.trim();
@@ -155,9 +165,6 @@ export default function RpChatWorkspace({
         setScene(data.scene);
       }
 
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
     } catch (err) {
       console.error(err);
 
@@ -175,7 +182,7 @@ export default function RpChatWorkspace({
   }
 
   return (
-    <main className="relative h-screen overflow-hidden bg-[#050816] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[url('/images/rp-dungeon-bg.png')] bg-cover bg-center opacity-[0.16]"
@@ -184,15 +191,15 @@ export default function RpChatWorkspace({
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[#050816]/70"
       />
-      <div className="relative z-10 mx-auto grid h-full w-full max-w-7xl gap-4 px-4 py-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
         {storyPanel ? (
-          <aside className="min-h-0 lg:h-full">
+          <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
             {storyPanel}
           </aside>
         ) : null}
 
-        <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <header className="mb-3 max-h-[38vh] shrink-0 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl">
+        <div className="flex min-h-screen min-w-0 flex-col">
+          <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
             <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
               Noema Roleplay
             </p>
@@ -300,17 +307,17 @@ export default function RpChatWorkspace({
             {companionPicker}
           </header>
 
-          <section className="mb-3 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
+          <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
           {scene?.imageUrl ? (
-            <div className="flex max-h-72 min-h-44 items-center justify-center bg-black">
+            <div className="flex max-h-[30rem] min-h-72 items-center justify-center bg-black">
               <img
                 src={scene.imageUrl}
                 alt={scene.title}
-                className="max-h-72 w-full object-contain"
+                className="max-h-[30rem] w-full object-contain"
               />
             </div>
           ) : (
-            <div className="flex h-44 items-center justify-center bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950">
+            <div className="flex h-72 items-center justify-center bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950">
               <div className="max-w-xl px-6 text-center">
                 <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
                   Current Scene
@@ -325,12 +332,15 @@ export default function RpChatWorkspace({
             </div>
           )}
 
-          <div className="border-t border-white/10 px-5 py-3">
+          <div className="border-t border-white/10 px-5 py-4">
             <h2 className="text-lg font-semibold">{sceneTitle}</h2>
           </div>
           </section>
 
-          <section className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <section
+            ref={messagesRef}
+            className="h-[36rem] space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.03] p-4"
+          >
           {messages.length === 0 && (
             <div className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-slate-300">
               Begin the story with an action like: “I enter the ruined chapel.”
@@ -347,10 +357,9 @@ export default function RpChatWorkspace({
             </div>
           )}
 
-          <div ref={bottomRef} />
           </section>
 
-          <footer className="mt-3 shrink-0 rounded-3xl border border-white/10 bg-black/40 p-4">
+          <footer className="mt-4 rounded-3xl border border-white/10 bg-black/40 p-4">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -361,7 +370,7 @@ export default function RpChatWorkspace({
               }
             }}
             placeholder="Describe your action..."
-            className="min-h-24 max-h-32 w-full resize-none overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+            className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
           />
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
