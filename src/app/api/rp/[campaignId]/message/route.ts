@@ -65,6 +65,9 @@ async function generateSceneImage(prompt: string) {
     return await generateSafeImage(
       [
         "Cinematic roleplay scene illustration.",
+        "Full-body, head-to-toe framing for visible characters.",
+        "Keep every face, head, feet, and important object fully inside the frame with generous safe margins.",
+        "Wide or full-frame composition, not a close-up portrait, not cropped, not zoomed in.",
         "No text, no watermark, no UI elements.",
         "Detailed environment, clear subject, dramatic lighting.",
         prompt,

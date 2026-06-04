@@ -125,11 +125,13 @@ export default function RpChatWorkspace({
 
         <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
           {scene?.imageUrl ? (
-            <img
-              src={scene.imageUrl}
-              alt={scene.title}
-              className="h-72 w-full object-cover"
-            />
+            <div className="flex max-h-[30rem] min-h-72 items-center justify-center bg-black">
+              <img
+                src={scene.imageUrl}
+                alt={scene.title}
+                className="max-h-[30rem] w-full object-contain"
+              />
+            </div>
           ) : (
             <div className="flex h-72 items-center justify-center bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950">
               <div className="max-w-xl px-6 text-center">
@@ -224,11 +226,13 @@ function MessageBubble({ message }: { message: RpMessage }) {
   if (message.speakerType === "IMAGE" && message.imageUrl) {
     return (
       <article className="overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-500/10">
-        <img
-          src={message.imageUrl}
-          alt={message.content || "Generated roleplay scene"}
-          className="max-h-[520px] w-full object-cover"
-        />
+        <div className="flex max-h-[640px] items-center justify-center bg-black">
+          <img
+            src={message.imageUrl}
+            alt={message.content || "Generated roleplay scene"}
+            className="max-h-[640px] w-full object-contain"
+          />
+        </div>
         <div className="border-t border-white/10 px-5 py-3">
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
             Scene Image
