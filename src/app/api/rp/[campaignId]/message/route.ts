@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { chatCompletion } from "@/lib/together";
+import { generateSafeImage } from "@/lib/gen/openai-image";
 import { SpeakerType } from "@prisma/client";
 
 export const runtime = "nodejs";
+
+const RP_IMAGE_TURN_INTERVAL = 4;
 
 type RpAIResponse = {
   narrator: string;
@@ -32,6 +35,62 @@ function safeJsonParse(text: string): RpAIResponse {
       sceneChanged: false,
     };
   }
+}
+
+async function shouldIllustrateScene(campaignId: string) {
+  const latestIllustratedScene = await prisma.rpScene.findFirst({
+    where: {
+      campaignId,
+      imageUrl: { not: null },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+
+  if (!latestIllustratedScene) return true;
+
+  const userTurnsSinceLastImage = await prisma.rpMessage.count({
+    where: {
+      campaignId,
+      speakerType: SpeakerType.USER,
+      createdAt: { gt: latestIllustratedScene.createdAt },
+    },
+  });
+
+  return userTurnsSinceLastImage >= RP_IMAGE_TURN_INTERVAL;
+}
+
+async function generateSceneImage(prompt: string) {
+  try {
+    return await generateSafeImage(
+      [
+        "Cinematic roleplay scene illustration.",
+        "No text, no watermark, no UI elements.",
+        "Detailed environment, clear subject, dramatic lighting.",
+        prompt,
+      ].join(" "),
+    );
+  } catch (error) {
+    console.error("RP scene image generation failed:", error);
+    return null;
+  }
+}
+
+function buildFallbackImagePrompt(args: {
+  campaignTitle: string;
+  genre?: string | null;
+  tone?: string | null;
+  narrator?: string;
+  playerAction: string;
+}) {
+  return [
+    `Campaign: ${args.campaignTitle}.`,
+    `Genre: ${args.genre ?? "roleplay"}.`,
+    `Tone: ${args.tone ?? "cinematic"}.`,
+    args.narrator
+      ? `Current scene: ${args.narrator}`
+      : `Player action: ${args.playerAction}`,
+  ].join(" ");
 }
 
 export async function POST(
@@ -213,17 +272,55 @@ ${content}
 
     let scene = null;
 
-    if (parsed.sceneChanged && parsed.imagePrompt?.trim()) {
+    const shouldGenerateImage = await shouldIllustrateScene(campaign.id);
+    const illustrationPrompt =
+      parsed.imagePrompt?.trim() ||
+      (shouldGenerateImage
+        ? buildFallbackImagePrompt({
+            campaignTitle: campaign.title,
+            genre: campaign.genre,
+            tone: campaign.tone,
+            narrator: parsed.narrator,
+            playerAction: content,
+          })
+        : "");
+
+    if ((parsed.sceneChanged || shouldGenerateImage) && illustrationPrompt) {
+      const imageUrl = shouldGenerateImage
+        ? await generateSceneImage(illustrationPrompt)
+        : null;
+
       scene = await prisma.rpScene.create({
         data: {
           campaignId: campaign.id,
-          title: parsed.newSceneTitle || "New Scene",
+          title:
+            parsed.newSceneTitle ||
+            (parsed.sceneChanged ? "New Scene" : "Story Moment"),
           location: parsed.newSceneLocation || null,
           mood: parsed.newSceneMood || null,
           summary: parsed.narrator || null,
-          imagePrompt: parsed.imagePrompt,
+          imagePrompt: illustrationPrompt,
+          imageUrl,
         },
       });
+
+      if (imageUrl) {
+        const imageMessage = await prisma.rpMessage.create({
+          data: {
+            campaignId: campaign.id,
+            sessionId: session.id,
+            speakerType: SpeakerType.IMAGE,
+            content: scene.title,
+            imageUrl,
+            metadata: {
+              sceneId: scene.id,
+              imagePrompt: illustrationPrompt,
+            },
+          },
+        });
+
+        createdMessages.push(imageMessage);
+      }
     }
 
     await prisma.rpSession.update({

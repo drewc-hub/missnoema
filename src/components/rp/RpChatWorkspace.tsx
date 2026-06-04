@@ -217,6 +217,26 @@ export default function RpChatWorkspace({
 }
 
 function MessageBubble({ message }: { message: RpMessage }) {
+  if (message.speakerType === "IMAGE" && message.imageUrl) {
+    return (
+      <article className="overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-500/10">
+        <img
+          src={message.imageUrl}
+          alt={message.content || "Generated roleplay scene"}
+          className="max-h-[520px] w-full object-cover"
+        />
+        <div className="border-t border-white/10 px-5 py-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+            Scene Image
+          </p>
+          {message.content ? (
+            <p className="mt-1 text-sm text-emerald-50">{message.content}</p>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   if (message.speakerType === "NARRATOR") {
     return (
       <article className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-5">

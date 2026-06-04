@@ -7,5 +7,8 @@ export async function generateSafeImage(prompt: string) {
         size: "1024x1024",
     });
 
-    return result.data?.[0]?.url ?? null;
+    const image = result.data?.[0];
+    return image?.url ?? (
+        image?.b64_json ? `data:image/png;base64,${image.b64_json}` : null
+    );
 }
