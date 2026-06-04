@@ -71,6 +71,7 @@ model Companion {
   GenerationJob                                                          GenerationJob[]
   marketplaceListings                                                    MarketplaceListing?
   companion_embeddings                                                   companion_embeddings?
+  rpCampaignCharacters                                                   RpCampaignCharacter[]
 
   @@index([createdAt])
   @@index([featuredRank])
@@ -1280,7 +1281,23 @@ model RpCampaign {
   messages    RpMessage[]
   scenes      RpScene[]
   sessions    RpSession[]
+  characters  RpCampaignCharacter[]
 
+  @@schema("public")
+}
+
+model RpCampaignCharacter {
+  id          String     @id @default(cuid())
+  campaignId  String
+  companionId String
+  role        String     @default("cast")
+  joinedAt    DateTime   @default(now())
+  campaign    RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  companion   Companion  @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, companionId])
+  @@index([campaignId, joinedAt])
+  @@index([companionId])
   @@schema("public")
 }
 

@@ -22,9 +22,41 @@ type RpScene = {
   imageUrl?: string | null;
 };
 
+type RpCastMember = {
+  id: string;
+  role: string;
+  joinedAt: string;
+  companion: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+    archetype?: string | null;
+    profile: unknown;
+    scenario?: string | null;
+    greeting?: string | null;
+    tags: string[];
+    imageUrl?: string | null;
+    focalX?: number | null;
+    focalY?: number | null;
+  };
+};
+
+type RpMemory = {
+  campaignTitle: string;
+  genre?: string | null;
+  tone?: string | null;
+  sessionSummary?: string | null;
+  latestSceneSummary?: string | null;
+  messageCount: number;
+  lastActiveAt?: string | null;
+};
+
 type Props = {
   campaignId: string;
   title: string;
+  cast?: RpCastMember[];
+  memory?: RpMemory;
   storyPanel?: ReactNode;
   companionPicker?: ReactNode;
   initialMessages?: RpMessage[];
@@ -47,6 +79,8 @@ const quickActions = [
 export default function RpChatWorkspace({
   campaignId,
   title,
+  cast = [],
+  memory,
   storyPanel = null,
   companionPicker = null,
   initialMessages = [],
@@ -63,6 +97,22 @@ export default function RpChatWorkspace({
     if (!scene) return "Roleplay Scene";
     return [scene.title, scene.location, scene.mood].filter(Boolean).join(" · ");
   }, [scene]);
+
+  const continuityNotes = useMemo(() => {
+    const notes = [
+      memory?.sessionSummary
+        ? { label: "Session memory", value: memory.sessionSummary }
+        : null,
+      memory?.latestSceneSummary
+        ? { label: "Latest scene", value: memory.latestSceneSummary }
+        : null,
+      scene?.imagePrompt
+        ? { label: "Visual continuity", value: scene.imagePrompt }
+        : null,
+    ].filter(Boolean) as { label: string; value: string }[];
+
+    return notes.slice(0, 3);
+  }, [memory?.latestSceneSummary, memory?.sessionSummary, scene?.imagePrompt]);
 
   async function sendAction() {
     const content = input.trim();
@@ -150,6 +200,103 @@ export default function RpChatWorkspace({
             <p className="mt-2 text-sm text-slate-300">
               Narrator-driven story mode with companion reactions and scene art.
             </p>
+            <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+              <section className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">
+                      Cast
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Active characters in this story.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
+                    {cast.length}
+                  </span>
+                </div>
+                {cast.length > 0 ? (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {cast.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex min-w-52 gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-2"
+                      >
+                        <div className="h-14 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-900">
+                          {member.companion.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={member.companion.imageUrl}
+                              alt={`${member.companion.name} portrait`}
+                              className="h-full w-full object-cover"
+                              style={{
+                                objectPosition: `${member.companion.focalX ?? 50}% ${member.companion.focalY ?? 0}%`,
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-600">
+                              {member.companion.name.slice(0, 1)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="line-clamp-1 text-sm font-semibold text-white">
+                            {member.companion.name}
+                          </div>
+                          <div className="mt-0.5 text-[11px] capitalize text-blue-200">
+                            {member.role}
+                          </div>
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-slate-500">
+                            {member.companion.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-dashed border-white/10 p-3 text-xs text-slate-500">
+                    Add one or more characters to make this a multi-character RP.
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">
+                      Memory visibility
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      What the narrator is carrying forward.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
+                    {memory?.messageCount ?? messages.length} turns
+                  </span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {continuityNotes.length > 0 ? (
+                    continuityNotes.map((note) => (
+                      <div
+                        key={note.label}
+                        className="rounded-xl border border-white/10 bg-white/[0.04] p-2"
+                      >
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">
+                          {note.label}
+                        </div>
+                        <div className="mt-1 line-clamp-3 text-xs leading-5 text-slate-400">
+                          {note.value}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-white/10 p-3 text-xs text-slate-500">
+                      Story memory appears after scenes and summaries are created.
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
             {companionPicker}
           </header>
 

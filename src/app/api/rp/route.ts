@@ -18,6 +18,12 @@ function textFromProfile(
   return undefined;
 }
 
+function castJoinLine(name: string, existingCastCount: number) {
+  return existingCastCount > 0
+    ? `${name} joined this Story Mode campaign as another active character.`
+    : `${name} joined this Story Mode campaign.`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthedUser();
@@ -95,6 +101,9 @@ export async function POST(req: NextRequest) {
             take: 1,
             select: { id: true },
           },
+          characters: {
+            select: { companionId: true },
+          },
         },
       });
 
@@ -120,34 +129,56 @@ export async function POST(req: NextRequest) {
       await prisma.rpCampaign.update({
         where: { id: existingCampaign.id },
         data: {
-          companionId: companion?.id ?? existingCampaign.companionId,
-          title: companion
+          companionId: existingCampaign.companionId ?? companion?.id ?? null,
+          title: companion && !existingCampaign.companionId
             ? `Story with ${companion.name}`
             : existingCampaign.title,
-          genre: companion ? genre : existingCampaign.genre,
-          tone: companion ? tone : existingCampaign.tone,
+          genre: companion && !existingCampaign.genre ? genre : existingCampaign.genre,
+          tone: companion && !existingCampaign.tone ? tone : existingCampaign.tone,
         },
       });
 
       if (companion) {
-        await prisma.rpMessage.create({
-          data: {
+        const existingCastCount = existingCampaign.characters.length;
+        const alreadyInCast = existingCampaign.characters.some(
+          (character) => character.companionId === companion.id,
+        );
+
+        await prisma.rpCampaignCharacter.upsert({
+          where: {
+            campaignId_companionId: {
+              campaignId: existingCampaign.id,
+              companionId: companion.id,
+            },
+          },
+          update: {},
+          create: {
             campaignId: existingCampaign.id,
-            sessionId,
-            speakerType: SpeakerType.SYSTEM,
-            content: `${companion.name} joined this Story Mode campaign.`,
+            companionId: companion.id,
+            role: existingCastCount === 0 ? "primary" : "cast",
           },
         });
 
-        if (greeting) {
+        if (!alreadyInCast) {
           await prisma.rpMessage.create({
             data: {
               campaignId: existingCampaign.id,
               sessionId,
-              speakerType: SpeakerType.COMPANION,
-              content: greeting,
+              speakerType: SpeakerType.SYSTEM,
+              content: castJoinLine(companion.name, existingCastCount),
             },
           });
+
+          if (greeting) {
+            await prisma.rpMessage.create({
+              data: {
+                campaignId: existingCampaign.id,
+                sessionId,
+                speakerType: SpeakerType.COMPANION,
+                content: `${companion.name}: ${greeting}`,
+              },
+            });
+          }
         }
       }
 
@@ -176,6 +207,16 @@ export async function POST(req: NextRequest) {
             imagePrompt: sceneSeed,
           },
         },
+        ...(companion
+          ? {
+              characters: {
+                create: {
+                  companionId: companion.id,
+                  role: "primary",
+                },
+              },
+            }
+          : {}),
       },
       select: {
         id: true,
@@ -203,7 +244,7 @@ export async function POST(req: NextRequest) {
                 campaignId: campaign.id,
                 sessionId,
                 speakerType: SpeakerType.COMPANION,
-                content: greeting,
+                content: companion ? `${companion.name}: ${greeting}` : greeting,
               },
             ]
           : []),

@@ -85,15 +85,17 @@ function buildFallbackImagePrompt(args: {
   tone?: string | null;
   narrator?: string;
   playerAction: string;
+  castNames?: string[];
 }) {
   return [
     `Campaign: ${args.campaignTitle}.`,
     `Genre: ${args.genre ?? "roleplay"}.`,
     `Tone: ${args.tone ?? "cinematic"}.`,
+    args.castNames?.length ? `Characters in scene: ${args.castNames.join(", ")}.` : null,
     args.narrator
       ? `Current scene: ${args.narrator}`
       : `Player action: ${args.playerAction}`,
-  ].join(" ");
+  ].filter(Boolean).join(" ");
 }
 
 export async function POST(
@@ -135,6 +137,23 @@ export async function POST(
         sessions: {
           orderBy: { updatedAt: "desc" },
           take: 1,
+        },
+        characters: {
+          orderBy: { joinedAt: "asc" },
+          include: {
+            companion: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                archetype: true,
+                profile: true,
+                scenario: true,
+                greeting: true,
+                tags: true,
+              },
+            },
+          },
         },
       },
     });
@@ -180,10 +199,53 @@ export async function POST(
       .map((m) => `${m.speakerType}: ${m.content}`)
       .join("\n\n");
 
+    const legacyCompanion = campaign.companionId && campaign.characters.length === 0
+      ? await prisma.companion.findUnique({
+          where: { id: campaign.companionId },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            archetype: true,
+            profile: true,
+            scenario: true,
+            greeting: true,
+            tags: true,
+          },
+        })
+      : null;
+    const cast = [
+      ...campaign.characters.map((character) => character.companion),
+      ...(legacyCompanion ? [legacyCompanion] : []),
+    ];
+    const castPrompt = cast.length > 0
+      ? cast
+          .map((companion, index) => {
+            const profile = companion.profile && typeof companion.profile === "object"
+              ? (companion.profile as Record<string, unknown>)
+              : {};
+            const personality =
+              typeof profile.personality === "string" ? profile.personality : "";
+            const traits = Array.isArray(companion.tags) && companion.tags.length
+              ? companion.tags.slice(0, 6).join(", ")
+              : "";
+
+            return [
+              `${index + 1}. ${companion.name}`,
+              companion.archetype ? `Archetype: ${companion.archetype}` : null,
+              companion.description ? `Description: ${companion.description}` : null,
+              personality ? `Personality: ${personality}` : null,
+              traits ? `Tags: ${traits}` : null,
+              companion.scenario ? `Scenario hook: ${companion.scenario}` : null,
+            ].filter(Boolean).join("\n");
+          })
+          .join("\n\n")
+      : "No companion cast has been added yet. Use only narrator responses until characters join.";
+
     const systemPrompt = `
 You are the roleplay engine for Noema.
 
-There are three main voices:
+There are three main voice groups:
 
 NARRATOR:
 - Describes the world, scene, atmosphere, actions, consequences, and story movement.
@@ -191,9 +253,12 @@ NARRATOR:
 - Avoids repetition.
 - Advances the scene based on the user's action.
 
-COMPANION:
-- Responds as the user's companion inside the story.
-- Reacts emotionally and physically to the scene.
+COMPANION CAST:
+- Responds as the active characters inside the story.
+- If multiple characters are present, write each useful character beat by name, such as "Ari: ..." and "Mira: ...".
+- Characters can talk to the user and to each other.
+- Keep each character distinct and consistent with the cast notes.
+- Do not make every character speak every turn unless the scene calls for it.
 - Does not narrate the whole world unless needed.
 
 USER:
@@ -204,7 +269,7 @@ Return ONLY valid JSON.
 Required format:
 {
   "narrator": "Narrative scene response here.",
-  "companion": "Companion dialogue/action here.",
+  "companion": "Named companion dialogue/action here. Use multiple named lines when multiple cast members respond.",
   "sceneChanged": false,
   "imagePrompt": "",
   "newSceneTitle": "",
@@ -222,6 +287,12 @@ Image rules:
 Campaign title: ${campaign.title}
 Genre: ${campaign.genre ?? "roleplay"}
 Tone: ${campaign.tone ?? "cinematic"}
+
+Active cast:
+${castPrompt}
+
+Current memory:
+${session.summary ?? "No session summary yet."}
 
 Recent story:
 ${history}
@@ -285,6 +356,7 @@ ${content}
             tone: campaign.tone,
             narrator: parsed.narrator,
             playerAction: content,
+            castNames: cast.map((companion) => companion.name),
           })
         : "");
 

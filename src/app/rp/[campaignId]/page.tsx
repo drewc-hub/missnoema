@@ -23,6 +23,30 @@ export default async function RpCampaignPage({
     prisma.rpCampaign.findUnique({
       where: { id: safeCampaignId },
       include: {
+        characters: {
+          orderBy: { joinedAt: "asc" },
+          include: {
+            companion: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                description: true,
+                archetype: true,
+                profile: true,
+                scenario: true,
+                greeting: true,
+                tags: true,
+                assets: {
+                  where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+                  orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+                  take: 1,
+                  select: { id: true, publicUrl: true, metadata: true },
+                },
+              },
+            },
+          },
+        },
         messages: {
           orderBy: { createdAt: "asc" },
           take: 50,
@@ -30,6 +54,15 @@ export default async function RpCampaignPage({
         scenes: {
           orderBy: { createdAt: "desc" },
           take: 1,
+        },
+        sessions: {
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            summary: true,
+            updatedAt: true,
+          },
         },
       },
     }),
@@ -76,10 +109,88 @@ export default async function RpCampaignPage({
 
   if (!campaign) notFound();
 
+  const legacyCompanion =
+    campaign.characters.length === 0 && campaign.companionId
+      ? await prisma.companion.findUnique({
+          where: { id: campaign.companionId },
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            description: true,
+            archetype: true,
+            profile: true,
+            scenario: true,
+            greeting: true,
+            tags: true,
+            assets: {
+              where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+              orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+              take: 1,
+              select: { id: true, publicUrl: true, metadata: true },
+            },
+          },
+        })
+      : null;
+  const castMembers = [
+    ...campaign.characters.map((character) => ({
+      id: character.id,
+      role: character.role,
+      joinedAt: character.joinedAt.toISOString(),
+      companion: character.companion,
+    })),
+    ...(legacyCompanion
+      ? [
+          {
+            id: `legacy-${legacyCompanion.id}`,
+            role: "primary",
+            joinedAt: campaign.createdAt.toISOString(),
+            companion: legacyCompanion,
+          },
+        ]
+      : []),
+  ];
+  const selectedCompanionIds = new Set(
+    castMembers.map((member) => member.companion.id),
+  );
+
   return (
     <RpChatWorkspace
       campaignId={campaign.id}
       title={campaign.title}
+      cast={castMembers.map((member) => {
+        const asset = member.companion.assets[0];
+        const assetMeta = (asset?.metadata ?? {}) as Record<string, unknown>;
+
+        return {
+          id: member.id,
+          role: member.role,
+          joinedAt: member.joinedAt,
+          companion: {
+            id: member.companion.id,
+            slug: member.companion.slug,
+            name: member.companion.name,
+            description: member.companion.description,
+            archetype: member.companion.archetype,
+            profile: member.companion.profile,
+            scenario: member.companion.scenario,
+            greeting: member.companion.greeting,
+            tags: member.companion.tags,
+            imageUrl: asset ? (asset.publicUrl ?? `/media/${asset.id}`) : null,
+            focalX: Number(assetMeta.focalX ?? 50),
+            focalY: Number(assetMeta.focalY ?? 0),
+          },
+        };
+      })}
+      memory={{
+        campaignTitle: campaign.title,
+        genre: campaign.genre,
+        tone: campaign.tone,
+        sessionSummary: campaign.sessions[0]?.summary ?? null,
+        latestSceneSummary: campaign.scenes[0]?.summary ?? null,
+        messageCount: campaign.messages.length,
+        lastActiveAt: campaign.sessions[0]?.updatedAt.toISOString() ?? campaign.updatedAt.toISOString(),
+      }}
       storyPanel={
         <section className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
@@ -145,15 +256,14 @@ export default async function RpCampaignPage({
         </section>
       }
       companionPicker={
-        campaign.companionId ? null : (
           <section className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-white">
-                  Add a companion to this campaign
+                  Add characters to this campaign
                 </h2>
                 <p className="mt-1 text-sm text-slate-400">
-                  Pick a character and keep using this same campaign id.
+                  Build a multi-character cast while keeping this same campaign id.
                 </p>
               </div>
               <a
@@ -206,20 +316,25 @@ export default async function RpCampaignPage({
                       </div>
                     </div>
                     <div className="border-t border-white/10 p-3">
-                      <CreateRpCampaignButton
-                        campaignId={campaign.id}
-                        companionSlug={companion.slug}
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-500 text-xs font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Insert companion
-                      </CreateRpCampaignButton>
+                      {selectedCompanionIds.has(companion.id) ? (
+                        <div className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-500/10 text-xs font-semibold text-emerald-100">
+                          Already in cast
+                        </div>
+                      ) : (
+                        <CreateRpCampaignButton
+                          campaignId={campaign.id}
+                          companionSlug={companion.slug}
+                          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-500 text-xs font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Add to cast
+                        </CreateRpCampaignButton>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
           </section>
-        )
       }
       initialMessages={campaign.messages.map((message) => ({
         id: message.id,
