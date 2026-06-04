@@ -30,6 +30,19 @@ type Props = {
   initialScene?: RpScene | null;
 };
 
+const quickActions = [
+  "Observe",
+  "Speak",
+  "Move",
+  "Investigate",
+  "Wait",
+  "Begs",
+  "Struggles",
+  "Screams",
+  "Moans",
+  "Obeys",
+];
+
 export default function RpChatWorkspace({
   campaignId,
   title,
@@ -110,8 +123,16 @@ export default function RpChatWorkspace({
   }
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-6">
+    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 bg-[url('/images/rp-dungeon-bg.png')] bg-cover bg-center opacity-[0.16]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 bg-[#050816]/70"
+      />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-6">
         <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
           <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
             Noema Roleplay
@@ -189,8 +210,16 @@ export default function RpChatWorkspace({
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
-              {["Observe", "Speak", "Move", "Investigate", "Wait"].map(
-                (action) => (
+              {quickActions.map((action) => {
+                const dramatic = [
+                  "Begs",
+                  "Struggles",
+                  "Screams",
+                  "Moans",
+                  "Obeys",
+                ].includes(action);
+
+                return (
                   <button
                     key={action}
                     type="button"
@@ -199,12 +228,16 @@ export default function RpChatWorkspace({
                         prev ? `${prev} ${action.toLowerCase()}` : action
                       )
                     }
-                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                    className={
+                      dramatic
+                        ? "rounded-full border border-pink-400/20 bg-pink-500/10 px-3 py-1 text-xs text-pink-100 hover:bg-pink-500/20"
+                        : "rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                    }
                   >
                     {action}
                   </button>
-                )
-              )}
+                );
+              })}
             </div>
 
             <button
