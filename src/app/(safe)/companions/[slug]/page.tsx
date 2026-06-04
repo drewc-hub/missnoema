@@ -184,7 +184,7 @@ export default async function SafeCompanionDetailPage({
                 Back
               </a>
               <a
-                href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
+                href={`/companions/${encodeURIComponent(companion.slug)}/start`}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
               >
                 <MessageCircle className="h-4 w-4" />

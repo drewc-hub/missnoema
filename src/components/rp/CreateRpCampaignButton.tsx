@@ -7,6 +7,7 @@ import { Loader2, Swords } from "lucide-react";
 
 type Props = {
   companionSlug?: string;
+  campaignId?: string;
   title?: string;
   genre?: string;
   tone?: string;
@@ -16,6 +17,7 @@ type Props = {
 
 export default function CreateRpCampaignButton({
   companionSlug,
+  campaignId,
   title,
   genre,
   tone,
@@ -35,6 +37,7 @@ export default function CreateRpCampaignButton({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           companionSlug,
+          campaignId,
           title,
           genre,
           tone,
@@ -56,6 +59,7 @@ export default function CreateRpCampaignButton({
       }
 
       router.push(`/rp/${data.campaignId}`);
+      router.refresh();
     } catch (error) {
       console.error(error);
       setPending(false);

@@ -59,7 +59,7 @@ function CompanionTile({ companion }: { companion: TavernCompanion }) {
   const chatHref =
     companion.contentRating === "ADULT"
       ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
-      : `/rpg?companion=${encodeURIComponent(companion.slug)}`;
+      : `/companions/${encodeURIComponent(companion.slug)}/start`;
 
   return (
     <a
@@ -210,7 +210,7 @@ export default async function TavernPage() {
               {tavernCompanions.slice(0, 3).map((companion) => (
                 <a
                   key={companion.id}
-                  href="/rpg"
+                  href="/rp"
                   className="relative hidden overflow-hidden bg-zinc-950 transition-opacity hover:opacity-80 sm:block"
                 >
                   {companion.thumbnailUrl ? (
@@ -332,7 +332,7 @@ export default async function TavernPage() {
                 recentConversations.map((conversation) => (
                   <a
                     key={conversation.id}
-                    href={`/rpg?companion=${encodeURIComponent(conversation.companion.slug)}`}
+                    href={`/companions/${encodeURIComponent(conversation.companion.slug)}/start`}
                     className="block rounded-lg border border-zinc-800 bg-black p-3 transition hover:border-fuchsia-500/60"
                   >
                     <div className="flex items-center justify-between gap-3">

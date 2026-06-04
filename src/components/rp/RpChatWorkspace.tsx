@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 type SpeakerType = "USER" | "COMPANION" | "NARRATOR" | "SYSTEM" | "IMAGE";
 
@@ -24,6 +25,7 @@ type RpScene = {
 type Props = {
   campaignId: string;
   title: string;
+  companionPicker?: ReactNode;
   initialMessages?: RpMessage[];
   initialScene?: RpScene | null;
 };
@@ -31,6 +33,7 @@ type Props = {
 export default function RpChatWorkspace({
   campaignId,
   title,
+  companionPicker = null,
   initialMessages = [],
   initialScene = null,
 }: Props) {
@@ -117,6 +120,7 @@ export default function RpChatWorkspace({
           <p className="mt-2 text-sm text-slate-300">
             Narrator-driven story mode with companion reactions and scene art.
           </p>
+          {companionPicker}
         </header>
 
         <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">

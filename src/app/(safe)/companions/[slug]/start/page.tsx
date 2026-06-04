@@ -152,12 +152,6 @@ export default async function CompanionStartPage({
                   >
                     Start saved story
                   </CreateRpCampaignButton>
-                  <a
-                    href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
-                  >
-                    Open sandbox RP
-                  </a>
                 </div>
               </div>
             </div>

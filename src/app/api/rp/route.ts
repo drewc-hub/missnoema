@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
+    const campaignId = String(body.campaignId ?? "").trim();
     const companionSlug = String(body.companionSlug ?? "").trim();
     const requestedTitle = String(body.title ?? "").trim();
     const requestedGenre = String(body.genre ?? "").trim();
@@ -81,6 +82,77 @@ export async function POST(req: NextRequest) {
       requestedTone ||
       textFromProfile(companion?.profile, ["tone"]) ||
       "cinematic";
+
+    if (campaignId) {
+      const existingCampaign = await prisma.rpCampaign.findFirst({
+        where: {
+          id: campaignId,
+          userId: user.id,
+        },
+        include: {
+          sessions: {
+            orderBy: { updatedAt: "desc" },
+            take: 1,
+            select: { id: true },
+          },
+        },
+      });
+
+      if (!existingCampaign) {
+        return NextResponse.json(
+          { error: "Campaign not found" },
+          { status: 404 },
+        );
+      }
+
+      const sessionId =
+        existingCampaign.sessions[0]?.id ??
+        (
+          await prisma.rpSession.create({
+            data: {
+              campaignId: existingCampaign.id,
+              title: existingCampaign.title,
+            },
+            select: { id: true },
+          })
+        ).id;
+
+      await prisma.rpCampaign.update({
+        where: { id: existingCampaign.id },
+        data: {
+          companionId: companion?.id ?? existingCampaign.companionId,
+          title: companion
+            ? `Story with ${companion.name}`
+            : existingCampaign.title,
+          genre: companion ? genre : existingCampaign.genre,
+          tone: companion ? tone : existingCampaign.tone,
+        },
+      });
+
+      if (companion) {
+        await prisma.rpMessage.create({
+          data: {
+            campaignId: existingCampaign.id,
+            sessionId,
+            speakerType: SpeakerType.SYSTEM,
+            content: `${companion.name} joined this Story Mode campaign.`,
+          },
+        });
+
+        if (greeting) {
+          await prisma.rpMessage.create({
+            data: {
+              campaignId: existingCampaign.id,
+              sessionId,
+              speakerType: SpeakerType.COMPANION,
+              content: greeting,
+            },
+          });
+        }
+      }
+
+      return NextResponse.json({ campaignId: existingCampaign.id });
+    }
 
     const campaign = await prisma.rpCampaign.create({
       data: {

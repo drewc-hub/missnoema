@@ -102,9 +102,9 @@ const worldTabCopy = {
   },
   "New Scene": {
     title: "Start a scene",
-    body: "Launch the selected character into the solo scene builder and continue from there.",
-    href: "/rpg",
-    cta: "Start scene",
+    body: "Launch the selected character into a saved Story Mode campaign.",
+    href: "/roleplay",
+    cta: "Open roleplay",
   },
 } satisfies Record<
   (typeof workspaceTabs)[number],
@@ -268,8 +268,8 @@ export function WorldStudioClient({
   const [draft, setDraft] = useState(initialDraft);
   const activeWorldCopy = worldTabCopy[workspaceTab];
   const sceneHref = selectedCompanion
-    ? `/rpg?companion=${encodeURIComponent(selectedCompanion.slug)}`
-    : "/rpg";
+    ? `/companions/${encodeURIComponent(selectedCompanion.slug)}/start`
+    : "/rp";
 
   function selectCompanion(companion: StudioCompanion) {
     setSelectedCompanionId(companion.id);

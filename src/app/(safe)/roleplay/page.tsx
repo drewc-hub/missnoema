@@ -143,13 +143,6 @@ export default async function RoleplayLobbyPage() {
                 Start Story Mode
               </CreateRpCampaignButton>
               <a
-                href="/rpg"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
-              >
-                <Swords className="h-4 w-4" />
-                Start solo scene
-              </a>
-              <a
                 href="/worlds"
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
               >

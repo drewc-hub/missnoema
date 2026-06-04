@@ -188,7 +188,7 @@ export default async function CreatorPage() {
               : `/companions/${companion.slug}`;
             const chatHref = isAdult
               ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
-              : `/rpg?companion=${encodeURIComponent(companion.slug)}`;
+              : `/companions/${encodeURIComponent(companion.slug)}/start`;
 
             return (
               <article
