@@ -25,6 +25,7 @@ type RpScene = {
 type Props = {
   campaignId: string;
   title: string;
+  storyPanel?: ReactNode;
   companionPicker?: ReactNode;
   initialMessages?: RpMessage[];
   initialScene?: RpScene | null;
@@ -46,6 +47,7 @@ const quickActions = [
 export default function RpChatWorkspace({
   campaignId,
   title,
+  storyPanel = null,
   companionPicker = null,
   initialMessages = [],
   initialScene = null,
@@ -132,19 +134,26 @@ export default function RpChatWorkspace({
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[#050816]/70"
       />
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-6">
-        <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
-            Noema Roleplay
-          </p>
-          <h1 className="mt-2 text-3xl font-bold">{title}</h1>
-          <p className="mt-2 text-sm text-slate-300">
-            Narrator-driven story mode with companion reactions and scene art.
-          </p>
-          {companionPicker}
-        </header>
+      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        {storyPanel ? (
+          <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
+            {storyPanel}
+          </aside>
+        ) : null}
 
-        <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
+        <div className="flex min-h-screen min-w-0 flex-col">
+          <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
+            <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
+              Noema Roleplay
+            </p>
+            <h1 className="mt-2 text-3xl font-bold">{title}</h1>
+            <p className="mt-2 text-sm text-slate-300">
+              Narrator-driven story mode with companion reactions and scene art.
+            </p>
+            {companionPicker}
+          </header>
+
+          <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
           {scene?.imageUrl ? (
             <div className="flex max-h-[30rem] min-h-72 items-center justify-center bg-black">
               <img
@@ -172,9 +181,9 @@ export default function RpChatWorkspace({
           <div className="border-t border-white/10 px-5 py-4">
             <h2 className="text-lg font-semibold">{sceneTitle}</h2>
           </div>
-        </section>
+          </section>
 
-        <section className="flex-1 space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <section className="flex-1 space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.03] p-4">
           {messages.length === 0 && (
             <div className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-slate-300">
               Begin the story with an action like: “I enter the ruined chapel.”
@@ -192,9 +201,9 @@ export default function RpChatWorkspace({
           )}
 
           <div ref={bottomRef} />
-        </section>
+          </section>
 
-        <footer className="mt-4 rounded-3xl border border-white/10 bg-black/40 p-4">
+          <footer className="mt-4 rounded-3xl border border-white/10 bg-black/40 p-4">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -249,7 +258,8 @@ export default function RpChatWorkspace({
               {pending ? "Writing..." : "Send Action"}
             </button>
           </div>
-        </footer>
+          </footer>
+        </div>
       </div>
     </main>
   );
