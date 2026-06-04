@@ -95,6 +95,22 @@ type ConversationMemory = {
     kinkLevel: number;
     relationshipLevel: number;
     summary?: string | null;
+    memorySummary?: string | null;
+    emotionalMemory?: string | null;
+    emotionalProfile?: string | null;
+};
+
+type RelationshipMilestone = {
+    id: string;
+    eventType: string;
+    oldLevel: number;
+    newLevel: number;
+    familiarity?: number | null;
+    trust?: number | null;
+    intimacy?: number | null;
+    kinkLevel?: number | null;
+    metadata?: Record<string, unknown> | null;
+    createdAt: string;
 };
 
 type MediaHistoryItem = {
@@ -120,6 +136,7 @@ export function CompanionChatWorkspace({
     const [activeId, setActiveId] = useState<string>("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [memory, setMemory] = useState<ConversationMemory | null>(null);
+    const [relationshipMilestones, setRelationshipMilestones] = useState<RelationshipMilestone[]>([]);
     const [companionMood, setCompanionMood] = useState<0 | 1 | 2 | 3>(0);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [input, setInput] = useState("");
@@ -185,6 +202,88 @@ export function CompanionChatWorkspace({
         if (average >= 10) return "Acquaintance";
         return "Stranger";
     }, [memory]);
+
+    const companionJournalEntries = useMemo(() => {
+        const pinned = messages.filter((message) => message.isPinned);
+        const source = pinned.length > 0
+            ? pinned
+            : messages.filter((message) => message.role === "assistant").slice(-4);
+
+        return source
+            .slice(-6)
+            .reverse()
+            .map((message) => ({
+                id: message.id ?? `${message.createdAt}-${message.content.slice(0, 20)}`,
+                title: message.isPinned ? "Pinned moment" : "Recent moment",
+                content: message.content,
+                createdAt: message.createdAt,
+            }));
+    }, [messages]);
+
+    const baseTraits = useMemo(() => {
+        const profile = activeCompanion?.profile;
+        if (!profile || typeof profile !== "object") return activeCompanion?.tags?.slice(0, 6) ?? [];
+        const traits = (profile as Record<string, unknown>).traits;
+        return Array.isArray(traits)
+            ? traits.filter((trait): trait is string => typeof trait === "string").slice(0, 8)
+            : activeCompanion?.tags?.slice(0, 6) ?? [];
+    }, [activeCompanion]);
+
+    const dynamicTraits = useMemo(() => {
+        const traits = new Set(baseTraits);
+        if (!memory) return [...traits];
+
+        if (memory.trust >= 70) traits.add("deeply trusting");
+        else if (memory.trust >= 40) traits.add("opening up");
+        else traits.add("guarded");
+
+        if (memory.intimacy >= 70) traits.add("emotionally intimate");
+        else if (memory.intimacy >= 35) traits.add("warmly attached");
+
+        if (memory.familiarity >= 70) traits.add("comfortable");
+        else if (memory.familiarity >= 35) traits.add("curious");
+
+        if (isAdultChat && memory.kinkLevel >= 50) traits.add("bold");
+
+        return [...traits].slice(0, 10);
+    }, [baseTraits, isAdultChat, memory]);
+
+    const personalityDrift = useMemo(() => {
+        const profile = activeCompanion?.profile;
+        const basePersonality =
+            profile && typeof profile === "object" && typeof (profile as Record<string, unknown>).personality === "string"
+                ? ((profile as Record<string, unknown>).personality as string)
+                : "";
+
+        const driftNotes = [
+            relationshipStage ? `Current bond reads as ${relationshipStage.toLowerCase()}.` : null,
+            memory?.emotionalProfile ? `User-facing adaptation: ${memory.emotionalProfile}` : null,
+            memory?.emotionalMemory ? `Recent emotional weight: ${memory.emotionalMemory}` : null,
+        ].filter(Boolean) as string[];
+
+        return {
+            basePersonality,
+            driftNotes,
+        };
+    }, [activeCompanion, memory, relationshipStage]);
+
+    const companionReflection = useMemo(() => {
+        const latestCompanionMoment = messages
+            .filter((message) => message.role === "assistant" && message.content.trim())
+            .slice(-1)[0];
+
+        if (memory?.summary) {
+            return memory.summary;
+        }
+
+        if (latestCompanionMoment) {
+            return latestCompanionMoment.content;
+        }
+
+        return activeCompanion
+            ? `${activeCompanion.name} is still forming a read on this relationship.`
+            : "";
+    }, [activeCompanion, memory?.summary, messages]);
 
     const filteredCompanions = useMemo(() => {
         const q = companionSearch.trim().toLowerCase();
@@ -451,6 +550,7 @@ export function CompanionChatWorkspace({
             if (!activeId) {
                 setMessages([]);
                 setMemory(null);
+                setRelationshipMilestones([]);
                 setCompanionMood(0);
                 setMediaHistory([]);
                 setLightboxItem(null);
@@ -495,7 +595,15 @@ export function CompanionChatWorkspace({
                     kinkLevel: conversationData.conversation.kinkLevel ?? 0,
                     relationshipLevel: conversationData.conversation.relationshipLevel ?? 1,
                     summary: conversationData.conversation.summary ?? null,
+                    memorySummary: conversationData.conversation.memorySummary ?? null,
+                    emotionalMemory: conversationData.conversation.emotionalMemory ?? null,
+                    emotionalProfile: conversationData.conversation.emotionalProfile ?? null,
                 });
+                setRelationshipMilestones(
+                    Array.isArray(conversationData.conversation.progressEvents)
+                        ? conversationData.conversation.progressEvents
+                        : [],
+                );
                 if (
                     typeof conversationData.conversation.companionMood === "number" &&
                     conversationData.conversation.companionMood >= 0 &&
@@ -601,21 +709,34 @@ export function CompanionChatWorkspace({
                         }
                         if (event.memory && typeof event.memory === "object") {
                             const m = event.memory as Record<string, unknown>;
-                            setMemory({
-                                id: (m.id as string) ?? memory?.id ?? "",
-                                familiarity: typeof m.familiarity === "number" ? m.familiarity : (memory?.familiarity ?? 0),
-                                trust: typeof m.trust === "number" ? m.trust : (memory?.trust ?? 0),
-                                intimacy: typeof m.intimacy === "number" ? m.intimacy : (memory?.intimacy ?? 0),
-                                kinkLevel: typeof m.kinkLevel === "number" ? m.kinkLevel : (memory?.kinkLevel ?? 0),
-                                relationshipLevel: typeof m.relationshipLevel === "number" ? m.relationshipLevel : (memory?.relationshipLevel ?? 1),
-                                summary: (m.summary as string | null) ?? null,
-                            });
+                            setMemory((prev) => ({
+                                id: (m.id as string) ?? prev?.id ?? "",
+                                familiarity: typeof m.familiarity === "number" ? m.familiarity : (prev?.familiarity ?? 0),
+                                trust: typeof m.trust === "number" ? m.trust : (prev?.trust ?? 0),
+                                intimacy: typeof m.intimacy === "number" ? m.intimacy : (prev?.intimacy ?? 0),
+                                kinkLevel: typeof m.kinkLevel === "number" ? m.kinkLevel : (prev?.kinkLevel ?? 0),
+                                relationshipLevel: typeof m.relationshipLevel === "number" ? m.relationshipLevel : (prev?.relationshipLevel ?? 1),
+                                summary: (m.summary as string | null) ?? prev?.summary ?? null,
+                                memorySummary: prev?.memorySummary ?? null,
+                                emotionalMemory: prev?.emotionalMemory ?? null,
+                                emotionalProfile: prev?.emotionalProfile ?? null,
+                            }));
                         }
                         if (typeof event.dailyUsed === "number") setDailyUsed(event.dailyUsed);
                         if (typeof event.dailyLimit === "number") setDailyLimit(event.dailyLimit);
                         if (event.levelUp && typeof event.levelUp === "object") {
                             const lu = event.levelUp as { level: number; nextLevel: number; coinsEarned: number };
                             setLevelUpNotif(lu);
+                            setRelationshipMilestones((prev) => [
+                                {
+                                    id: `level-up-${Date.now()}`,
+                                    eventType: "LEVEL_UP",
+                                    oldLevel: lu.level,
+                                    newLevel: lu.nextLevel,
+                                    createdAt: new Date().toISOString(),
+                                },
+                                ...prev,
+                            ].slice(0, 12));
                             setTimeout(() => setLevelUpNotif(null), 7000);
                         }
                         // Stamp DB IDs onto the optimistic messages so they can be edited/rerun
@@ -896,6 +1017,7 @@ export function CompanionChatWorkspace({
                 setActiveId("");
                 setMessages([]);
                 setMemory(null);
+                setRelationshipMilestones([]);
             }
             setDeleteConfirmId(null);
         } finally {
@@ -914,7 +1036,19 @@ export function CompanionChatWorkspace({
                 return;
             }
             setMessages([]);
-            setMemory((prev) => prev ? { ...prev, familiarity: 0, trust: 0, intimacy: 0, kinkLevel: 0, relationshipLevel: 1, summary: null } : null);
+            setMemory((prev) => prev ? {
+                ...prev,
+                familiarity: 0,
+                trust: 0,
+                intimacy: 0,
+                kinkLevel: 0,
+                relationshipLevel: 1,
+                summary: null,
+                memorySummary: null,
+                emotionalMemory: null,
+                emotionalProfile: null,
+            } : null);
+            setRelationshipMilestones([]);
             setSuggestions([]);
             setResetConfirmId(null);
         } finally {
@@ -1325,6 +1459,218 @@ export function CompanionChatWorkspace({
                                                 <div>{memory.summary}</div>
                                             </div>
                                         ) : null}
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3 flex items-center justify-between gap-2">
+                                                <div>
+                                                    <div className="text-sm font-semibold text-zinc-100">
+                                                        Relationship milestones
+                                                    </div>
+                                                    <div className="text-xs text-zinc-500">
+                                                        Bond events and progress changes.
+                                                    </div>
+                                                </div>
+                                                <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[11px] text-zinc-500">
+                                                    {relationshipMilestones.length}
+                                                </span>
+                                            </div>
+                                            {relationshipMilestones.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {relationshipMilestones.slice(0, 5).map((event) => {
+                                                        const emotion =
+                                                            event.metadata && typeof event.metadata.emotion === "string"
+                                                                ? event.metadata.emotion
+                                                                : null;
+                                                        const title =
+                                                            event.eventType === "LEVEL_UP"
+                                                                ? `Bond level ${event.oldLevel} -> ${event.newLevel}`
+                                                                : "Relationship progress";
+
+                                                        return (
+                                                            <div
+                                                                key={event.id}
+                                                                className="rounded-lg border border-zinc-800 bg-black/40 p-2"
+                                                            >
+                                                                <div className="flex items-center justify-between gap-2 text-xs">
+                                                                    <span className="font-medium text-zinc-200">{title}</span>
+                                                                    <span className="text-zinc-600">
+                                                                        {new Date(event.createdAt).toLocaleDateString("en-US", {
+                                                                            month: "short",
+                                                                            day: "numeric",
+                                                                        })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-1 text-[11px] text-zinc-500">
+                                                                    F {event.familiarity ?? "-"} · T {event.trust ?? "-"} · I {event.intimacy ?? "-"}
+                                                                    {isAdultChat ? ` · K ${event.kinkLevel ?? "-"}` : ""}
+                                                                    {emotion ? ` · ${emotion}` : ""}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    No milestone events yet. Keep chatting to build the bond.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Core memories
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    Saved facts and emotional continuity.
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 text-xs text-zinc-400">
+                                                {memory.memorySummary ? (
+                                                    <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                        <div className="mb-1 text-zinc-200">Known about you</div>
+                                                        <div className="whitespace-pre-wrap">{memory.memorySummary}</div>
+                                                    </div>
+                                                ) : null}
+                                                {memory.emotionalMemory ? (
+                                                    <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                        <div className="mb-1 text-zinc-200">Emotional moments</div>
+                                                        <div className="whitespace-pre-wrap">{memory.emotionalMemory}</div>
+                                                    </div>
+                                                ) : null}
+                                                {memory.emotionalProfile ? (
+                                                    <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                        <div className="mb-1 text-zinc-200">Emotional profile</div>
+                                                        <div className="whitespace-pre-wrap">{memory.emotionalProfile}</div>
+                                                    </div>
+                                                ) : null}
+                                                {!memory.memorySummary && !memory.emotionalMemory && !memory.emotionalProfile ? (
+                                                    <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-zinc-500">
+                                                        Core memories appear after a few meaningful exchanges.
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Dynamic traits
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    Base traits adjusted by current relationship state.
+                                                </div>
+                                            </div>
+                                            {dynamicTraits.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {dynamicTraits.map((trait) => (
+                                                        <span
+                                                            key={trait}
+                                                            className="rounded-full border border-zinc-800 bg-black/40 px-2.5 py-1 text-xs text-zinc-300"
+                                                        >
+                                                            {trait}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Dynamic traits appear once a companion is selected.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Personality drift
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    How the companion is adapting around this relationship.
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 text-xs text-zinc-400">
+                                                {personalityDrift.basePersonality ? (
+                                                    <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                        <div className="mb-1 text-zinc-200">Base personality</div>
+                                                        <div className="line-clamp-4">{personalityDrift.basePersonality}</div>
+                                                    </div>
+                                                ) : null}
+                                                {personalityDrift.driftNotes.length > 0 ? (
+                                                    <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                        <div className="mb-1 text-zinc-200">Current drift</div>
+                                                        <ul className="space-y-1">
+                                                            {personalityDrift.driftNotes.map((note) => (
+                                                                <li key={note}>{note}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                ) : (
+                                                    <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-zinc-500">
+                                                        Drift appears after emotional patterns are learned.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Companion reflection
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    A current read on the relationship from recent context.
+                                                </div>
+                                            </div>
+                                            {companionReflection ? (
+                                                <div className="rounded-lg border border-zinc-800 bg-black/40 p-2 text-xs leading-5 text-zinc-400">
+                                                    {companionReflection}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Reflection appears once the companion has context.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Companion journal
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    Pinned moments first, then recent companion moments.
+                                                </div>
+                                            </div>
+                                            {companionJournalEntries.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {companionJournalEntries.map((entry) => (
+                                                        <div
+                                                            key={entry.id}
+                                                            className="rounded-lg border border-zinc-800 bg-black/40 p-2"
+                                                        >
+                                                            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                                                                <span className="font-medium text-zinc-200">{entry.title}</span>
+                                                                {entry.createdAt ? (
+                                                                    <span className="text-[11px] text-zinc-600">
+                                                                        {new Date(entry.createdAt).toLocaleDateString("en-US", {
+                                                                            month: "short",
+                                                                            day: "numeric",
+                                                                        })}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            <div className="line-clamp-3 text-xs leading-5 text-zinc-400">
+                                                                {entry.content}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Journal moments appear as the conversation develops.
+                                                </div>
+                                            )}
+                                        </div>
                                     </>
                                 ) : null}
 
