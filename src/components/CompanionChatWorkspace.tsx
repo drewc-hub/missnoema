@@ -113,6 +113,21 @@ type RelationshipMilestone = {
     createdAt: string;
 };
 
+type CompanionGoal = {
+    id: string;
+    title: string;
+    detail: string;
+    progress: number;
+    status: "Active" | "Growing" | "Reached";
+};
+
+type LifeEvent = {
+    id: string;
+    title: string;
+    detail: string;
+    createdAt?: string;
+};
+
 type MediaHistoryItem = {
     id: string;
     type: "IMAGE" | "VIDEO";
@@ -284,6 +299,147 @@ export function CompanionChatWorkspace({
             ? `${activeCompanion.name} is still forming a read on this relationship.`
             : "";
     }, [activeCompanion, memory?.summary, messages]);
+
+    const companionGoals = useMemo<CompanionGoal[]>(() => {
+        if (!memory) return [];
+
+        const goals: CompanionGoal[] = [
+            {
+                id: "trust",
+                title: "Build trust",
+                detail: memory.trust >= 70
+                    ? "Trust is strong. Keep the bond consistent."
+                    : "Share steady, meaningful exchanges to make the companion feel safer with you.",
+                progress: memory.trust,
+                status: memory.trust >= 70 ? "Reached" : memory.trust >= 35 ? "Growing" : "Active",
+            },
+            {
+                id: "familiarity",
+                title: "Learn each other",
+                detail: memory.familiarity >= 70
+                    ? "The companion has a strong sense of your rhythm and preferences."
+                    : "Keep adding details, habits, and recurring moments for better continuity.",
+                progress: memory.familiarity,
+                status: memory.familiarity >= 70 ? "Reached" : memory.familiarity >= 35 ? "Growing" : "Active",
+            },
+            {
+                id: "intimacy",
+                title: "Deepen the bond",
+                detail: memory.intimacy >= 70
+                    ? "The relationship has an intimate emotional tone."
+                    : "Let the relationship develop through remembered emotional moments.",
+                progress: memory.intimacy,
+                status: memory.intimacy >= 70 ? "Reached" : memory.intimacy >= 35 ? "Growing" : "Active",
+            },
+            {
+                id: "memories",
+                title: "Create core memories",
+                detail: memory.memorySummary || memory.emotionalMemory
+                    ? "Core memory is active and shaping future replies."
+                    : "Pinned moments and meaningful chats will become long-term continuity.",
+                progress: memory.memorySummary || memory.emotionalMemory ? 100 : Math.min(messages.length * 8, 80),
+                status: memory.memorySummary || memory.emotionalMemory ? "Reached" : messages.length >= 6 ? "Growing" : "Active",
+            },
+        ];
+
+        if (isAdultChat) {
+            goals.push({
+                id: "boundaries",
+                title: "Refine adult dynamic",
+                detail: memory.kinkLevel >= 50
+                    ? "Adult preferences are strongly influencing tone and pacing."
+                    : "The companion is still learning adult tone, limits, and preferences.",
+                progress: memory.kinkLevel,
+                status: memory.kinkLevel >= 50 ? "Reached" : memory.kinkLevel >= 20 ? "Growing" : "Active",
+            });
+        }
+
+        return goals;
+    }, [isAdultChat, memory, messages.length]);
+
+    const lifeEvents = useMemo<LifeEvent[]>(() => {
+        const events: LifeEvent[] = [];
+        const firstMessage = messages.find((message) => message.createdAt);
+
+        if (firstMessage?.createdAt) {
+            events.push({
+                id: "first-message",
+                title: "First conversation",
+                detail: `${activeCompanion?.name ?? "This companion"} started building history with you.`,
+                createdAt: firstMessage.createdAt,
+            });
+        }
+
+        relationshipMilestones.slice(0, 4).forEach((event) => {
+            events.push({
+                id: event.id,
+                title: event.eventType === "LEVEL_UP"
+                    ? `Bond reached level ${event.newLevel}`
+                    : "Relationship shifted",
+                detail: `Familiarity ${event.familiarity ?? "-"}, trust ${event.trust ?? "-"}, intimacy ${event.intimacy ?? "-"}.`,
+                createdAt: event.createdAt,
+            });
+        });
+
+        messages
+            .filter((message) => message.isPinned)
+            .slice(-3)
+            .forEach((message) => {
+                events.push({
+                    id: message.id ?? `pinned-${message.createdAt}`,
+                    title: "Pinned memory",
+                    detail: message.content,
+                    createdAt: message.createdAt,
+                });
+            });
+
+        return events
+            .filter((event, index, all) => all.findIndex((candidate) => candidate.id === event.id) === index)
+            .sort((a, b) => {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return bTime - aTime;
+            })
+            .slice(0, 6);
+    }, [activeCompanion?.name, messages, relationshipMilestones]);
+
+    const agingRelationship = useMemo(() => {
+        if (!memory) return null;
+
+        const dates = [
+            ...messages.map((message) => message.createdAt),
+            ...relationshipMilestones.map((event) => event.createdAt),
+        ]
+            .filter((date): date is string => Boolean(date))
+            .map((date) => new Date(date))
+            .filter((date) => !Number.isNaN(date.getTime()))
+            .sort((a, b) => a.getTime() - b.getTime());
+
+        const startedAt = dates[0] ?? null;
+        const ageDays = startedAt
+            ? Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 86_400_000))
+            : 0;
+        const bondAverage = Math.round((memory.familiarity + memory.trust + memory.intimacy) / 3);
+        const nextStage =
+            bondAverage < 10 ? "Acquaintance" :
+                bondAverage < 25 ? "Friend" :
+                    bondAverage < 45 ? "Close friend" :
+                        bondAverage < 65 ? "Intimate partner" :
+                            "Mature bond";
+
+        return {
+            startedAt: startedAt?.toISOString() ?? null,
+            ageLabel: startedAt
+                ? ageDays === 0
+                    ? "New today"
+                    : `${ageDays} day${ageDays === 1 ? "" : "s"} old`
+                : "Not started",
+            bondAverage,
+            messageCount: messages.length,
+            stage: relationshipStage ?? "Stranger",
+            nextStage,
+        };
+    }, [memory, messages, relationshipMilestones, relationshipStage]);
 
     const filteredCompanions = useMemo(() => {
         const q = companionSearch.trim().toLowerCase();
@@ -1512,6 +1668,136 @@ export function CompanionChatWorkspace({
                                             ) : (
                                                 <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
                                                     No milestone events yet. Keep chatting to build the bond.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Companion goals
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    Relationship goals inferred from current bond state.
+                                                </div>
+                                            </div>
+                                            {companionGoals.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {companionGoals.map((goal) => (
+                                                        <div
+                                                            key={goal.id}
+                                                            className="rounded-lg border border-zinc-800 bg-black/40 p-2"
+                                                        >
+                                                            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                                                                <span className="font-medium text-zinc-200">{goal.title}</span>
+                                                                <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">
+                                                                    {goal.status}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mb-2 text-[11px] leading-4 text-zinc-500">
+                                                                {goal.detail}
+                                                            </div>
+                                                            <div className="h-1.5 rounded-full bg-zinc-800">
+                                                                <div
+                                                                    className="h-1.5 rounded-full bg-emerald-500 transition-all duration-500"
+                                                                    style={{ width: `${Math.min(goal.progress, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Companion goals appear once this chat has relationship state.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Life events
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    Major relationship moments and pinned memories.
+                                                </div>
+                                            </div>
+                                            {lifeEvents.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {lifeEvents.map((event) => (
+                                                        <div
+                                                            key={event.id}
+                                                            className="rounded-lg border border-zinc-800 bg-black/40 p-2"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-2 text-xs">
+                                                                <span className="font-medium text-zinc-200">{event.title}</span>
+                                                                {event.createdAt ? (
+                                                                    <span className="shrink-0 text-zinc-600">
+                                                                        {new Date(event.createdAt).toLocaleDateString("en-US", {
+                                                                            month: "short",
+                                                                            day: "numeric",
+                                                                        })}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            <div className="mt-1 line-clamp-3 text-[11px] leading-4 text-zinc-500">
+                                                                {event.detail}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Life events appear after first messages, milestones, or pinned moments.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                            <div className="mb-3">
+                                                <div className="text-sm font-semibold text-zinc-100">
+                                                    Aging relationship
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    How long this bond has been developing.
+                                                </div>
+                                            </div>
+                                            {agingRelationship ? (
+                                                <div className="space-y-2 text-xs text-zinc-400">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                            <div className="text-[11px] text-zinc-600">Age</div>
+                                                            <div className="mt-1 text-zinc-200">{agingRelationship.ageLabel}</div>
+                                                        </div>
+                                                        <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                            <div className="text-[11px] text-zinc-600">Messages</div>
+                                                            <div className="mt-1 text-zinc-200">{agingRelationship.messageCount}</div>
+                                                        </div>
+                                                        <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                            <div className="text-[11px] text-zinc-600">Current stage</div>
+                                                            <div className="mt-1 text-zinc-200">{agingRelationship.stage}</div>
+                                                        </div>
+                                                        <div className="rounded-lg border border-zinc-800 bg-black/40 p-2">
+                                                            <div className="text-[11px] text-zinc-600">Next shape</div>
+                                                            <div className="mt-1 text-zinc-200">{agingRelationship.nextStage}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="mb-1 flex items-center justify-between text-[11px] text-zinc-500">
+                                                            <span>Bond maturity</span>
+                                                            <span>{agingRelationship.bondAverage}/100</span>
+                                                        </div>
+                                                        <div className="h-1.5 rounded-full bg-zinc-800">
+                                                            <div
+                                                                className="h-1.5 rounded-full bg-cyan-500 transition-all duration-500"
+                                                                style={{ width: `${Math.min(agingRelationship.bondAverage, 100)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-lg border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+                                                    Aging starts when the first conversation is created.
                                                 </div>
                                             )}
                                         </div>
