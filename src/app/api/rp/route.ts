@@ -24,6 +24,22 @@ function castJoinLine(name: string, existingCastCount: number) {
     : `${name} joined this Story Mode campaign.`;
 }
 
+async function rpRosterTableExists() {
+  try {
+    const result = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'RpCampaignCharacter'
+      ) AS "exists"
+    `;
+    return Boolean(result[0]?.exists);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthedUser();
@@ -38,6 +54,7 @@ export async function POST(req: NextRequest) {
     const requestedTitle = String(body.title ?? "").trim();
     const requestedGenre = String(body.genre ?? "").trim();
     const requestedTone = String(body.tone ?? "").trim();
+    const hasRosterTable = await rpRosterTableExists();
 
     const companion = companionSlug
       ? await prisma.companion.findFirst({
@@ -101,9 +118,13 @@ export async function POST(req: NextRequest) {
             take: 1,
             select: { id: true },
           },
-          characters: {
-            select: { companionId: true },
-          },
+          ...(hasRosterTable
+            ? {
+                characters: {
+                  select: { companionId: true },
+                },
+              }
+            : {}),
         },
       });
 
@@ -139,25 +160,31 @@ export async function POST(req: NextRequest) {
       });
 
       if (companion) {
-        const existingCastCount = existingCampaign.characters.length;
-        const alreadyInCast = existingCampaign.characters.some(
+        const existingCharacters =
+          "characters" in existingCampaign && Array.isArray(existingCampaign.characters)
+            ? existingCampaign.characters
+            : [];
+        const existingCastCount = existingCharacters.length;
+        const alreadyInCast = existingCharacters.some(
           (character) => character.companionId === companion.id,
-        );
+        ) || existingCampaign.companionId === companion.id;
 
-        await prisma.rpCampaignCharacter.upsert({
-          where: {
-            campaignId_companionId: {
+        if (hasRosterTable) {
+          await prisma.rpCampaignCharacter.upsert({
+            where: {
+              campaignId_companionId: {
+                campaignId: existingCampaign.id,
+                companionId: companion.id,
+              },
+            },
+            update: {},
+            create: {
               campaignId: existingCampaign.id,
               companionId: companion.id,
+              role: existingCastCount === 0 ? "primary" : "cast",
             },
-          },
-          update: {},
-          create: {
-            campaignId: existingCampaign.id,
-            companionId: companion.id,
-            role: existingCastCount === 0 ? "primary" : "cast",
-          },
-        });
+          });
+        }
 
         if (!alreadyInCast) {
           await prisma.rpMessage.create({
@@ -207,7 +234,7 @@ export async function POST(req: NextRequest) {
             imagePrompt: sceneSeed,
           },
         },
-        ...(companion
+        ...(companion && hasRosterTable
           ? {
               characters: {
                 create: {

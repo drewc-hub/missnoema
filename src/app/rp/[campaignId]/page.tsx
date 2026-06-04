@@ -5,6 +5,46 @@ import { prisma } from "@/lib/prisma";
 import { ContentRating, Visibility } from "@prisma/client";
 import { notFound } from "next/navigation";
 
+type RpPageCompanion = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  archetype: string | null;
+  profile: unknown;
+  scenario: string | null;
+  greeting: string | null;
+  tags: string[];
+  assets: {
+    id: string;
+    publicUrl: string | null;
+    metadata: unknown;
+  }[];
+};
+
+type RpPageCharacter = {
+  id: string;
+  role: string;
+  joinedAt: Date;
+  companion: RpPageCompanion;
+};
+
+async function rpRosterTableExists() {
+  try {
+    const result = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'RpCampaignCharacter'
+      ) AS "exists"
+    `;
+    return Boolean(result[0]?.exists);
+  } catch {
+    return false;
+  }
+}
+
 export default async function RpCampaignPage({
   params,
 }: {
@@ -18,35 +58,40 @@ export default async function RpCampaignPage({
   }
 
   const user = await getAuthedUser();
+  const hasRosterTable = await rpRosterTableExists();
 
   const [campaign, companionOptions, storyList] = await Promise.all([
     prisma.rpCampaign.findUnique({
       where: { id: safeCampaignId },
       include: {
-        characters: {
-          orderBy: { joinedAt: "asc" },
-          include: {
-            companion: {
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-                description: true,
-                archetype: true,
-                profile: true,
-                scenario: true,
-                greeting: true,
-                tags: true,
-                assets: {
-                  where: { type: "IMAGE", contentRating: ContentRating.SAFE },
-                  orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
-                  take: 1,
-                  select: { id: true, publicUrl: true, metadata: true },
+        ...(hasRosterTable
+          ? {
+              characters: {
+                orderBy: { joinedAt: "asc" },
+                include: {
+                  companion: {
+                    select: {
+                      id: true,
+                      slug: true,
+                      name: true,
+                      description: true,
+                      archetype: true,
+                      profile: true,
+                      scenario: true,
+                      greeting: true,
+                      tags: true,
+                      assets: {
+                        where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+                        orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
+                        take: 1,
+                        select: { id: true, publicUrl: true, metadata: true },
+                      },
+                    },
+                  },
                 },
               },
-            },
-          },
-        },
+            }
+          : {}),
         messages: {
           orderBy: { createdAt: "asc" },
           take: 50,
@@ -109,8 +154,12 @@ export default async function RpCampaignPage({
 
   if (!campaign) notFound();
 
+  const campaignCharacters =
+    "characters" in campaign && Array.isArray(campaign.characters)
+      ? (campaign.characters as unknown as RpPageCharacter[])
+      : [];
   const legacyCompanion =
-    campaign.characters.length === 0 && campaign.companionId
+    campaignCharacters.length === 0 && campaign.companionId
       ? await prisma.companion.findUnique({
           where: { id: campaign.companionId },
           select: {
@@ -133,7 +182,7 @@ export default async function RpCampaignPage({
         })
       : null;
   const castMembers = [
-    ...campaign.characters.map((character) => ({
+    ...campaignCharacters.map((character) => ({
       id: character.id,
       role: character.role,
       joinedAt: character.joinedAt.toISOString(),

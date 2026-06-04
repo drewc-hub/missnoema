@@ -98,6 +98,22 @@ function buildFallbackImagePrompt(args: {
   ].filter(Boolean).join(" ");
 }
 
+async function rpRosterTableExists() {
+  try {
+    const result = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'RpCampaignCharacter'
+      ) AS "exists"
+    `;
+    return Boolean(result[0]?.exists);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ campaignId: string }> },
@@ -120,6 +136,7 @@ export async function POST(
 
     const body = await req.json();
     const content = String(body.content ?? "").trim();
+    const hasRosterTable = await rpRosterTableExists();
 
     if (!content) {
       return NextResponse.json(
@@ -138,23 +155,27 @@ export async function POST(
           orderBy: { updatedAt: "desc" },
           take: 1,
         },
-        characters: {
-          orderBy: { joinedAt: "asc" },
-          include: {
-            companion: {
-              select: {
-                id: true,
-                name: true,
-                description: true,
-                archetype: true,
-                profile: true,
-                scenario: true,
-                greeting: true,
-                tags: true,
+        ...(hasRosterTable
+          ? {
+              characters: {
+                orderBy: { joinedAt: "asc" },
+                include: {
+                  companion: {
+                    select: {
+                      id: true,
+                      name: true,
+                      description: true,
+                      archetype: true,
+                      profile: true,
+                      scenario: true,
+                      greeting: true,
+                      tags: true,
+                    },
+                  },
+                },
               },
-            },
-          },
-        },
+            }
+          : {}),
       },
     });
 
@@ -199,7 +220,11 @@ export async function POST(
       .map((m) => `${m.speakerType}: ${m.content}`)
       .join("\n\n");
 
-    const legacyCompanion = campaign.companionId && campaign.characters.length === 0
+    const campaignCharacters =
+      "characters" in campaign && Array.isArray(campaign.characters)
+        ? campaign.characters
+        : [];
+    const legacyCompanion = campaign.companionId && campaignCharacters.length === 0
       ? await prisma.companion.findUnique({
           where: { id: campaign.companionId },
           select: {
@@ -215,7 +240,7 @@ export async function POST(
         })
       : null;
     const cast = [
-      ...campaign.characters.map((character) => character.companion),
+      ...campaignCharacters.map((character) => character.companion),
       ...(legacyCompanion ? [legacyCompanion] : []),
     ];
     const castPrompt = cast.length > 0
