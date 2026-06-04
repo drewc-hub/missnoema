@@ -10,6 +10,7 @@ import {
 import { ContentRating, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import CreateRpCampaignButton from "@/components/rp/CreateRpCampaignButton";
 
 export default async function CompanionStartPage({
   params,
@@ -135,19 +136,30 @@ export default async function CompanionStartPage({
                 </p>
               </a>
 
-              <a
-                href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
-                className="group rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/10 p-4 transition hover:border-fuchsia-400"
-              >
+              <div className="group rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/10 p-4 transition hover:border-fuchsia-400">
                 <div className="flex items-center gap-2 text-lg font-semibold text-white">
                   <Swords className="h-5 w-5 text-fuchsia-300" />
-                  Fantasy Chat
+                  Story Mode
                 </div>
                 <p className="mt-2 text-sm leading-6 text-zinc-300">
-                  Structured narrative play for scenes, quests, and Story Mode
-                  moments with matching visual generation.
+                  Persistent narrative play with saved turns, narrator
+                  responses, and scene state.
                 </p>
-              </a>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <CreateRpCampaignButton
+                    companionSlug={companion.slug}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-3 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Start saved story
+                  </CreateRpCampaignButton>
+                  <a
+                    href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
+                  >
+                    Open sandbox RP
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-1.5">

@@ -48,7 +48,7 @@ export function SafeTopNav() {
                         <NavLink href="/chat" label="Chat" />
                     </li>
                     <li>
-                        <NavLink href="/rp/[CampainId]" label="Chat, RP Games" />
+                        <NavLink href="/roleplay" label="Chat, RP Games" />
                     </li>
                     <li>
                         <NavLink href="/account/billing" label="Subscriptions" />

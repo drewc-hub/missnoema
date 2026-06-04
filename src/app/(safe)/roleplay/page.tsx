@@ -11,6 +11,7 @@ import {
 import { ContentRating, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import CreateRpCampaignButton from "@/components/rp/CreateRpCampaignButton";
 
 function Stat({
   label,
@@ -138,9 +139,12 @@ export default async function RoleplayLobbyPage() {
               straight into a regular companion chat.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
+              <CreateRpCampaignButton>
+                Start Story Mode
+              </CreateRpCampaignButton>
               <a
                 href="/rpg"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-200 transition hover:border-fuchsia-500/70 hover:text-white"
               >
                 <Swords className="h-4 w-4" />
                 Start solo scene
@@ -219,36 +223,40 @@ export default async function RoleplayLobbyPage() {
               const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 0}%`;
 
               return (
-                <a
+                <div
                   key={companion.id}
-                  href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
                   className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition hover:-translate-y-0.5 hover:border-fuchsia-500/60"
                 >
-                  <div className="relative aspect-[4/5] overflow-hidden bg-zinc-900">
-                    {imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={imageUrl}
-                        alt={`${companion.name} portrait`}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
-                        style={{ objectPosition: objectPos }}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-5xl font-semibold text-zinc-700">
-                        {companion.name.slice(0, 1)}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <div className="line-clamp-1 text-base font-bold text-white">
-                        {companion.name}
-                      </div>
-                      <div className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-zinc-300">
-                        {companion.description}
+                  <a
+                    href={`/companions/${encodeURIComponent(companion.slug)}/start`}
+                    className="block"
+                  >
+                    <div className="relative aspect-[4/5] overflow-hidden bg-zinc-900">
+                      {imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={imageUrl}
+                          alt={`${companion.name} portrait`}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+                          style={{ objectPosition: objectPos }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-5xl font-semibold text-zinc-700">
+                          {companion.name.slice(0, 1)}
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <div className="line-clamp-1 text-base font-bold text-white">
+                          {companion.name}
+                        </div>
+                        <div className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-zinc-300">
+                          {companion.description}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </a>
                   <div className="flex min-h-12 flex-wrap content-start gap-1.5 p-3">
                     {companion.tags.slice(0, 3).map((tag) => (
                       <span
@@ -259,7 +267,15 @@ export default async function RoleplayLobbyPage() {
                       </span>
                     ))}
                   </div>
-                </a>
+                  <div className="border-t border-zinc-900 p-3">
+                    <CreateRpCampaignButton
+                      companionSlug={companion.slug}
+                      className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-fuchsia-500 text-xs font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Start saved story
+                    </CreateRpCampaignButton>
+                  </div>
+                </div>
               );
             })}
           </div>

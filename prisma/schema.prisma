@@ -1268,57 +1268,47 @@ model companion_embeddings {
 }
 
 model RpCampaign {
-  id          String  @id @default(cuid())
+  id          String      @id @default(cuid())
   userId      String
   companionId String?
-
-  title  String
-  genre  String?
-  tone   String?
-  status String  @default("ACTIVE")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sessions RpSession[]
-  scenes   RpScene[]
-  messages RpMessage[]
+  title       String
+  genre       String?
+  tone        String?
+  status      String      @default("ACTIVE")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  messages    RpMessage[]
+  scenes      RpScene[]
+  sessions    RpSession[]
 
   @@schema("public")
 }
 
 model RpSession {
-  id         String @id @default(cuid())
-  campaignId String
-
+  id             String      @id @default(cuid())
+  campaignId     String
   title          String?
   summary        String?
   currentSceneId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  campaign RpCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  messages RpMessage[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  messages       RpMessage[]
+  campaign       RpCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@schema("public")
 }
 
 model RpMessage {
-  id         String  @id @default(cuid())
-  campaignId String
-  sessionId  String?
-
+  id          String      @id @default(cuid())
+  campaignId  String
+  sessionId   String?
   speakerType SpeakerType
   content     String
-
-  imageUrl String?
-  metadata Json?
-
-  createdAt DateTime @default(now())
-
-  campaign RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  session  RpSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  imageUrl    String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  campaign    RpCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  session     RpSession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, createdAt])
   @@index([sessionId, createdAt])
@@ -1326,21 +1316,17 @@ model RpMessage {
 }
 
 model RpScene {
-  id         String @id @default(cuid())
-  campaignId String
-
-  title    String
-  location String?
-  mood     String?
-  summary  String?
-
+  id          String     @id @default(cuid())
+  campaignId  String
+  title       String
+  location    String?
+  mood        String?
+  summary     String?
   imagePrompt String?
   imageUrl    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  campaign RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  campaign    RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@schema("public")
 }

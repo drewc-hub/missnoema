@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
-import { generateText } from "ai";
-import { getProvider } from "@/lib/ai-client";
+import { chatCompletion } from "@/lib/together";
 import { SpeakerType } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -37,26 +36,37 @@ function safeJsonParse(text: string): RpAIResponse {
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ campaignId: string }> }
+  context: { params: Promise<{ campaignId: string }> },
 ) {
   try {
     const { campaignId } = await context.params;
+    const safeCampaignId = String(campaignId ?? "").trim();
     const user = await getAuthedUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!safeCampaignId || safeCampaignId.startsWith("[")) {
+      return NextResponse.json(
+        { error: "Campaign not found" },
+        { status: 404 },
+      );
+    }
+
     const body = await req.json();
     const content = String(body.content ?? "").trim();
 
     if (!content) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 },
+      );
     }
 
     const campaign = await prisma.rpCampaign.findFirst({
       where: {
-        id: campaignId,
+        id: safeCampaignId,
         userId: user.id,
       },
       include: {
@@ -68,7 +78,10 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Campaign not found" },
+        { status: 404 },
+      );
     }
 
     let session = campaign.sessions[0];
@@ -155,17 +168,16 @@ Player action:
 ${content}
 `;
 
-    const provider = getProvider();
-
-    const result = await generateText({
-      model: provider("mistralai/mistral-small-3.2-24b-instruct"),
-      system: systemPrompt,
-      prompt: userPrompt,
+    const result = await chatCompletion({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
       temperature: 0.9,
-      maxTokens: 900,
+      max_tokens: 900,
     });
 
-    const parsed = safeJsonParse(result.text);
+    const parsed = safeJsonParse(result.choices[0]?.message?.content ?? "");
 
     const createdMessages = [];
 
@@ -242,7 +254,7 @@ ${content}
 
     return NextResponse.json(
       { error: "Failed to process roleplay message" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

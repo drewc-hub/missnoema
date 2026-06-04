@@ -1,0 +1,149 @@
+import { NextRequest, NextResponse } from "next/server";
+import { ContentRating, SpeakerType, Visibility } from "@prisma/client";
+import { getAuthedUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+
+function textFromProfile(
+  profile: unknown,
+  keys: string[],
+): string | undefined {
+  if (!profile || typeof profile !== "object") return undefined;
+  const record = profile as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getAuthedUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const companionSlug = String(body.companionSlug ?? "").trim();
+    const requestedTitle = String(body.title ?? "").trim();
+    const requestedGenre = String(body.genre ?? "").trim();
+    const requestedTone = String(body.tone ?? "").trim();
+
+    const companion = companionSlug
+      ? await prisma.companion.findFirst({
+          where: {
+            slug: companionSlug,
+            contentRating: ContentRating.SAFE,
+            OR: [
+              { visibility: Visibility.PUBLIC },
+              { ownerId: user.id },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            archetype: true,
+            profile: true,
+            scenario: true,
+            greeting: true,
+          },
+        })
+      : null;
+
+    if (companionSlug && !companion) {
+      return NextResponse.json(
+        { error: "Companion not found" },
+        { status: 404 },
+      );
+    }
+
+    const sceneSeed =
+      companion?.scenario ||
+      textFromProfile(companion?.profile, ["scene", "scenario", "setting"]) ||
+      "A new roleplay scene begins. The narrator frames the moment and waits for your first action.";
+    const greeting =
+      companion?.greeting ||
+      textFromProfile(companion?.profile, ["greeting", "openingLine"]) ||
+      (companion ? `${companion.name} watches the scene unfold.` : "");
+    const title =
+      requestedTitle ||
+      (companion ? `Story with ${companion.name}` : "New Story Mode Campaign");
+    const genre =
+      requestedGenre ||
+      companion?.archetype ||
+      textFromProfile(companion?.profile, ["genre"]) ||
+      "fantasy roleplay";
+    const tone =
+      requestedTone ||
+      textFromProfile(companion?.profile, ["tone"]) ||
+      "cinematic";
+
+    const campaign = await prisma.rpCampaign.create({
+      data: {
+        userId: user.id,
+        companionId: companion?.id ?? null,
+        title,
+        genre,
+        tone,
+        sessions: {
+          create: {
+            title,
+            summary: sceneSeed.slice(0, 500),
+          },
+        },
+        scenes: {
+          create: {
+            title: "Opening Scene",
+            location: null,
+            mood: tone,
+            summary: sceneSeed,
+            imagePrompt: sceneSeed,
+          },
+        },
+      },
+      select: {
+        id: true,
+        sessions: {
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { id: true },
+        },
+      },
+    });
+
+    const sessionId = campaign.sessions[0]?.id ?? null;
+
+    await prisma.rpMessage.createMany({
+      data: [
+        {
+          campaignId: campaign.id,
+          sessionId,
+          speakerType: SpeakerType.NARRATOR,
+          content: sceneSeed,
+        },
+        ...(greeting
+          ? [
+              {
+                campaignId: campaign.id,
+                sessionId,
+                speakerType: SpeakerType.COMPANION,
+                content: greeting,
+              },
+            ]
+          : []),
+      ],
+    });
+
+    return NextResponse.json({ campaignId: campaign.id });
+  } catch (error) {
+    console.error("RP campaign create error:", error);
+    return NextResponse.json(
+      { error: "Failed to create roleplay campaign" },
+      { status: 500 },
+    );
+  }
+}
