@@ -128,7 +128,7 @@ export default async function SafePage() {
 
           <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
             {featured.map((c) => {
-              const chatHref = `/rpg?companion=${encodeURIComponent(c.slug)}`;
+              const chatHref = `/companions/${encodeURIComponent(c.slug)}/start`;
               return (
                 <a
                   key={c.id}

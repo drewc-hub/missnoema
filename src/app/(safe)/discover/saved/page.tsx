@@ -125,7 +125,7 @@ export default async function SavedDiscoveriesPage() {
                 className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
               >
                 <a
-                  href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
+                  href={`/companions/${encodeURIComponent(companion.slug)}/start`}
                   className="group block"
                 >
                   <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
@@ -180,11 +180,11 @@ export default async function SavedDiscoveriesPage() {
                   </div>
 
                   <a
-                    href={`/rpg?companion=${encodeURIComponent(companion.slug)}`}
+                    href={`/companions/${encodeURIComponent(companion.slug)}/start`}
                     className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    Roleplay
+                    Choose mode
                   </a>
                 </div>
               </article>

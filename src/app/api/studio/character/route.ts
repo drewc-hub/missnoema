@@ -48,6 +48,41 @@ function readOptionalNumber(value: unknown): number | undefined {
     : undefined;
 }
 
+function sentenceCase(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return `${trimmed.slice(0, 1).toUpperCase()}${trimmed.slice(1)}`;
+}
+
+function gerundPhrase(value: string) {
+  return value
+    .trim()
+    .replace(/^hides?\b/i, "hiding")
+    .replace(/^wants?\s+to\b/i, "trying to")
+    .replace(/^protects?\b/i, "protecting");
+}
+
+function expandBackstorySeed(seed: string, fallback: string) {
+  const fragments = seed
+    .split(/[\n.]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (fragments.length === 0) return fallback;
+
+  const [origin, wound, mask, desire] = fragments;
+  const lines = [
+    origin ? `${sentenceCase(origin)}.` : "",
+    wound ? `That past still follows them: ${wound}.` : "",
+    mask ? `They usually mask it by ${gerundPhrase(mask)}.` : "",
+    desire
+      ? `What drives them now is simple but difficult: ${gerundPhrase(desire)}.`
+      : "",
+  ].filter(Boolean);
+
+  return lines.join(" ");
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
 
@@ -94,9 +129,13 @@ export async function POST(req: Request) {
   }
 
   if (mode === "expand") {
+    const seed =
+      typeof body.fieldValue === "string"
+        ? body.fieldValue
+        : readString(draft.backstory);
     return NextResponse.json({
       ok: true,
-      text: generated.backstory,
+      text: expandBackstorySeed(seed, generated.backstory),
     });
   }
 

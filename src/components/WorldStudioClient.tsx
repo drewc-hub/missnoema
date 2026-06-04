@@ -969,6 +969,40 @@ export function WorldStudioClient({
             </div>
 
             {/* SillyTavern V2 fields */}
+            <div className="mb-5 rounded-lg border border-cyan-900/60 bg-cyan-950/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Feather className="h-4 w-4 text-cyan-200" />
+                    Backstory builder
+                  </div>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-cyan-100/70">
+                    Drop in a few rough sentences, then expand them into a
+                    cleaner character-history paragraph.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExpand}
+                  disabled={!selectedCompanion || busy}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-cyan-300/40 bg-zinc-950/70 px-3 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Feather className="h-4 w-4" />
+                  Build paragraph
+                </button>
+              </div>
+              <Textarea
+                value={draft.backstory}
+                rows={4}
+                onChange={(event) =>
+                  updateDraft("backstory", event.target.value)
+                }
+                placeholder="Example: Grew up near a ruined gate. Lost their mentor. Hides guilt behind jokes. Wants to protect the party."
+                className="mt-3 resize-y"
+              />
+            </div>
+
+            {/* SillyTavern V2 fields */}
             <div className="grid gap-4 xl:grid-cols-2">
               <Field
                 label="Name"

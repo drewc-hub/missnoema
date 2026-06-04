@@ -44,12 +44,12 @@ function CompanionCard({ c }: { c: ApiItem }) {
   const viewHref =
     c.contentRating === "ADULT"
       ? `/adult/companions/${encodeURIComponent(c.slug)}`
-      : `/companions/${encodeURIComponent(c.slug)}`;
+      : `/companions/${encodeURIComponent(c.slug)}/start`;
 
   const chatHref =
     c.contentRating === "ADULT"
       ? `/adult/chat?companion=${encodeURIComponent(c.slug)}`
-      : `/rpg?companion=${encodeURIComponent(c.slug)}`;
+      : `/companions/${encodeURIComponent(c.slug)}/start`;
 
   return (
     <div
@@ -91,7 +91,7 @@ function CompanionCard({ c }: { c: ApiItem }) {
           className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[20px] bg-white/90 text-xs font-bold text-black transition hover:bg-white"
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          {c.contentRating === "ADULT" ? "Chat now" : "Roleplay"}
+          {c.contentRating === "ADULT" ? "Chat now" : "Choose mode"}
         </a>
       </div>
 

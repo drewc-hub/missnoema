@@ -411,7 +411,7 @@ export default async function MarketplacePage({
               const isAdult = companion.contentRating === ContentRating.ADULT;
               const viewHref = isAdult
                 ? `/adult/companions/${companion.slug}`
-                : `/companions/${companion.slug}`;
+                : `/companions/${companion.slug}/start`;
 
               return (
                 <a
@@ -679,10 +679,10 @@ export default async function MarketplacePage({
                 const isAdult = companion.contentRating === ContentRating.ADULT;
                 const chatHref = isAdult
                   ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
-                  : `/rpg?companion=${encodeURIComponent(companion.slug)}`;
+                  : `/companions/${encodeURIComponent(companion.slug)}/start`;
                 const viewHref = isAdult
                   ? `/adult/companions/${companion.slug}`
-                  : `/companions/${companion.slug}`;
+                  : `/companions/${companion.slug}/start`;
 
                 return (
                   <article
@@ -772,7 +772,7 @@ export default async function MarketplacePage({
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400"
                         >
                           <MessageCircle className="h-4 w-4" />
-                          {isAdult ? "Chat" : "Roleplay"}
+                          {isAdult ? "Chat" : "Choose mode"}
                         </a>
                         <a
                           href={viewHref}
