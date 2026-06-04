@@ -1,5 +1,6 @@
 import RpChatWorkspace from "@/components/rp/RpChatWorkspace";
 import CreateRpCampaignButton from "@/components/rp/CreateRpCampaignButton";
+import RpStoryList from "@/components/rp/RpStoryList";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ContentRating, Visibility } from "@prisma/client";
@@ -241,68 +242,17 @@ export default async function RpCampaignPage({
         lastActiveAt: campaign.sessions[0]?.updatedAt.toISOString() ?? campaign.updatedAt.toISOString(),
       }}
       storyPanel={
-        <section className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur-md">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-blue-300">
-                Stories
-              </p>
-              <h2 className="mt-2 text-lg font-semibold text-white">
-                Roleplay campaigns
-              </h2>
-            </div>
-          </div>
-
-          <CreateRpCampaignButton className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 text-sm font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60">
-            Start new story
-          </CreateRpCampaignButton>
-
-          <div className="mt-4 max-h-[calc(100vh-13rem)] space-y-2 overflow-y-auto pr-1">
-            {storyList.length > 0 ? (
-              storyList.map((story) => {
-                const active = story.id === campaign.id;
-
-                return (
-                  <a
-                    key={story.id}
-                    href={`/rp/${story.id}`}
-                    className={
-                      active
-                        ? "block rounded-2xl border border-blue-400/50 bg-blue-500/15 p-3 text-white"
-                        : "block rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-slate-300 transition hover:border-blue-400/40 hover:bg-white/[0.07] hover:text-white"
-                    }
-                  >
-                    <div className="line-clamp-2 text-sm font-semibold">
-                      {story.title}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {story.genre ? (
-                        <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
-                          {story.genre}
-                        </span>
-                      ) : null}
-                      {story.tone ? (
-                        <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
-                          {story.tone}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-2 text-[11px] text-slate-500">
-                      {story.updatedAt.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </div>
-                  </a>
-                );
-              })
-            ) : (
-              <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm leading-6 text-slate-400">
-                Start your first saved roleplay story.
-              </div>
-            )}
-          </div>
-        </section>
+        <RpStoryList
+          activeCampaignId={campaign.id}
+          stories={storyList.map((story) => ({
+            id: story.id,
+            title: story.title,
+            genre: story.genre,
+            tone: story.tone,
+            status: story.status,
+            updatedAt: story.updatedAt.toISOString(),
+          }))}
+        />
       }
       companionPicker={
           <section className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
