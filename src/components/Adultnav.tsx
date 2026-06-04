@@ -43,7 +43,7 @@ export function AdultTopNav() {
                         <NavLink href="/adult/companions/new" label="Creator" />
                     </li>
                     <li>
-                        <NavLink href="/rpg" label="RP & Chat" />
+                        <NavLink href="/rp/[CampainId]" label="RP & Chat" />
                     </li>
                     <li>
                         <NavLink href="/adult/chat" label="Chat" />

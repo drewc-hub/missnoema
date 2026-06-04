@@ -380,16 +380,16 @@ model Lorebook {
 }
 
 model LoreEntry {
-  id          String   @id @default(cuid())
-  lorebookId  String
-  keys        String[]
-  content     String
-  constant    Boolean  @default(false)
-  enabled     Boolean  @default(true)
-  priority    Int      @default(100)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
-  lorebook    Lorebook @relation(fields: [lorebookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id         String   @id @default(cuid())
+  lorebookId String
+  keys       String[]
+  content    String
+  constant   Boolean  @default(false)
+  enabled    Boolean  @default(true)
+  priority   Int      @default(100)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+  lorebook   Lorebook @relation(fields: [lorebookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([lorebookId, enabled])
   @@schema("public")
@@ -1267,6 +1267,84 @@ model companion_embeddings {
   @@schema("public")
 }
 
+model RpCampaign {
+  id          String  @id @default(cuid())
+  userId      String
+  companionId String?
+
+  title  String
+  genre  String?
+  tone   String?
+  status String  @default("ACTIVE")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions RpSession[]
+  scenes   RpScene[]
+  messages RpMessage[]
+
+  @@schema("public")
+}
+
+model RpSession {
+  id         String @id @default(cuid())
+  campaignId String
+
+  title          String?
+  summary        String?
+  currentSceneId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign RpCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages RpMessage[]
+
+  @@schema("public")
+}
+
+model RpMessage {
+  id         String  @id @default(cuid())
+  campaignId String
+  sessionId  String?
+
+  speakerType SpeakerType
+  content     String
+
+  imageUrl String?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  campaign RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  session  RpSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@index([sessionId, createdAt])
+  @@schema("public")
+}
+
+model RpScene {
+  id         String @id @default(cuid())
+  campaignId String
+
+  title    String
+  location String?
+  mood     String?
+  summary  String?
+
+  imagePrompt String?
+  imageUrl    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign RpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
 enum gen_status {
   queued
   processing
@@ -1519,6 +1597,16 @@ enum ContentBucket {
   HISTORY
   RELATIONSHIP
   OTHER
+
+  @@schema("public")
+}
+
+enum SpeakerType {
+  USER
+  COMPANION
+  NARRATOR
+  SYSTEM
+  IMAGE
 
   @@schema("public")
 }
