@@ -18,7 +18,7 @@ export function Card({
     return (
         <div
             className={cn(
-                "rounded-2xl border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] shadow-sm",
+                "min-w-0 overflow-hidden rounded-xl border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] shadow-sm sm:rounded-2xl",
                 className,
             )}
         >
@@ -37,11 +37,11 @@ export function CardHeader({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-zinc-800 p-5">
-            <div>
-                <div className="text-lg font-semibold">{title}</div>
+        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-zinc-800 p-4 sm:flex-nowrap sm:items-center sm:gap-4 sm:p-5">
+            <div className="min-w-0 flex-1">
+                <div className="break-words text-base font-semibold sm:text-lg">{title}</div>
                 {subtitle ? (
-                    <div className="mt-1 text-sm text-zinc-400">{subtitle}</div>
+                    <div className="mt-1 break-words text-xs text-zinc-400 sm:text-sm">{subtitle}</div>
                 ) : null}
             </div>
             {right ? <div className="relative shrink-0">{right}</div> : null}
@@ -50,7 +50,7 @@ export function CardHeader({
 }
 
 export function CardBody({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <div className={cn("p-5", className)}>{children}</div>;
+    return <div className={cn("min-w-0 p-4 sm:p-5", className)}>{children}</div>;
 }
 
 export function Button({

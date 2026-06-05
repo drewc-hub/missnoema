@@ -105,7 +105,7 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="flex min-h-screen"
+      className="flex min-h-screen min-w-0 max-w-full overflow-x-hidden"
       style={{
         background:
           "#0D0D1A radial-gradient(ellipse 80% 50% at 20% 0%, rgba(160,120,255,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(60,100,255,0.10) 0%, transparent 60%)",
@@ -163,7 +163,25 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main */}
-      <div className="flex flex-1 flex-col min-w-0">{children}</div>
+      <div className="flex min-w-0 max-w-full flex-1 flex-col pb-16 sm:pb-0">{children}</div>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-[#111120]/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur-xl sm:hidden"
+        aria-label="Primary navigation"
+      >
+        {NAV_ITEMS.slice(0, 5).map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-medium ${
+              item.accent ?? "text-white/60"
+            }`}
+          >
+            {item.icon}
+            <span className="max-w-full truncate">{item.label}</span>
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -1496,19 +1496,19 @@ export function CompanionChatWorkspace({
     }
 
     return (
-        <main className="mx-auto w-full max-w-6xl">
+        <main className="mx-auto min-w-0 w-full max-w-6xl overflow-x-hidden">
             {/* Mobile companion picker bar — visible only on small screens */}
-            <div className="mb-3 flex items-center gap-2 lg:hidden">
+            <div className="mb-3 flex min-w-0 items-center gap-2 lg:hidden">
                 <button
                     type="button"
                     onClick={() => setSidebarOpen((o) => !o)}
                     // mobile companion picker button
-                    className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-all duration-200 hover:border-zinc-500 hover:bg-zinc-800 active:scale-[0.98]"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-all duration-200 hover:border-zinc-500 hover:bg-zinc-800 active:scale-[0.98]"
                 >
                     <svg className="h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M2 4h12M2 8h8M2 12h6" strokeLinecap="round" />
                     </svg>
-                    {activeCompanion ? activeCompanion.name : "Choose companion"}
+                    <span className="truncate">{activeCompanion ? activeCompanion.name : "Choose companion"}</span>
                 </button>
                 {activeCompanion && (
                     <Badge tone={activeCompanion.contentRating === "ADULT" ? "adult" : "safe"}>
@@ -1536,7 +1536,7 @@ export function CompanionChatWorkspace({
                             }
                         />
                         <CardBody>
-                            <div className="flex gap-4">
+                            <div className="flex flex-col gap-4 sm:flex-row">
                                 <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
                                     {activeCompanion.thumbnailUrl ? (
                                         // eslint-disable-next-line @next/next/no-img-element
@@ -1620,7 +1620,7 @@ export function CompanionChatWorkspace({
                 </div>
             ) : null}
 
-            <div className="grid gap-5 lg:grid-cols-12">
+            <div className="grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-12">
                 <aside className={`space-y-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
                     <Card>
                         <CardHeader
@@ -1748,7 +1748,7 @@ export function CompanionChatWorkspace({
                     ) : null}
                 </aside>
 
-                <section className="space-y-4 lg:col-span-6">
+                <section className="min-w-0 space-y-4 lg:col-span-6">
 
                     <Card>
                         <CardHeader
@@ -2194,7 +2194,7 @@ export function CompanionChatWorkspace({
                                     </div>
                                 ) : null}
 
-                                <div ref={messagesContainerRef} className="max-h-[430px] space-y-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                                <div ref={messagesContainerRef} className="max-h-[min(430px,55dvh)] space-y-3 overflow-y-auto overflow-x-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 sm:p-3">
                                     {loadingConversation ? (
                                         <div className="space-y-3 animate-pulse">
                                             <div className="ml-10 h-12 rounded-xl bg-zinc-800/60" />
@@ -2210,19 +2210,19 @@ export function CompanionChatWorkspace({
                                         messages.map((m, i) => (
                                             <div
                                                 key={m.id ?? i}
-                                                className={`rounded-xl p-3 text-sm ${m.role === "user"
-                                                    ? "ml-10 bg-zinc-800 text-zinc-100"
-                                                    : "mr-10 bg-zinc-900 text-zinc-300"
+                                                className={`min-w-0 overflow-hidden rounded-xl p-3 text-sm ${m.role === "user"
+                                                    ? "ml-3 bg-zinc-800 text-zinc-100 sm:ml-10"
+                                                    : "mr-3 bg-zinc-900 text-zinc-300 sm:mr-10"
                                                     }`}
                                             >
-                                                <div className="mb-2 flex items-center justify-between gap-2">
+                                                <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
                                                     <div className="text-[11px] uppercase tracking-wide text-zinc-500">
                                                         {m.role === "assistant"
                                                             ? (activeCompanion?.name ?? "Companion")
                                                             : "You"}
                                                     </div>
                                                     {m.content ? (
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex max-w-[70%] items-center gap-2 overflow-x-auto no-scrollbar">
                                                             {m.role === "assistant" ? (
                                                                 <>
                                                                     <button
@@ -2311,7 +2311,7 @@ export function CompanionChatWorkspace({
                                                         </div>
                                                     </div>
                                                 ) : m.content ? (
-                                                    <div>{m.content}</div>
+                                                    <div className="break-words">{m.content}</div>
                                                 ) : (
                                                     <div className="flex gap-1 py-0.5">
                                                         <span className="animate-bounce text-zinc-500 text-xs" style={{ animationDelay: "0ms" }}>●</span>
@@ -2329,7 +2329,7 @@ export function CompanionChatWorkspace({
                                     ))}
                                 </div>
 
-                                <div className="flex gap-2">
+                                <div className="flex flex-col gap-2 sm:flex-row">
                                     <textarea
                                         ref={messageInputRef}
                                         value={input}
@@ -2354,15 +2354,16 @@ export function CompanionChatWorkspace({
                                         type="button"
                                         onClick={() => sendMessage()}
                                         disabled={!input.trim() || sending || !activeCompanion}
+                                        className="w-full sm:w-auto"
                                     >
                                         {sending ? "Sending..." : "Send"}
                                     </Button>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
+                                    <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
                                         <div className="text-xs text-zinc-400">Draft replies</div>
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
                                             <button
                                                 type="button"
                                                 onClick={refreshSuggestions}
@@ -2507,7 +2508,7 @@ export function CompanionChatWorkspace({
                     </Card>
                 </section>
 
-                <aside className="space-y-4 lg:col-span-3">
+                <aside className="min-w-0 space-y-4 lg:col-span-3">
                     {activeCompanion ? (
                         <MediaGenPanel
                             allowAdult={allowAdult}

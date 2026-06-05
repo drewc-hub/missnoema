@@ -1,5 +1,8 @@
+"use client";
+
 import UserBadge from "@/components/UserBadge";
-import React from "react";
+import { Menu, X } from "lucide-react";
+import React, { useState } from "react";
 
 function NavLink({ href, label }: { href: string; label: string }) {
     return (
@@ -14,10 +17,12 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 
 export function AdultTopNav() {
+    const [menuOpen, setMenuOpen] = useState(false);
+
     return (
         <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/90 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.10)_0%,transparent_60%)] backdrop-blur-xl">
-            <div className="mx-auto flex w-full max-w-7xl items-center px-6 py-4">
-                <a href="/" className="mr-6 flex shrink-0 items-center gap-3">
+            <div className="mx-auto flex w-full max-w-7xl items-center px-3 py-3 sm:px-6 sm:py-4">
+                <a href="/" className="mr-3 flex shrink-0 items-center gap-3 sm:mr-6">
                     <img src="/logo-icon.svg" alt="" className="h-8 w-8" />
                     <img
                         src="/logo-wordmark.svg"
@@ -26,7 +31,7 @@ export function AdultTopNav() {
                     />
                 </a>
 
-                <ul className="flex items-center space-x-1">
+                <ul className="hidden items-center space-x-1 lg:flex">
                     <li>
                         <NavLink href="/tavern" label="Tavern" />
                     </li>
@@ -63,8 +68,39 @@ export function AdultTopNav() {
                             Logout
                         </button>
                     </form>
+                    <button
+                        type="button"
+                        onClick={() => setMenuOpen((open) => !open)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 text-zinc-300 lg:hidden"
+                        aria-label="Open navigation"
+                        aria-expanded={menuOpen}
+                    >
+                        {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </button>
                 </div>
             </div>
+            {menuOpen ? (
+                <nav className="grid grid-cols-2 gap-2 border-t border-zinc-800 bg-black/95 p-3 lg:hidden">
+                    {[
+                        ["/tavern", "Tavern"],
+                        ["/discover?includeAdult=1", "Discover"],
+                        ["/marketplace", "Market"],
+                        ["/worlds", "Worlds"],
+                        ["/adult/companions/new", "Creator"],
+                        ["/roleplay", "Roleplay"],
+                        ["/chat", "Chat"],
+                        ["/account/billing", "Subscriptions"],
+                    ].map(([href, label]) => (
+                        <a
+                            key={href}
+                            href={href}
+                            className="flex min-h-11 items-center rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 text-sm text-zinc-200"
+                        >
+                            {label}
+                        </a>
+                    ))}
+                </nav>
+            ) : null}
         </header>
     );
 }

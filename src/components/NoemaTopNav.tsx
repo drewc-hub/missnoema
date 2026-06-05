@@ -11,10 +11,11 @@ interface NoemaTopNavProps {
 export function NoemaTopNav({ title }: NoemaTopNavProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header
-      className="sticky top-0 z-30 flex h-[60px] items-center gap-3 px-4 sm:px-6"
+      className="sticky top-0 z-30 flex h-[60px] min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-6"
       style={{
         background: "rgba(13,13,26,0.7)",
         backdropFilter: "blur(20px)",
@@ -80,9 +81,37 @@ export function NoemaTopNav({ title }: NoemaTopNavProps) {
       </div>
 
       {/* Mobile menu hint */}
-      <button className="flex sm:hidden h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white transition">
-        <Menu className="h-5 w-5" />
+      <button
+        onClick={() => setMenuOpen((open) => !open)}
+        className="flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition hover:text-white sm:hidden"
+        aria-label="Open navigation"
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
+
+      {menuOpen ? (
+        <div className="absolute inset-x-3 top-[68px] grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#151526]/98 p-3 shadow-2xl sm:hidden">
+          {[
+            ["/discover", "Discover"],
+            ["/companions", "Companions"],
+            ["/companions/new", "Create"],
+            ["/chat", "Chat"],
+            ["/roleplay", "Roleplay"],
+            ["/worlds", "Worlds"],
+            ["/marketplace", "Market"],
+            ["/adult", "18+"],
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className="flex min-h-11 items-center rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-sm font-medium text-white/75"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -19,9 +19,9 @@ export default function AdultLayout({
     return (
         <>
             <AdultTopNav />
-            <div className="mx-auto w-full max-w-6xl px-4">
-                <div className="py-8">{children}</div>
-                <AdultFooter className="rounded-[24px]" />
+            <div className="mx-auto min-w-0 w-full max-w-6xl px-3 sm:px-4">
+                <div className="min-w-0 py-4 sm:py-8">{children}</div>
+                <AdultFooter className="rounded-[16px] sm:rounded-[24px]" />
             </div>
         </>
     );
