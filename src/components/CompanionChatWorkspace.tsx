@@ -41,46 +41,99 @@ function speakMessage(
     text: string,
     voicePreset?: string | null,
     gender?: string | null,
-    callbacks?: { onStart?: () => void; onEnd?: () => void; onError?: () => void },
-) {
+    callbacks?: { onStart?: () => void; onEnd?: () => void; onError?: (message: string) => void },
+): () => void {
     if (typeof window === "undefined" || !window.speechSynthesis) {
-        callbacks?.onError?.();
-        return;
+        callbacks?.onError?.("Voice playback is not supported by this browser.");
+        return () => undefined;
     }
-    window.speechSynthesis.cancel();
 
+    const synthesis = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     const preset = voicePreset ? VOICE_PRESET_SETTINGS[voicePreset] : null;
     const isFemale = preset
         ? preset.femaleHint
         : (!gender || gender === "female" || gender === "non-binary");
+    let disposed = false;
+    let started = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
 
     utter.pitch = preset?.pitch ?? (isFemale ? 1.1 : 0.9);
     utter.rate = preset?.rate ?? 1.0;
 
+    function cleanup() {
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (startTimer) clearTimeout(startTimer);
+        synthesis.removeEventListener("voiceschanged", assignAndSpeak);
+        utter.onstart = null;
+        utter.onend = null;
+        utter.onerror = null;
+    }
+
+    function fail(message: string) {
+        if (disposed) return;
+        disposed = true;
+        cleanup();
+        synthesis.cancel();
+        callbacks?.onError?.(message);
+    }
+
     function assignAndSpeak() {
-        const voices = window.speechSynthesis.getVoices();
+        if (disposed || started) return;
+        started = true;
+        cleanup();
+
+        const voices = synthesis.getVoices();
         const preferred = voices.find((v) =>
             isFemale
                 ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa/i.test(v.name)
                 : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
         );
         if (preferred) utter.voice = preferred;
-        utter.onstart = () => callbacks?.onStart?.();
-        utter.onend = () => callbacks?.onEnd?.();
-        utter.onerror = () => callbacks?.onError?.();
+        utter.onstart = () => {
+            if (disposed) return;
+            if (startTimer) clearTimeout(startTimer);
+            callbacks?.onStart?.();
+        };
+        utter.onend = () => {
+            if (disposed) return;
+            disposed = true;
+            cleanup();
+            callbacks?.onEnd?.();
+        };
+        utter.onerror = (event) => {
+            fail(event.error === "not-allowed"
+                ? "Voice playback was blocked by the browser."
+                : "Voice playback failed. Check your browser audio settings.");
+        };
+
         setTimeout(() => {
-            window.speechSynthesis.resume();
-            window.speechSynthesis.speak(utter);
+            if (disposed) return;
+            synthesis.resume();
+            synthesis.speak(utter);
+            startTimer = setTimeout(() => {
+                if (!disposed) fail("Voice playback did not start. Check your browser audio settings.");
+            }, 5000);
         }, 50);
     }
 
-    // getVoices() is async on first call — wait for voiceschanged if needed
-    if (window.speechSynthesis.getVoices().length > 0) {
+    synthesis.cancel();
+
+    if (synthesis.getVoices().length > 0) {
         assignAndSpeak();
     } else {
-        window.speechSynthesis.addEventListener("voiceschanged", assignAndSpeak, { once: true });
+        synthesis.addEventListener("voiceschanged", assignAndSpeak, { once: true });
+        // Several browsers never emit voiceschanged. Use their default voice instead.
+        fallbackTimer = setTimeout(assignAndSpeak, 750);
     }
+
+    return () => {
+        if (disposed) return;
+        disposed = true;
+        cleanup();
+        synthesis.cancel();
+    };
 }
 
 type ChatMessage = {
@@ -210,6 +263,7 @@ export function CompanionChatWorkspace({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [voiceMessageId, setVoiceMessageId] = useState<string | null>(null);
     const [voiceStarting, setVoiceStarting] = useState(false);
+    const voiceCleanupRef = useRef<(() => void) | null>(null);
 
     const activeCompanion = useMemo(
         () => companions.find((c) => c.id === activeId) ?? null,
@@ -470,15 +524,19 @@ export function CompanionChatWorkspace({
     }, [activeId]);
 
     useEffect(() => {
+        voiceCleanupRef.current?.();
+        voiceCleanupRef.current = null;
         setVoiceMessageId(null);
         setVoiceStarting(false);
         return () => {
-            if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+            voiceCleanupRef.current?.();
+            voiceCleanupRef.current = null;
         };
     }, [activeId]);
 
     function stopVoicePlayback() {
-        if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+        voiceCleanupRef.current?.();
+        voiceCleanupRef.current = null;
         setVoiceMessageId(null);
         setVoiceStarting(false);
     }
@@ -493,19 +551,23 @@ export function CompanionChatWorkspace({
 
         setVoiceStarting(true);
         setVoiceMessageId(messageKey);
-        speakMessage(
+        setError(null);
+        voiceCleanupRef.current = speakMessage(
             message.content,
             activeCompanion?.profile?.voice,
             activeCompanion?.gender,
             {
                 onStart: () => setVoiceStarting(false),
                 onEnd: () => {
+                    voiceCleanupRef.current = null;
                     setVoiceMessageId(null);
                     setVoiceStarting(false);
                 },
-                onError: () => {
+                onError: (message) => {
+                    voiceCleanupRef.current = null;
                     setVoiceMessageId(null);
                     setVoiceStarting(false);
+                    setError(message);
                 },
             },
         );
@@ -1396,7 +1458,7 @@ export function CompanionChatWorkspace({
             </div>
 
             <div className="grid gap-5 lg:grid-cols-12">
-                <aside className={`space-y-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
+                <aside className={`space-y-4 lg:col-span-3 lg:row-span-2 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
                     <Card>
                         <CardHeader
                             title="Companions"
@@ -1523,8 +1585,8 @@ export function CompanionChatWorkspace({
                     ) : null}
                 </aside>
 
-                <section className="space-y-4 lg:col-span-6">
-                    {activeCompanion ? (
+                {activeCompanion ? (
+                    <div className="lg:col-span-9">
                         <Card>
                             <CardHeader
                                 title={activeCompanion.name}
@@ -1595,7 +1657,10 @@ export function CompanionChatWorkspace({
                                 </div>
                             </CardBody>
                         </Card>
-                    ) : null}
+                    </div>
+                ) : null}
+
+                <section className="space-y-4 lg:col-span-6">
 
                     <Card>
                         <CardHeader
