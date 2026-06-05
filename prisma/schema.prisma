@@ -73,6 +73,7 @@ model Companion {
   companion_embeddings                                                   companion_embeddings?
   rpCampaignCharacters                                                   RpCampaignCharacter[]
 
+  sillyTavernCard                                                        Json?
   @@index([createdAt])
   @@index([featuredRank])
   @@index([featuredUntil])

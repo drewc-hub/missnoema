@@ -12,6 +12,7 @@ import {
     SidebarCompanionSkeleton,
 } from "@/components/ui";
 import { MediaGenPanel } from "@/components/MediaGenPanel";
+import { Loader2, Square, Volume2 } from "lucide-react";
 
 type Companion = {
     id: string;
@@ -36,8 +37,16 @@ const VOICE_PRESET_SETTINGS: Record<string, { pitch: number; rate: number; femal
     "dark-mysterious": { pitch: 0.82, rate: 0.88, femaleHint: false },
 };
 
-function speakMessage(text: string, voicePreset?: string | null, gender?: string | null) {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
+function speakMessage(
+    text: string,
+    voicePreset?: string | null,
+    gender?: string | null,
+    callbacks?: { onStart?: () => void; onEnd?: () => void; onError?: () => void },
+) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+        callbacks?.onError?.();
+        return;
+    }
     window.speechSynthesis.cancel();
 
     const utter = new SpeechSynthesisUtterance(text);
@@ -57,7 +66,9 @@ function speakMessage(text: string, voicePreset?: string | null, gender?: string
                 : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
         );
         if (preferred) utter.voice = preferred;
-        utter.onerror = () => { };
+        utter.onstart = () => callbacks?.onStart?.();
+        utter.onend = () => callbacks?.onEnd?.();
+        utter.onerror = () => callbacks?.onError?.();
         setTimeout(() => {
             window.speechSynthesis.resume();
             window.speechSynthesis.speak(utter);
@@ -197,6 +208,8 @@ export function CompanionChatWorkspace({
     const [deletingFactId, setDeletingFactId] = useState<string | null>(null);
     const [levelUpNotif, setLevelUpNotif] = useState<{ level: number; nextLevel: number; coinsEarned: number } | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [voiceMessageId, setVoiceMessageId] = useState<string | null>(null);
+    const [voiceStarting, setVoiceStarting] = useState(false);
 
     const activeCompanion = useMemo(
         () => companions.find((c) => c.id === activeId) ?? null,
@@ -455,6 +468,48 @@ export function CompanionChatWorkspace({
     useEffect(() => {
         console.log("[CompanionChatWorkspace] activeId changed:", activeId);
     }, [activeId]);
+
+    useEffect(() => {
+        setVoiceMessageId(null);
+        setVoiceStarting(false);
+        return () => {
+            if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+        };
+    }, [activeId]);
+
+    function stopVoicePlayback() {
+        if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+        setVoiceMessageId(null);
+        setVoiceStarting(false);
+    }
+
+    function playVoiceMessage(message: ChatMessage, index: number) {
+        const messageKey = message.id ?? `message-${index}`;
+
+        if (voiceMessageId === messageKey || voiceStarting) {
+            stopVoicePlayback();
+            return;
+        }
+
+        setVoiceStarting(true);
+        setVoiceMessageId(messageKey);
+        speakMessage(
+            message.content,
+            activeCompanion?.profile?.voice,
+            activeCompanion?.gender,
+            {
+                onStart: () => setVoiceStarting(false),
+                onEnd: () => {
+                    setVoiceMessageId(null);
+                    setVoiceStarting(false);
+                },
+                onError: () => {
+                    setVoiceMessageId(null);
+                    setVoiceStarting(false);
+                },
+            },
+        );
+    }
 
     async function loadSavedIds(conversationId: string) {
         try {
@@ -1960,6 +2015,32 @@ export function CompanionChatWorkspace({
                                     </>
                                 ) : null}
 
+                                {voiceMessageId ? (
+                                    <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2">
+                                        <div className="flex min-w-0 items-center gap-2 text-xs text-cyan-100">
+                                            {voiceStarting ? (
+                                                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                                            ) : (
+                                                <Volume2 className="h-4 w-4 shrink-0" />
+                                            )}
+                                            <span className="truncate">
+                                                {voiceStarting
+                                                    ? `Preparing ${activeCompanion?.name ?? "companion"} voice...`
+                                                    : `${activeCompanion?.name ?? "Companion"} is speaking`}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={stopVoicePlayback}
+                                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-cyan-300/20 px-2.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
+                                            title="Stop voice"
+                                        >
+                                            <Square className="h-3 w-3 fill-current" />
+                                            Stop
+                                        </button>
+                                    </div>
+                                ) : null}
+
                                 <div ref={messagesContainerRef} className="max-h-[430px] space-y-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
                                     {loadingConversation ? (
                                         <div className="space-y-3 animate-pulse">
@@ -1993,11 +2074,21 @@ export function CompanionChatWorkspace({
                                                                 <>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => speakMessage(m.content, activeCompanion?.profile?.voice, activeCompanion?.gender)}
-                                                                        className="text-[11px] text-zinc-500 hover:text-zinc-200 transition"
-                                                                        title="Read aloud"
+                                                                        onClick={() => playVoiceMessage(m, i)}
+                                                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition ${
+                                                                            voiceMessageId === (m.id ?? `message-${i}`)
+                                                                                ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-200"
+                                                                                : "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-200"
+                                                                        }`}
+                                                                        title={voiceMessageId === (m.id ?? `message-${i}`) ? "Stop voice" : "Play voice"}
                                                                     >
-                                                                        🔊
+                                                                        {voiceMessageId === (m.id ?? `message-${i}`) && voiceStarting ? (
+                                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                        ) : voiceMessageId === (m.id ?? `message-${i}`) ? (
+                                                                            <Square className="h-3 w-3 fill-current" />
+                                                                        ) : (
+                                                                            <Volume2 className="h-3.5 w-3.5" />
+                                                                        )}
                                                                     </button>
                                                                     <button
                                                                         type="button"
