@@ -98,21 +98,33 @@ export default function RpChatWorkspace({
     return [scene.title, scene.location, scene.mood].filter(Boolean).join(" · ");
   }, [scene]);
 
-  const continuityNotes = useMemo(() => {
-    const notes = [
-      memory?.sessionSummary
-        ? { label: "Session memory", value: memory.sessionSummary }
-        : null,
-      memory?.latestSceneSummary
-        ? { label: "Latest scene", value: memory.latestSceneSummary }
-        : null,
-      scene?.imagePrompt
-        ? { label: "Visual continuity", value: scene.imagePrompt }
-        : null,
-    ].filter(Boolean) as { label: string; value: string }[];
+  const recentStoryEvents = useMemo(
+    () =>
+      messages
+        .filter(
+          (message) =>
+            message.content.trim() &&
+            ["NARRATOR", "SYSTEM"].includes(message.speakerType),
+        )
+        .slice(-4)
+        .reverse(),
+    [messages],
+  );
 
-    return notes.slice(0, 3);
-  }, [memory?.latestSceneSummary, memory?.sessionSummary, scene?.imagePrompt]);
+  const questTracker = useMemo(() => {
+    const latestUserAction = messages
+      .filter((message) => message.speakerType === "USER" && message.content.trim())
+      .slice(-1)[0];
+
+    return {
+      objective:
+        memory?.latestSceneSummary ||
+        memory?.sessionSummary ||
+        "Advance the current scene.",
+      latestAction: latestUserAction?.content ?? null,
+      status: pending ? "Updating" : "Active",
+    };
+  }, [memory?.latestSceneSummary, memory?.sessionSummary, messages, pending]);
 
   useEffect(() => {
     const panel = messagesRef.current;
@@ -200,19 +212,12 @@ export default function RpChatWorkspace({
 
         <div className="flex min-h-screen min-w-0 flex-col">
           <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
-            <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
-              Noema Roleplay
-            </p>
-            <h1 className="mt-2 text-3xl font-bold">{title}</h1>
-            <p className="mt-2 text-sm text-slate-300">
-              Narrator-driven story mode with companion reactions and scene art.
-            </p>
-            <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+            <div className="grid gap-3 xl:grid-cols-3">
               <section className="rounded-2xl border border-white/10 bg-black/25 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-white">
-                      Cast
+                      Character Portraits
                     </h2>
                     <p className="mt-1 text-xs text-slate-500">
                       Active characters in this story.
@@ -271,36 +276,72 @@ export default function RpChatWorkspace({
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-white">
-                      Memory visibility
+                      Recent Story Events
                     </h2>
                     <p className="mt-1 text-xs text-slate-500">
-                      What the narrator is carrying forward.
+                      Important moments from the current story.
                     </p>
                   </div>
                   <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
-                    {memory?.messageCount ?? messages.length} turns
+                    {recentStoryEvents.length}
                   </span>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {continuityNotes.length > 0 ? (
-                    continuityNotes.map((note) => (
+                  {recentStoryEvents.length > 0 ? (
+                    recentStoryEvents.map((event) => (
                       <div
-                        key={note.label}
+                        key={event.id}
                         className="rounded-xl border border-white/10 bg-white/[0.04] p-2"
                       >
                         <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">
-                          {note.label}
+                          {event.speakerType === "NARRATOR" ? "Story event" : "Campaign event"}
                         </div>
                         <div className="mt-1 line-clamp-3 text-xs leading-5 text-slate-400">
-                          {note.value}
+                          {event.content}
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="rounded-xl border border-dashed border-white/10 p-3 text-xs text-slate-500">
-                      Story memory appears after scenes and summaries are created.
+                      Recent story events appear as the narrator advances the scene.
                     </div>
                   )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">
+                      Quest Tracker
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Current objective and latest action.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-200">
+                    {questTracker.status}
+                  </span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">
+                      Active objective
+                    </div>
+                    <div className="mt-1 line-clamp-4 text-xs leading-5 text-slate-400">
+                      {questTracker.objective}
+                    </div>
+                  </div>
+                  {questTracker.latestAction ? (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Latest action
+                      </div>
+                      <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                        {questTracker.latestAction}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             </div>
@@ -333,7 +374,11 @@ export default function RpChatWorkspace({
           )}
 
           <div className="border-t border-white/10 px-5 py-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-300">
+              Current Scene
+            </p>
             <h2 className="text-lg font-semibold">{sceneTitle}</h2>
+            <p className="mt-1 text-xs text-slate-500">{title}</p>
           </div>
           </section>
 
