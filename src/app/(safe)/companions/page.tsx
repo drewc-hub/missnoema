@@ -46,7 +46,8 @@ function CompanionCard({ c }: { c: ApiItem }) {
 
   return (
     <div
-      className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-white/[0.08] bg-[#0d0d1a] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-xl hover:shadow-black/40"
+      className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0d1a] transition-all duration-300 hover:border-white/20 hover:shadow-2xl hover:shadow-black/50"
+      style={{ aspectRatio: "188/330" }}
     >
       <a href={viewHref} className="absolute inset-0 block">
         {c.thumbnailUrl ? (
@@ -66,20 +67,30 @@ function CompanionCard({ c }: { c: ApiItem }) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d1a] via-[#0d0d1a]/40 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-2.5 pr-11">
-          <div className="truncate text-xs font-semibold leading-tight text-white sm:text-sm">
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <div className="truncate text-sm font-semibold leading-tight text-white">
             {c.name}
+          </div>
+          <div className="mt-1 max-h-0 overflow-hidden text-xs leading-relaxed text-white/60 opacity-0 transition-opacity duration-200 group-hover:max-h-12 group-hover:opacity-100 line-clamp-2">
+            {c.description}
           </div>
         </div>
       </a>
 
       <a
         href={chatHref}
-        className="absolute bottom-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/65 text-white shadow-lg backdrop-blur-sm transition hover:bg-white hover:text-black"
-        title={c.contentRating === "ADULT" ? "Chat now" : "Choose chat or roleplay"}
-        aria-label={c.contentRating === "ADULT" ? `Chat with ${c.name}` : `Choose a mode with ${c.name}`}
+        className="absolute bottom-3 left-3 right-3 z-10 mt-2 flex h-9 translate-y-1 items-center justify-center gap-2 rounded-lg bg-white text-xs font-semibold text-black opacity-0 transition-all duration-200 hover:bg-white/90 group-hover:translate-y-0 group-hover:opacity-100"
+        title={
+          c.contentRating === "ADULT" ? "Chat now" : "Choose chat or roleplay"
+        }
+        aria-label={
+          c.contentRating === "ADULT"
+            ? `Chat with ${c.name}`
+            : `Choose a mode with ${c.name}`
+        }
       >
         <MessageSquare className="h-3.5 w-3.5" />
+        {c.contentRating === "ADULT" ? "Chat now" : "Choose mode"}
       </a>
 
       {c.contentRating === "ADULT" && (
@@ -201,8 +212,8 @@ export default async function SafeCompanionsPage({
         </div>
       )}
 
-      {/* Compact library grid */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+      {/* Card grid — 5 columns max */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {data.items.map((c) => (
           <CompanionCard key={c.id} c={c} />
         ))}
