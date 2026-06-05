@@ -219,7 +219,7 @@ export default function RpChatWorkspace({
       />
       {storyPanel ? (
         <aside
-          className={`group fixed left-0 top-20 z-40 h-[calc(100dvh-6rem)] w-[min(18rem,calc(100vw-3rem))] transition-transform duration-300 ease-out hover:translate-x-0 focus-within:translate-x-0 ${
+          className={`group fixed left-0 top-20 z-50 h-[calc(100dvh-6rem)] w-[min(18rem,calc(100vw-3rem))] transition-transform duration-300 ease-out hover:translate-x-0 focus-within:translate-x-0 sm:left-[72px] ${
             storiesOpen ? "translate-x-0" : "-translate-x-full"
           }`}
           onMouseEnter={() => setStoriesOpen(true)}
