@@ -197,7 +197,7 @@ export default function RpChatWorkspace({
     <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-[url('/images/rp-dungeon-bg.png')] bg-cover bg-center opacity-[0.16]"
+        className="pointer-events-none fixed inset-0 bg-[url('/images/rp-dungeon-bg.png')] bg-cover bg-center opacity-[0.26]"
       />
       <div
         aria-hidden="true"

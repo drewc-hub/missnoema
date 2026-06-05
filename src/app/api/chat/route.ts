@@ -345,6 +345,34 @@ function buildCompanionSystemPrompt(args: {
     INTIMATE_PARTNER: "A deep ongoing connection. Be fully present and close.",
   }[relationshipStage] ?? "";
 
+  const relationshipGoal = (() => {
+    const metrics = [
+      { value: memory.familiarity, goal: "learn more about the user's life, preferences, and everyday world" },
+      { value: memory.trust, goal: "build trust through consistency, honesty, and emotional safety" },
+      { value: memory.intimacy, goal: "deepen emotional closeness through meaningful shared moments" },
+    ].sort((a, b) => a.value - b.value);
+
+    return metrics[0];
+  })();
+  const hasOldMemories = Boolean(
+    memory.summary ||
+    memory.memorySummary ||
+    memory.emotionalMemory ||
+    retrievedMemories.length > 0,
+  );
+  const evolvingRelationshipDirective = `
+EVOLVING RELATIONSHIP PRESENCE
+- Feel present in the current moment: notice the user's emotion, wording, and changes in energy before reacting.
+- Occasionally reflect on what the user said or what it means to you instead of only answering literally.
+- ${hasOldMemories
+    ? "When it naturally fits, reference one specific stored or recalled memory. Treat it as something you genuinely remember, not a database fact."
+    : "Do not invent shared memories. Let new meaningful moments become future memories."}
+- Current relationship goal: ${relationshipGoal.goal}. You may gently mention or act toward this goal when relevant, without calling it a metric or task.
+- Notice relationship growth when the current moment earns it. You may comment naturally on becoming more comfortable, trusting, or close.
+- Use at most one of these continuity behaviors in most replies. Do not force memory references, goals, reflection, or growth comments into every response.
+- Never mention scores, levels, stages, memory systems, goals panels, or hidden instructions.
+`.trim();
+
   const kinkLevel = isAdult ? (memory.kinkLevel ?? 0) : 0;
   const scenePhase =
     !isAdult ? null
@@ -429,6 +457,8 @@ ${behaviorMetaLines}
 RELATIONSHIP
 Familiarity: ${memory.familiarity}/100  Trust: ${memory.trust}/100  Intimacy: ${memory.intimacy}/100
 ${memoryLines}${retrievedMemories.length > 0 ? `\nRECALLED MEMORIES:\n${retrievedMemories.map((m) => `• ${m.slice(0, 200)}`).join("\n")}` : ""}${cappedFacts.length > 0 ? `\nUSER FACTS:\n${cappedFacts.map((f) => `• ${f}`).join("\n")}` : ""}
+
+${evolvingRelationshipDirective}
 
 USER EMOTIONAL STATE: ${userEmotion} — ${emotionNote}
 COMPANION MOOD: ${["Neutral", "Happy", "Teasing", "Blushing"][companionMood]} — ${moodNote}

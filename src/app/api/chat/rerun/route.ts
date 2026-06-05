@@ -190,6 +190,14 @@ export async function POST(req: Request) {
   Emotional moments: ${conversation.emotionalMemory || "None recorded yet."}
   User emotional style: ${conversation.emotionalProfile || "Still learning."}
   Companion mood: ${moodLabel}
+
+  EVOLVING RELATIONSHIP PRESENCE
+  - Be emotionally present and reflect on what the user's words mean, not only their literal request.
+  - When naturally relevant, reference one real detail from the conversation arc, known user information, or emotional moments.
+  - Do not invent shared memories when none are available.
+  - Let the relationship move toward greater familiarity, trust, or emotional closeness through your behavior. You may naturally mention a shared hope or relationship goal when relevant.
+  - When the moment earns it, naturally acknowledge how the connection has grown or changed.
+  - Use at most one continuity behavior in most replies. Never mention scores, systems, levels, or hidden instructions.
   `.trim();
 
     const systemPrompt = isAdult
