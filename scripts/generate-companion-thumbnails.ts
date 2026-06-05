@@ -35,9 +35,11 @@ const replicate = new Replicate({
 // ---------------------------------------------------------------------------
 
 const IMAGE_MODEL = env(
-    "REPLICATE_IMAGE_MODEL",
-    "zedge/stable-diffusion:69d39dcbb296da580994d867890ba2410d1fb6be9da9225d9bb48da2181594cf",
+    "THUMBNAIL_IMAGE_MODEL",
+    "black-forest-labs/flux-dev",
 );
+const DISABLE_SAFETY_CHECKER =
+    env("THUMBNAIL_DISABLE_SAFETY_CHECKER", "true").toLowerCase() === "true";
 const SAFE_BUCKET = env("SUPABASE_STORAGE_BUCKET_SAFE", "companion-media");
 const ADULT_BUCKET = env(
     "SUPABASE_STORAGE_BUCKET_ADULT",
@@ -51,6 +53,20 @@ const BASE_URL = env("BASE_URL", "http://localhost:3000").replace(/\/+$/, "");
 const REPLICATE_TIMEOUT_MS = 10 * 60_000; // 10 min
 const FETCH_TIMEOUT_MS = 2 * 60_000; // 2 min
 const UPLOAD_TIMEOUT_MS = 5 * 60_000; // 5 min
+
+const args = new Set(process.argv.slice(2));
+const valueArg = (name: string) =>
+    process.argv
+        .slice(2)
+        .find((arg) => arg.startsWith(`${name}=`))
+        ?.slice(name.length + 1)
+        .trim();
+const DRY_RUN = args.has("--dry-run");
+const COUNT_ONLY = args.has("--count-only");
+const LIMIT = Math.max(0, Number(valueArg("--limit") ?? "0") || 0);
+const ONLY_SLUG = valueArg("--slug") ?? "";
+const INCLUDE_ALL_PENDING = args.has("--all-pending");
+const MAX_FAILURES = Math.max(0, Number(valueArg("--max-failures") ?? "5") || 0);
 
 // ---------------------------------------------------------------------------
 // Timeout helpers (mirrors worker/index.ts)
@@ -84,33 +100,35 @@ async function fetchWithTimeout(
 
 function buildThumbnailPrompt(companion: {
     name: string;
-    description: string;
     tags: string[];
+    archetype: string | null;
+    gender: string | null;
+    race: string | null;
+    aestheticTags: string[];
     profile: any;
 }): string {
-    const { name, description, tags, profile } = companion;
-
-    const scene = typeof profile?.scene === "string" ? profile.scene : "";
+    const { name, tags, archetype, gender, race, aestheticTags, profile } = companion;
     const wardrobe =
         typeof profile?.wardrobe === "string" ? profile.wardrobe : "";
-    const personality =
-        typeof profile?.personality === "string" ? profile.personality : "";
-    const traits = Array.isArray(profile?.traits)
-        ? (profile.traits as string[]).join(", ")
-        : "";
-
-    // Base prompt: portrait thumbnail suitable for a companion library card
-    const userPrompt = `portrait thumbnail, companion card, ${name}`;
+    const safeVisualTags = [...tags, ...aestheticTags]
+        .filter((tag) => !/adult|nsfw|explicit|erotic|sexual|kink|nude|dominant|submissive|seductive|sensual/i.test(tag))
+        .slice(0, 8);
 
     return [
-        userPrompt,
-        `character: ${name}`,
-        description ? `description: ${description}` : "",
-        scene ? `scene: ${scene}` : "",
+        "safe-for-work fantasy character portrait",
+        "vertical companion card cover",
+        `character named ${name}`,
+        archetype ? `archetype: ${archetype}` : "",
+        gender ? `gender presentation: ${gender}` : "",
+        race ? `fantasy ancestry: ${race}` : "",
         wardrobe ? `wardrobe: ${wardrobe}` : "",
-        personality ? `personality: ${personality}` : "",
-        traits ? `traits: ${traits}` : "",
-        tags.length ? `tags: ${tags.join(", ")}` : "",
+        safeVisualTags.length ? `visual themes: ${safeVisualTags.join(", ")}` : "",
+        "adult character",
+        "fully clothed",
+        "head and shoulders visible",
+        "face fully inside frame",
+        "no text",
+        "no watermark",
         "cinematic lighting",
         "highly detailed",
         "clean composition",
@@ -129,38 +147,72 @@ function buildThumbnailPrompt(companion: {
 
 async function generateImageBytes(
     prompt: string,
+    rating: ContentRating,
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
     const { signal, cancel } = timeoutSignal(REPLICATE_TIMEOUT_MS, "replicate.run");
     let output: unknown;
     try {
+        const input: Record<string, unknown> = {
+            prompt,
+            aspect_ratio: "2:3",
+            output_format: "webp",
+            output_quality: 90,
+        };
+
+        if (IMAGE_MODEL === "black-forest-labs/flux-dev") {
+            input.megapixels = "1";
+            input.num_outputs = 1;
+            input.num_inference_steps = 28;
+            input.guidance = 3.5;
+            input.disable_safety_checker = DISABLE_SAFETY_CHECKER;
+        } else {
+            input.resolution = "1 MP";
+            input.safety_tolerance = rating === ContentRating.ADULT ? 5 : 2;
+        }
+
         output = await replicate.run(IMAGE_MODEL as `${string}/${string}`, {
-            input: { prompt },
+            input,
             signal,
         });
     } finally {
         cancel();
     }
 
-    async function extractUrl(value: any): Promise<string | null> {
+    async function extractUrl(value: unknown): Promise<string | null> {
         if (!value) return null;
         if (typeof value === "string") return value;
-        if (typeof value?.url === "string") return value.url;
-        if (typeof value?.url === "function") {
-            const r = await value.url();
-            if (typeof r === "string") return r;
+        if (value instanceof URL) return value.href;
+        if (Array.isArray(value)) {
+            for (const item of value) {
+                const url = await extractUrl(item);
+                if (url) return url;
+            }
+            return null;
         }
-        if (typeof value?.href === "string") return value.href;
+        if (typeof value !== "object") return null;
+
+        const record = value as Record<string, unknown>;
+        if (typeof record.url === "string") return record.url;
+        if (typeof record.url === "function") {
+            const r = await record.url();
+            if (typeof r === "string") return r;
+            if (r instanceof URL) return r.href;
+        }
+        if (typeof record.href === "string") return record.href;
+
+        for (const key of ["output", "outputs", "output_paths", "files", "images"]) {
+            if (key in record) {
+                const url = await extractUrl(record[key]);
+                if (url) return url;
+            }
+        }
+
         const s = String(value);
         if (/^https?:\/\//.test(s)) return s;
         return null;
     }
 
-    let url: string | null = null;
-    if (Array.isArray(output)) {
-        url = await extractUrl(output[0]);
-    } else {
-        url = await extractUrl(output);
-    }
+    const url = await extractUrl(output);
 
     if (!url) {
         throw new Error(
@@ -193,7 +245,7 @@ function extFromContentType(ct: string): string {
 async function uploadToSupabase(opts: {
     rating: ContentRating;
     bytes: Uint8Array;
-    contentType: string;warriior
+    contentType: string;
     companionId: string;
     slug: string;
 }): Promise<{ bucket: string; storagePath: string; publicUrl: string }> {
@@ -257,6 +309,11 @@ async function createAssetRecord(opts: {
             storageBucket: opts.bucket,
             storagePath: opts.storagePath,
             publicUrl: opts.publicUrl || "about:blank",
+            isCover: true,
+            metadata: {
+                source: "generate-companion-thumbnails",
+                model: IMAGE_MODEL,
+            },
         },
         select: { id: true },
     });
@@ -284,6 +341,10 @@ async function processCompanion(companion: {
     slug: string;
     description: string;
     tags: string[];
+    archetype: string | null;
+    gender: string | null;
+    race: string | null;
+    aestheticTags: string[];
     contentRating: ContentRating;
     profile: any;
 }): Promise<void> {
@@ -291,7 +352,10 @@ async function processCompanion(companion: {
 
     console.log(`  [gen] prompt: ${prompt.slice(0, 120)}...`);
 
-    const { bytes, contentType } = await generateImageBytes(prompt);
+    const { bytes, contentType } = await generateImageBytes(
+        prompt,
+        companion.contentRating,
+    );
 
     const uploaded = await uploadToSupabase({
         rating: companion.contentRating,
@@ -322,15 +386,23 @@ async function main() {
     console.log("[thumbnails] Starting companion thumbnail generation...");
     console.log(`[thumbnails] Model: ${IMAGE_MODEL}`);
     console.log(
+        `[thumbnails] Safety checker: ${DISABLE_SAFETY_CHECKER ? "disabled" : "enabled"}`,
+    );
+    console.log(
         `[thumbnails] Buckets: SAFE=${SAFE_BUCKET}, ADULT=${ADULT_BUCKET}`,
     );
     console.log(
         `[thumbnails] Concurrency: ${CONCURRENCY}, batch delay: ${BATCH_DELAY_MS}ms`,
     );
+    console.log(
+        `[thumbnails] Mode: ${DRY_RUN ? "dry run" : "generate"}${LIMIT ? `, limit=${LIMIT}` : ""}${ONLY_SLUG ? `, slug=${ONLY_SLUG}` : ""}, target=${INCLUDE_ALL_PENDING ? "all pending" : "generic DiceBear covers"}, max failures=${MAX_FAILURES || "unlimited"}`,
+    );
 
-    // Find all companions with zero IMAGE assets
-    const companions = await prisma.companion.findMany({
+    // DiceBear/generic profile avatars are not CompanionAsset records, so this
+    // selects companions that still need a generated cover.
+    const pendingCompanions = await prisma.companion.findMany({
         where: {
+            ...(ONLY_SLUG ? { slug: ONLY_SLUG } : {}),
             assets: {
                 none: {
                     type: GenerationType.IMAGE,
@@ -343,11 +415,26 @@ async function main() {
             slug: true,
             description: true,
             tags: true,
+            archetype: true,
+            gender: true,
+            race: true,
+            aestheticTags: true,
             contentRating: true,
             profile: true,
         },
         orderBy: { createdAt: "asc" },
     });
+    const companions = pendingCompanions
+        .filter((companion) => {
+            if (INCLUDE_ALL_PENDING || ONLY_SLUG) return true;
+            const profile =
+                companion.profile && typeof companion.profile === "object"
+                    ? (companion.profile as Record<string, unknown>)
+                    : {};
+            return typeof profile.avatarImageUrl === "string"
+                && profile.avatarImageUrl.includes("dicebear.com");
+        })
+        .slice(0, LIMIT || undefined);
 
     const total = companions.length;
 
@@ -359,6 +446,24 @@ async function main() {
 
     console.log(`[thumbnails] Found ${total} companion(s) without image assets.`);
 
+    if (COUNT_ONLY) return;
+
+    if (DRY_RUN) {
+        for (const [index, companion] of companions.entries()) {
+            const profile =
+                companion.profile && typeof companion.profile === "object"
+                    ? (companion.profile as Record<string, unknown>)
+                    : {};
+            const avatar = typeof profile.avatarImageUrl === "string"
+                ? profile.avatarImageUrl
+                : "";
+            console.log(
+                `[thumbnails] ${index + 1}/${total}: "${companion.name}" (${companion.slug})${avatar.includes("dicebear.com") ? " [generic DiceBear cover]" : ""}`,
+            );
+        }
+        return;
+    }
+
     let succeeded = 0;
     let failed = 0;
 
@@ -367,8 +472,8 @@ async function main() {
         const batch = companions.slice(i, i + CONCURRENCY);
 
         await Promise.all(
-            batch.map(async (companion) => {
-                const index = companions.indexOf(companion) + 1;
+            batch.map(async (companion, batchIndex) => {
+                const index = i + batchIndex + 1;
                 console.log(
                     `[thumbnails] Processing ${index}/${total}: "${companion.name}" (${companion.slug}) [${companion.contentRating}]`,
                 );
@@ -386,6 +491,13 @@ async function main() {
             }),
         );
 
+        if (MAX_FAILURES > 0 && failed >= MAX_FAILURES) {
+            console.error(
+                `[thumbnails] Stopping after ${failed} failures. Use --max-failures=0 to disable this guard.`,
+            );
+            break;
+        }
+
         // Pause between batches to avoid hammering Replicate rate limits
         if (i + CONCURRENCY < companions.length && BATCH_DELAY_MS > 0) {
             await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
@@ -396,10 +508,13 @@ async function main() {
         `[thumbnails] Done. succeeded=${succeeded}, failed=${failed}, total=${total}`,
     );
 
-    await prisma.$disconnect();
 }
 
-main().catch((err) => {
-    console.error("[thumbnails] Fatal error:", err);
-    process.exit(1);
-});
+main()
+    .catch((err) => {
+        console.error("[thumbnails] Fatal error:", err);
+        process.exitCode = 1;
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

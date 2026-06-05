@@ -12,6 +12,7 @@ import {
     SidebarCompanionSkeleton,
 } from "@/components/ui";
 import { MediaGenPanel } from "@/components/MediaGenPanel";
+import { playNotificationPing } from "@/lib/notification-sound";
 import { Loader2, Square, Volume2 } from "lucide-react";
 
 type Companion = {
@@ -28,14 +29,23 @@ type Companion = {
 };
 
 const VOICE_PRESET_SETTINGS: Record<string, { pitch: number; rate: number; femaleHint: boolean }> = {
-    "soft-young": { pitch: 1.25, rate: 1.0, femaleHint: true },
-    "warm-sultry": { pitch: 0.9, rate: 0.82, femaleHint: true },
-    "deep-breathy": { pitch: 0.85, rate: 0.88, femaleHint: true },
-    "playful-energetic": { pitch: 1.2, rate: 1.12, femaleHint: true },
-    "mature-refined": { pitch: 0.92, rate: 0.9, femaleHint: false },
-    "older-distinguished": { pitch: 0.78, rate: 0.85, femaleHint: false },
-    "dark-mysterious": { pitch: 0.82, rate: 0.88, femaleHint: false },
+    "soft-young": { pitch: 1.04, rate: 0.98, femaleHint: true },
+    "warm-sultry": { pitch: 0.98, rate: 0.92, femaleHint: true },
+    "deep-breathy": { pitch: 0.94, rate: 0.94, femaleHint: true },
+    "playful-energetic": { pitch: 1.03, rate: 1.04, femaleHint: true },
+    "mature-refined": { pitch: 0.98, rate: 0.96, femaleHint: false },
+    "older-distinguished": { pitch: 0.94, rate: 0.92, femaleHint: false },
+    "dark-mysterious": { pitch: 0.95, rate: 0.93, femaleHint: false },
 };
+
+function cleanVoiceText(text: string) {
+    return text
+        .replace(/\*[^*]+\*/g, " ")
+        .replace(/```[\s\S]*?```/g, " ")
+        .replace(/[#>`_~]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
 
 function speakMessage(
     text: string,
@@ -49,7 +59,13 @@ function speakMessage(
     }
 
     const synthesis = window.speechSynthesis;
-    const utter = new SpeechSynthesisUtterance(text);
+    const spokenText = cleanVoiceText(text);
+    if (!spokenText) {
+        callbacks?.onError?.("This message has no spoken dialogue.");
+        return () => undefined;
+    }
+
+    const utter = new SpeechSynthesisUtterance(spokenText);
     const preset = voicePreset ? VOICE_PRESET_SETTINGS[voicePreset] : null;
     const isFemale = preset
         ? preset.femaleHint
@@ -59,8 +75,8 @@ function speakMessage(
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let startTimer: ReturnType<typeof setTimeout> | null = null;
 
-    utter.pitch = preset?.pitch ?? (isFemale ? 1.1 : 0.9);
-    utter.rate = preset?.rate ?? 1.0;
+    utter.pitch = preset?.pitch ?? (isFemale ? 1.02 : 0.98);
+    utter.rate = preset?.rate ?? 0.97;
 
     function cleanup() {
         if (fallbackTimer) clearTimeout(fallbackTimer);
@@ -85,11 +101,19 @@ function speakMessage(
         cleanup();
 
         const voices = synthesis.getVoices();
-        const preferred = voices.find((v) =>
-            isFemale
-                ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa/i.test(v.name)
-                : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi/i.test(v.name),
-        );
+        const genderPattern = isFemale
+            ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa|ava|aria|jenny/i
+            : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi|guy|ryan/i;
+        const preferred = [...voices]
+            .filter((voice) => /^en[-_]/i.test(voice.lang))
+            .sort((a, b) => {
+                const score = (voice: SpeechSynthesisVoice) =>
+                    (/natural|neural|premium|enhanced|google|microsoft/i.test(voice.name) ? 8 : 0) +
+                    (genderPattern.test(voice.name) ? 4 : 0) +
+                    (!voice.localService ? 1 : 0) +
+                    (voice.default ? 1 : 0);
+                return score(b) - score(a);
+            })[0];
         if (preferred) utter.voice = preferred;
         utter.onstart = () => {
             if (disposed) return;
@@ -264,6 +288,9 @@ export function CompanionChatWorkspace({
     const [voiceMessageId, setVoiceMessageId] = useState<string | null>(null);
     const [voiceStarting, setVoiceStarting] = useState(false);
     const voiceCleanupRef = useRef<(() => void) | null>(null);
+    const [checkInHours, setCheckInHours] = useState(0);
+    const [checkInSending, setCheckInSending] = useState(false);
+    const checkInAttemptRef = useRef<string | null>(null);
 
     const activeCompanion = useMemo(
         () => companions.find((c) => c.id === activeId) ?? null,
@@ -571,6 +598,58 @@ export function CompanionChatWorkspace({
                 },
             },
         );
+    }
+
+    function checkInStorageKey(companionId: string, suffix: "hours" | "last") {
+        return `noema-companion-check-in:${companionId}:${suffix}`;
+    }
+
+    function updateCheckInHours(hours: number) {
+        if (!activeCompanion) return;
+        setCheckInHours(hours);
+        localStorage.setItem(checkInStorageKey(activeCompanion.id, "hours"), String(hours));
+        localStorage.setItem(checkInStorageKey(activeCompanion.id, "last"), String(Date.now()));
+        checkInAttemptRef.current = null;
+
+        if (hours > 0 && "Notification" in window && Notification.permission === "default") {
+            void Notification.requestPermission();
+        }
+    }
+
+    async function requestCompanionCheckIn(manual = false) {
+        if (!activeCompanion || checkInSending || sending) return;
+
+        setCheckInSending(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/chat/check-in", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ companionId: activeCompanion.id }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.message) {
+                throw new Error(data?.error || "Companion check-in failed.");
+            }
+
+            setMessages((prev) => [...prev, data.message as ChatMessage]);
+            localStorage.setItem(
+                checkInStorageKey(activeCompanion.id, "last"),
+                String(Date.now()),
+            );
+            playNotificationPing();
+
+            if (!manual && "Notification" in window && Notification.permission === "granted") {
+                new Notification(activeCompanion.name, {
+                    body: String(data.message.content ?? "").slice(0, 180),
+                    icon: activeCompanion.thumbnailUrl ?? undefined,
+                });
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Companion check-in failed.");
+        } finally {
+            setCheckInSending(false);
+        }
     }
 
     async function loadSavedIds(conversationId: string) {
@@ -916,6 +995,31 @@ export function CompanionChatWorkspace({
 
         loadConversation();
     }, [activeId]);
+
+    useEffect(() => {
+        if (!activeId) {
+            setCheckInHours(0);
+            return;
+        }
+
+        const savedHours = Number(localStorage.getItem(checkInStorageKey(activeId, "hours")) ?? "0");
+        setCheckInHours(Number.isFinite(savedHours) ? savedHours : 0);
+        checkInAttemptRef.current = null;
+    }, [activeId]);
+
+    useEffect(() => {
+        if (!activeCompanion || !checkInHours || loadingConversation || checkInSending || sending) return;
+
+        const last = Number(
+            localStorage.getItem(checkInStorageKey(activeCompanion.id, "last")) ?? "0",
+        );
+        const attemptKey = `${activeCompanion.id}:${last}:${checkInHours}`;
+        if (checkInAttemptRef.current === attemptKey) return;
+        if (Date.now() - last < checkInHours * 60 * 60 * 1000) return;
+
+        checkInAttemptRef.current = attemptKey;
+        void requestCompanionCheckIn(false);
+    }, [activeCompanion, checkInHours, checkInSending, loadingConversation, sending]);
 
     async function sendMessage(customMessage?: string) {
         if (!activeCompanion || sending) return;
@@ -1524,6 +1628,34 @@ export function CompanionChatWorkspace({
                                                 {tag}
                                             </span>
                                         ))}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800 pt-3">
+                                        <label className="flex items-center gap-2 text-xs text-zinc-400">
+                                            <span>Receive texts</span>
+                                            <select
+                                                value={checkInHours}
+                                                onChange={(event) => updateCheckInHours(Number(event.target.value))}
+                                                className="h-8 rounded-lg border border-zinc-800 bg-zinc-950 px-2 text-xs text-zinc-200"
+                                            >
+                                                <option value={0}>Off</option>
+                                                <option value={6}>Every 6 hours</option>
+                                                <option value={24}>Daily</option>
+                                                <option value={72}>Every 3 days</option>
+                                            </select>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            disabled={checkInSending || sending}
+                                            onClick={() => void requestCompanionCheckIn(true)}
+                                            className="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-xs font-semibold text-zinc-300 transition hover:border-cyan-500/50 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {checkInSending ? "Writing..." : "Text me now"}
+                                        </button>
+                                        {checkInHours > 0 ? (
+                                            <span className="text-[11px] text-zinc-500">
+                                                Check-ins appear when you return to chat.
+                                            </span>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>
