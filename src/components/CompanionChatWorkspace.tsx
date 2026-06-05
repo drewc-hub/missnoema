@@ -28,135 +28,72 @@ type Companion = {
     thumbnailUrl?: string | null;
 };
 
-const VOICE_PRESET_SETTINGS: Record<string, { pitch: number; rate: number; femaleHint: boolean }> = {
-    "soft-young": { pitch: 1.04, rate: 0.98, femaleHint: true },
-    "warm-sultry": { pitch: 0.98, rate: 0.92, femaleHint: true },
-    "deep-breathy": { pitch: 0.94, rate: 0.94, femaleHint: true },
-    "playful-energetic": { pitch: 1.03, rate: 1.04, femaleHint: true },
-    "mature-refined": { pitch: 0.98, rate: 0.96, femaleHint: false },
-    "older-distinguished": { pitch: 0.94, rate: 0.92, femaleHint: false },
-    "dark-mysterious": { pitch: 0.95, rate: 0.93, femaleHint: false },
-};
-
-function cleanVoiceText(text: string) {
-    return text
-        .replace(/\*[^*]+\*/g, " ")
-        .replace(/```[\s\S]*?```/g, " ")
-        .replace(/[#>`_~]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-}
-
-function speakMessage(
-    text: string,
-    voicePreset?: string | null,
-    gender?: string | null,
+function playGeneratedVoice(
+    messageId: string,
+    companionId: string,
     callbacks?: { onStart?: () => void; onEnd?: () => void; onError?: (message: string) => void },
 ): () => void {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-        callbacks?.onError?.("Voice playback is not supported by this browser.");
-        return () => undefined;
-    }
-
-    const synthesis = window.speechSynthesis;
-    const spokenText = cleanVoiceText(text);
-    if (!spokenText) {
-        callbacks?.onError?.("This message has no spoken dialogue.");
-        return () => undefined;
-    }
-
-    const utter = new SpeechSynthesisUtterance(spokenText);
-    const preset = voicePreset ? VOICE_PRESET_SETTINGS[voicePreset] : null;
-    const isFemale = preset
-        ? preset.femaleHint
-        : (!gender || gender === "female" || gender === "non-binary");
+    const abortController = new AbortController();
+    let audio: HTMLAudioElement | null = null;
     let disposed = false;
-    let started = false;
-    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
-    let startTimer: ReturnType<typeof setTimeout> | null = null;
-
-    utter.pitch = preset?.pitch ?? (isFemale ? 1.02 : 0.98);
-    utter.rate = preset?.rate ?? 0.97;
 
     function cleanup() {
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-        if (startTimer) clearTimeout(startTimer);
-        synthesis.removeEventListener("voiceschanged", assignAndSpeak);
-        utter.onstart = null;
-        utter.onend = null;
-        utter.onerror = null;
+        if (!audio) return;
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+        audio = null;
     }
 
     function fail(message: string) {
         if (disposed) return;
         disposed = true;
         cleanup();
-        synthesis.cancel();
         callbacks?.onError?.(message);
     }
 
-    function assignAndSpeak() {
-        if (disposed || started) return;
-        started = true;
-        cleanup();
-
-        const voices = synthesis.getVoices();
-        const genderPattern = isFemale
-            ? /female|woman|girl|zira|samantha|victoria|fiona|karen|moira|veena|tessa|ava|aria|jenny/i
-            : /male|man|daniel|david|alex|fred|ralph|thomas|lekha|rishi|guy|ryan/i;
-        const preferred = [...voices]
-            .filter((voice) => /^en[-_]/i.test(voice.lang))
-            .sort((a, b) => {
-                const score = (voice: SpeechSynthesisVoice) =>
-                    (/natural|neural|premium|enhanced|google|microsoft/i.test(voice.name) ? 8 : 0) +
-                    (genderPattern.test(voice.name) ? 4 : 0) +
-                    (!voice.localService ? 1 : 0) +
-                    (voice.default ? 1 : 0);
-                return score(b) - score(a);
-            })[0];
-        if (preferred) utter.voice = preferred;
-        utter.onstart = () => {
+    void (async () => {
+        try {
+            const response = await fetch("/api/voice/message", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ messageId, companionId }),
+                signal: abortController.signal,
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || typeof data?.audioUrl !== "string") {
+                throw new Error(data?.error || "Voice generation failed.");
+            }
             if (disposed) return;
-            if (startTimer) clearTimeout(startTimer);
-            callbacks?.onStart?.();
-        };
-        utter.onend = () => {
-            if (disposed) return;
-            disposed = true;
-            cleanup();
-            callbacks?.onEnd?.();
-        };
-        utter.onerror = (event) => {
-            fail(event.error === "not-allowed"
-                ? "Voice playback was blocked by the browser."
-                : "Voice playback failed. Check your browser audio settings.");
-        };
 
-        setTimeout(() => {
-            if (disposed) return;
-            synthesis.resume();
-            synthesis.speak(utter);
-            startTimer = setTimeout(() => {
-                if (!disposed) fail("Voice playback did not start. Check your browser audio settings.");
-            }, 5000);
-        }, 50);
-    }
+            audio = new Audio(data.audioUrl);
+            audio.preload = "auto";
+            audio.onplaying = () => {
+                if (!disposed) callbacks?.onStart?.();
+            };
+            audio.onended = () => {
+                if (disposed) return;
+                disposed = true;
+                cleanup();
+                callbacks?.onEnd?.();
+            };
+            audio.onerror = () => fail("Generated voice audio could not be played.");
 
-    synthesis.cancel();
-
-    if (synthesis.getVoices().length > 0) {
-        assignAndSpeak();
-    } else {
-        synthesis.addEventListener("voiceschanged", assignAndSpeak, { once: true });
-        // Several browsers never emit voiceschanged. Use their default voice instead.
-        fallbackTimer = setTimeout(assignAndSpeak, 750);
-    }
+            await audio.play();
+        } catch (error) {
+            if (abortController.signal.aborted) return;
+            fail(error instanceof Error ? error.message : "Voice generation failed.");
+        }
+    })();
 
     return () => {
         if (disposed) return;
         disposed = true;
+        abortController.abort();
         cleanup();
-        synthesis.cancel();
     };
 }
 
@@ -576,13 +513,17 @@ export function CompanionChatWorkspace({
             return;
         }
 
+        if (!message.id || !activeCompanion) {
+            setError("Wait for the companion reply to finish before playing its voice.");
+            return;
+        }
+
         setVoiceStarting(true);
         setVoiceMessageId(messageKey);
         setError(null);
-        voiceCleanupRef.current = speakMessage(
-            message.content,
-            activeCompanion?.profile?.voice,
-            activeCompanion?.gender,
+        voiceCleanupRef.current = playGeneratedVoice(
+            message.id,
+            activeCompanion.id,
             {
                 onStart: () => setVoiceStarting(false),
                 onEnd: () => {
@@ -1283,6 +1224,21 @@ export function CompanionChatWorkspace({
                                 next[next.length - 1] = {
                                     ...last,
                                     content: last.content + String(event.text ?? ""),
+                                };
+                            }
+                            return next;
+                        });
+                    } else if (
+                        event.type === "done" &&
+                        typeof event.assistantMsgId === "string"
+                    ) {
+                        setMessages((prev) => {
+                            const next = [...prev];
+                            const last = next[next.length - 1];
+                            if (last?.role === "assistant") {
+                                next[next.length - 1] = {
+                                    ...last,
+                                    id: event.assistantMsgId as string,
                                 };
                             }
                             return next;

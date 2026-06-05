@@ -225,16 +225,17 @@ export async function POST(req: Request) {
 
             const reply = fullReply.trim() || `Hey… I've been waiting for you.`;
 
-            await prisma.chatMessage.create({
+            const message = await prisma.chatMessage.create({
                 data: {
                     conversationId: convoId,
                     role: "assistant",
                     content: reply,
                     contentRating: companion.contentRating,
                 },
+                select: { id: true },
             });
 
-            await sse({ type: "done", reply });
+            await sse({ type: "done", reply, assistantMsgId: message.id });
         } catch (err) {
             console.error("Intro generation failed:", err);
             try {

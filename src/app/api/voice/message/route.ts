@@ -16,6 +16,7 @@ export const runtime = "nodejs";
 
 const SIGNED_URL_TTL_SECONDS = 24 * 60 * 60;
 const MAX_TTS_CHARACTERS = 4096;
+const VOICE_RENDER_VERSION = "natural-v2";
 const OPENAI_VOICES = [
   "alloy",
   "ash",
@@ -56,6 +57,8 @@ function stringValue(value: unknown): string {
 
 function cleanTTSInputText(value: string): string {
   return value
+    .replace(/\*[^*]+\*/g, " ")
+    .replace(/```[\s\S]*?```/g, " ")
     .replace(
       /\{(shake|shout|whisper|glow|pulse|wave|flicker|drip|bounce|tremble|glitch|expand):([^}]+)\}/gi,
       "$2",
@@ -98,7 +101,9 @@ function buildVoiceInstructions(companionName: string, profile: unknown): string
     stringValue(voiceMeta.accent) && `Accent: ${stringValue(voiceMeta.accent)}.`,
     stringValue(profileRecord.speakingStyle) &&
       `Speaking style: ${stringValue(profileRecord.speakingStyle)}.`,
-    "Use natural pacing, varied intonation, and conversational pauses.",
+    "Deliver this as intimate, spontaneous conversation, not narration or an announcement.",
+    "Use natural pacing, varied intonation, contractions, brief conversational pauses, and subtle emotion.",
+    "Avoid a polished presenter voice, exaggerated acting, sing-song cadence, and equal emphasis on every word.",
   ].filter(Boolean);
 
   return parts.join(" ").slice(0, 1000);
@@ -214,10 +219,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const model = process.env.OPENAI_TTS_MODEL?.trim() || "gpt-4o-mini-tts";
+    const voice = resolveVoice(companion.profile, companion.gender);
+    const cachedModel = `${model}:${VOICE_RENDER_VERSION}`;
     const cached = await prisma.messageAudio.findUnique({
       where: { messageId: message.id },
     });
-    if (cached) {
+    if (
+      cached &&
+      cached.provider === "openai" &&
+      cached.voiceId === voice &&
+      cached.model === cachedModel
+    ) {
       const signed = await createSignedAudioUrl(
         cached.storageBucket,
         cached.storagePath,
@@ -240,8 +253,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const model = process.env.OPENAI_TTS_MODEL?.trim() || "gpt-4o-mini-tts";
-    const voice = resolveVoice(companion.profile, companion.gender);
     const request: OpenAI.Audio.Speech.SpeechCreateParams = {
       model,
       voice,
@@ -287,7 +298,7 @@ export async function POST(req: Request) {
         companionId: companion.id,
         provider: "openai",
         voiceId: voice,
-        model,
+        model: cachedModel,
         storageBucket: bucket,
         storagePath,
         ...signed,
@@ -297,7 +308,7 @@ export async function POST(req: Request) {
         companionId: companion.id,
         provider: "openai",
         voiceId: voice,
-        model,
+        model: cachedModel,
         storageBucket: bucket,
         storagePath,
         contentType: "audio/mpeg",
