@@ -41,15 +41,8 @@ function qs(params: Record<string, string | undefined>) {
 }
 
 function CompanionCard({ c }: { c: ApiItem }) {
-  const viewHref =
-    c.contentRating === "ADULT"
-      ? `/adult/companions/${encodeURIComponent(c.slug)}`
-      : `/companions/${encodeURIComponent(c.slug)}/start`;
-
-  const chatHref =
-    c.contentRating === "ADULT"
-      ? `/adult/chat?companion=${encodeURIComponent(c.slug)}`
-      : `/companions/${encodeURIComponent(c.slug)}/start`;
+  const viewHref = `/companions/${encodeURIComponent(c.slug)}`;
+  const chatHref = `/companions/${encodeURIComponent(c.slug)}/start`;
 
   return (
     <div

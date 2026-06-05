@@ -20,11 +20,15 @@ export default async function SafeCompanionDetailPage({
 }) {
   const { slug } = await params;
   const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
 
   const companion = await prisma.companion.findFirst({
     where: {
       slug,
-      contentRating: ContentRating.SAFE,
+      contentRating: { in: allowedRatings },
       OR: [
         { visibility: Visibility.PUBLIC },
         ...(user ? [{ ownerId: user.id }] : []),
@@ -38,6 +42,7 @@ export default async function SafeCompanionDetailPage({
       description: true,
       tags: true,
       profile: true,
+      contentRating: true,
       views: true,
       saves: true,
       likes: true,
@@ -45,11 +50,11 @@ export default async function SafeCompanionDetailPage({
       assets: {
         where: {
           type: "IMAGE",
-          contentRating: ContentRating.SAFE,
+          contentRating: { in: allowedRatings },
         },
         orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
         take: 6,
-        select: { id: true, publicUrl: true },
+        select: { id: true, publicUrl: true, contentRating: true },
       },
       User: {
         select: {
@@ -80,14 +85,11 @@ export default async function SafeCompanionDetailPage({
     });
 
     if (adultCompanion) {
-      const adultProfilePath = `/adult/companions/${adultCompanion.slug}`;
-      if (user && isAdultAllowed(user)) {
-        redirect(adultProfilePath);
-      }
+      const profilePath = `/companions/${adultCompanion.slug}`;
       if (user) {
-        redirect(`/adult/verify?next=${encodeURIComponent(adultProfilePath)}`);
+        redirect(`/adult/verify?next=${encodeURIComponent(profilePath)}`);
       }
-      redirect(`/login?next=${encodeURIComponent(adultProfilePath)}`);
+      redirect(`/login?next=${encodeURIComponent(profilePath)}`);
     }
 
     return <main className="p-6 text-zinc-400">Companion not found.</main>;
@@ -108,7 +110,9 @@ export default async function SafeCompanionDetailPage({
       ? profile.avatarImageUrl.trim()
       : null;
   const primaryUrl = primaryAsset
-    ? (primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`)
+    ? primaryAsset.contentRating === ContentRating.ADULT
+      ? `/media/${primaryAsset.id}`
+      : (primaryAsset.publicUrl ?? `/media/${primaryAsset.id}`)
     : avatarImageUrl;
   const stats =
     profile.stats && typeof profile.stats === "object"
@@ -117,6 +121,7 @@ export default async function SafeCompanionDetailPage({
           .slice(0, 6)
       : [];
   const isOwner = Boolean(user && user.id === companion.ownerId);
+  const isAdult = companion.contentRating === ContentRating.ADULT;
 
   if (companion.ownerId && !companion.User && !isOwner) {
     redirect("/marketplace");
@@ -141,8 +146,14 @@ export default async function SafeCompanionDetailPage({
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
             <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-emerald-900/60 bg-emerald-950/60 px-3 py-1 text-xs text-emerald-200">
-                SAFE
+              <span
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  isAdult
+                    ? "border-rose-900/60 bg-rose-950/60 text-rose-200"
+                    : "border-emerald-900/60 bg-emerald-950/60 text-emerald-200"
+                }`}
+              >
+                {companion.contentRating}
               </span>
               <span className="rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
                 Marketplace
@@ -264,7 +275,11 @@ export default async function SafeCompanionDetailPage({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={asset.publicUrl ?? `/media/${asset.id}`}
+                    src={
+                      asset.contentRating === ContentRating.ADULT
+                        ? `/media/${asset.id}`
+                        : (asset.publicUrl ?? `/media/${asset.id}`)
+                    }
                     alt=""
                     className="h-full w-full object-cover"
                     loading="lazy"
@@ -309,13 +324,17 @@ export default async function SafeCompanionDetailPage({
           </div>
 
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm leading-6 text-zinc-400">
-            <div className="flex items-center gap-2 text-emerald-300">
+            <div
+              className={`flex items-center gap-2 ${
+                isAdult ? "text-rose-300" : "text-emerald-300"
+              }`}
+            >
               <Shield className="h-4 w-4" />
-              Safe listing
+              {isAdult ? "Adult listing" : "Safe listing"}
             </div>
             <p className="mt-2">
-              This companion is listed in the safe marketplace and can be used
-              in roleplay scenes, chat, or discovery.
+              This companion can be used in roleplay scenes, chat, or
+              discovery.
             </p>
           </div>
         </aside>

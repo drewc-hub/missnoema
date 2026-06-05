@@ -46,7 +46,7 @@ export function AdultTopNav() {
                         <NavLink href="/roleplay" label="RP & Chat" />
                     </li>
                     <li>
-                        <NavLink href="/adult/chat" label="Chat" />
+                        <NavLink href="/chat" label="Chat" />
                     </li>
                     <li>
                         <NavLink href="/account/billing" label="Subscriptions" />

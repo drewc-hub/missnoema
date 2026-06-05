@@ -88,10 +88,7 @@ export function DiscoveryDeck({
         if (signedIn) {
             await recordReaction(active.id, "start").catch(() => undefined);
         }
-        const isAdult = active.contentRating === "ADULT";
-        window.location.href = isAdult
-            ? `/adult/chat?companion=${encodeURIComponent(active.slug)}`
-            : `/chat?companion=${encodeURIComponent(active.slug)}`;
+        window.location.href = `/chat?companion=${encodeURIComponent(active.slug)}`;
     }
 
     function resetDeck() {

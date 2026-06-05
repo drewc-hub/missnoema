@@ -26,16 +26,18 @@ export default async function SafeChatPage({
 
   if (requestedSlug) {
     const companion = await prisma.companion.findFirst({
-      where: { slug: requestedSlug, visibility: Visibility.PUBLIC },
+      where: {
+        slug: requestedSlug,
+        OR: [{ visibility: Visibility.PUBLIC }, { ownerId: user.id }],
+      },
       select: { id: true, contentRating: true },
     });
 
     if (companion?.contentRating === ContentRating.ADULT) {
-      const adultChatPath = `/adult/chat?companion=${encodeURIComponent(requestedSlug)}`;
-      if (allowAdult) {
-        redirect(adultChatPath);
+      if (!allowAdult) {
+        const chatPath = `/chat?companion=${encodeURIComponent(requestedSlug)}`;
+        redirect(`/adult/verify?next=${encodeURIComponent(chatPath)}`);
       }
-      redirect(`/adult/verify?next=${encodeURIComponent(adultChatPath)}`);
     }
 
     initialCompanionId = companion?.id;

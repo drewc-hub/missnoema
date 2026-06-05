@@ -56,10 +56,7 @@ function ActionLink({
 }
 
 function CompanionTile({ companion }: { companion: TavernCompanion }) {
-  const chatHref =
-    companion.contentRating === "ADULT"
-      ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
-      : `/companions/${encodeURIComponent(companion.slug)}/start`;
+  const chatHref = `/companions/${encodeURIComponent(companion.slug)}/start`;
 
   return (
     <a

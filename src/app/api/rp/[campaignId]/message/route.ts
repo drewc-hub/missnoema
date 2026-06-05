@@ -220,9 +220,22 @@ export async function POST(
       .map((m) => `${m.speakerType}: ${m.content}`)
       .join("\n\n");
 
-    const campaignCharacters =
+    type CampaignCharacterWithCompanion = {
+      companion: {
+        id: string;
+        name: string;
+        description: string;
+        archetype: string | null;
+        profile: unknown;
+        scenario: string | null;
+        greeting: string | null;
+        tags: string[];
+      };
+    };
+
+    const campaignCharacters: CampaignCharacterWithCompanion[] =
       "characters" in campaign && Array.isArray(campaign.characters)
-        ? campaign.characters
+        ? (campaign.characters as unknown as CampaignCharacterWithCompanion[])
         : [];
     const legacyCompanion = campaign.companionId && campaignCharacters.length === 0
       ? await prisma.companion.findUnique({

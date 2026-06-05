@@ -141,12 +141,8 @@ function CompanionSlide({
     feature: string;
 }) {
     const isAdult = item.contentRating === "ADULT";
-    const chatHref = isAdult
-        ? `/adult/chat?companion=${encodeURIComponent(item.slug)}`
-        : `/chat?companion=${encodeURIComponent(item.slug)}`;
-    const viewHref = isAdult
-        ? `/adult/companions/${encodeURIComponent(item.slug)}`
-        : `/companions/${encodeURIComponent(item.slug)}`;
+    const chatHref = `/chat?companion=${encodeURIComponent(item.slug)}`;
+    const viewHref = `/companions/${encodeURIComponent(item.slug)}`;
 
     return (
         <div className="relative flex h-full w-full items-center">

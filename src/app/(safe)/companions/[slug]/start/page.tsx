@@ -10,6 +10,7 @@ import {
 import { ContentRating, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 import CreateRpCampaignButton from "@/components/rp/CreateRpCampaignButton";
 
 export default async function CompanionStartPage({
@@ -19,11 +20,15 @@ export default async function CompanionStartPage({
 }) {
   const { slug } = await params;
   const user = await getAuthedUser();
+  const allowAdult = isAdultAllowed(user);
+  const allowedRatings = allowAdult
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
 
   const companion = await prisma.companion.findFirst({
     where: {
       slug,
-      contentRating: ContentRating.SAFE,
+      contentRating: { in: allowedRatings },
       OR: [
         { visibility: Visibility.PUBLIC },
         ...(user ? [{ ownerId: user.id }] : []),
@@ -36,16 +41,35 @@ export default async function CompanionStartPage({
       description: true,
       tags: true,
       profile: true,
+      contentRating: true,
       assets: {
-        where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+        where: { type: "IMAGE", contentRating: { in: allowedRatings } },
         orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
         take: 1,
-        select: { id: true, publicUrl: true, metadata: true },
+        select: { id: true, publicUrl: true, metadata: true, contentRating: true },
       },
     },
   });
 
   if (!companion) {
+    const adultCompanion = await prisma.companion.findFirst({
+      where: {
+        slug,
+        contentRating: ContentRating.ADULT,
+        OR: [
+          { visibility: Visibility.PUBLIC },
+          ...(user ? [{ ownerId: user.id }] : []),
+        ],
+      },
+      select: { slug: true },
+    });
+    if (adultCompanion) {
+      const startPath = `/companions/${encodeURIComponent(slug)}/start`;
+      if (user) {
+        redirect(`/adult/verify?next=${encodeURIComponent(startPath)}`);
+      }
+      redirect(`/login?next=${encodeURIComponent(startPath)}`);
+    }
     redirect(`/companions/${encodeURIComponent(slug)}`);
   }
 
@@ -54,7 +78,12 @@ export default async function CompanionStartPage({
       ? (companion.profile as Record<string, unknown>)
       : {};
   const asset = companion.assets[0];
-  const imageUrl = asset ? (asset.publicUrl ?? `/media/${asset.id}`) : null;
+  const imageUrl = asset
+    ? asset.contentRating === ContentRating.ADULT
+      ? `/media/${asset.id}`
+      : (asset.publicUrl ?? `/media/${asset.id}`)
+    : null;
+  const isAdult = companion.contentRating === ContentRating.ADULT;
   const assetMeta = (asset?.metadata ?? {}) as Record<string, unknown>;
   const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 0}%`;
   const scene =
@@ -92,8 +121,14 @@ export default async function CompanionStartPage({
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-5">
-              <div className="inline-flex items-center rounded-full border border-emerald-900/60 bg-emerald-950/70 px-3 py-1 text-xs font-semibold text-emerald-200">
-                SAFE
+              <div
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                  isAdult
+                    ? "border-rose-900/60 bg-rose-950/70 text-rose-200"
+                    : "border-emerald-900/60 bg-emerald-950/70 text-emerald-200"
+                }`}
+              >
+                {companion.contentRating}
               </div>
               <h1 className="mt-3 text-4xl font-black tracking-tight text-white">
                 {companion.name}

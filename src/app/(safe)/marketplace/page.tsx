@@ -95,6 +95,29 @@ function formatCompact(value: number) {
   }).format(value);
 }
 
+function categorySearchTerms(category: { name: string; slug: string } | null) {
+  if (!category) return [];
+
+  const cleanName = category.name
+    .replace(/\s*\((?:18\+|Safe)\)\s*/gi, "")
+    .trim()
+    .toLowerCase();
+  const cleanSlug = category.slug
+    .replace(/^(?:safe|adult|trait|rel|occ|set|kink)-/i, "")
+    .replace(/-/g, " ")
+    .trim()
+    .toLowerCase();
+
+  return Array.from(
+    new Set([
+      cleanName,
+      cleanSlug,
+      cleanName.replace(/\s+/g, "-"),
+      cleanSlug.replace(/\s+/g, "-"),
+    ].filter(Boolean)),
+  );
+}
+
 function buildOrderBy(
   sort: SortKey,
 ): Prisma.MarketplaceListingOrderByWithRelationInput[] {
@@ -164,6 +187,13 @@ export default async function MarketplacePage({
   const price = normalizePrice(sp.price);
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = 16;
+  const selectedCategory = category
+    ? await prisma.category.findUnique({
+        where: { slug: category },
+        select: { name: true, slug: true },
+      })
+    : null;
+  const categoryTerms = categorySearchTerms(selectedCategory);
 
   const ratingPool =
     allowAdult && rating === "adult"
@@ -182,14 +212,29 @@ export default async function MarketplacePage({
         contentRating: { in: ratingPool },
         ...(category
           ? {
-              categories: {
-                some: {
-                  category: {
-                    slug: category,
-                    isAdult: allowAdult ? undefined : false,
+              OR: [
+                {
+                  categories: {
+                    some: {
+                      category: {
+                        slug: category,
+                        isAdult: allowAdult ? undefined : false,
+                      },
+                    },
                   },
                 },
-              },
+                ...(categoryTerms.length > 0
+                  ? [
+                      { tags: { hasSome: categoryTerms } },
+                      ...categoryTerms.map((term) => ({
+                        archetype: { contains: term, mode: Prisma.QueryMode.insensitive },
+                      })),
+                      ...categoryTerms.map((term) => ({
+                        description: { contains: term, mode: Prisma.QueryMode.insensitive },
+                      })),
+                    ]
+                  : []),
+              ],
             }
           : {}),
       },
@@ -409,9 +454,7 @@ export default async function MarketplacePage({
               >;
               const objectPos = `${assetMeta.focalX ?? 50}% ${assetMeta.focalY ?? 0}%`;
               const isAdult = companion.contentRating === ContentRating.ADULT;
-              const viewHref = isAdult
-                ? `/adult/companions/${companion.slug}`
-                : `/companions/${companion.slug}/start`;
+              const viewHref = `/companions/${companion.slug}`;
 
               return (
                 <a
@@ -677,12 +720,8 @@ export default async function MarketplacePage({
                       ? `${formatCompact(listing.priceCoins)} coins`
                       : "Free";
                 const isAdult = companion.contentRating === ContentRating.ADULT;
-                const chatHref = isAdult
-                  ? `/adult/chat?companion=${encodeURIComponent(companion.slug)}`
-                  : `/companions/${encodeURIComponent(companion.slug)}/start`;
-                const viewHref = isAdult
-                  ? `/adult/companions/${companion.slug}`
-                  : `/companions/${companion.slug}/start`;
+                const chatHref = `/companions/${encodeURIComponent(companion.slug)}/start`;
+                const viewHref = `/companions/${companion.slug}`;
 
                 return (
                   <article

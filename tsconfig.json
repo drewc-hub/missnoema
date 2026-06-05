@@ -27,10 +27,10 @@
     ]
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
     "next-env.d.ts",
-    "worker/**/*.ts",
+    "src/app/**/*.ts",
+    "src/app/**/*.tsx",
+    "src/middleware.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [
