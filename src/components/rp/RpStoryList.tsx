@@ -68,7 +68,22 @@ export default function RpStoryList({ activeCampaignId, stories }: Props) {
         Start new story
       </CreateRpCampaignButton>
 
-      <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      <div
+        className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
+        onWheel={(event) => {
+          const panel = event.currentTarget;
+          const atTop = panel.scrollTop <= 0;
+          const atBottom =
+            Math.ceil(panel.scrollTop + panel.clientHeight) >= panel.scrollHeight;
+          if (
+            (event.deltaY < 0 && atTop) ||
+            (event.deltaY > 0 && atBottom)
+          ) {
+            event.preventDefault();
+            window.scrollBy({ top: event.deltaY, behavior: "auto" });
+          }
+        }}
+      >
         {stories.length > 0 ? (
           stories.map((story) => {
             const active = story.id === activeCampaignId;

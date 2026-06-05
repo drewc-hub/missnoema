@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 
 type SpeakerType = "USER" | "COMPANION" | "NARRATOR" | "SYSTEM" | "IMAGE";
 
@@ -90,6 +91,7 @@ export default function RpChatWorkspace({
   const [scene, setScene] = useState<RpScene | null>(initialScene);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [storiesOpen, setStoriesOpen] = useState(false);
 
   const messagesRef = useRef<HTMLElement | null>(null);
 
@@ -135,6 +137,18 @@ export default function RpChatWorkspace({
       behavior: messages.length > initialMessages.length ? "smooth" : "auto",
     });
   }, [messages, pending, initialMessages.length]);
+
+  function releaseWheelToPage(event: React.WheelEvent<HTMLElement>) {
+    const panel = event.currentTarget;
+    const atTop = panel.scrollTop <= 0;
+    const atBottom =
+      Math.ceil(panel.scrollTop + panel.clientHeight) >= panel.scrollHeight;
+
+    if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+      event.preventDefault();
+      window.scrollBy({ top: event.deltaY, behavior: "auto" });
+    }
+  }
 
   async function sendAction() {
     const content = input.trim();
@@ -194,7 +208,7 @@ export default function RpChatWorkspace({
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#050816] text-white">
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[url('/images/rp-dungeon-bg.png')] bg-cover bg-center opacity-[0.26]"
@@ -203,13 +217,32 @@ export default function RpChatWorkspace({
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[#050816]/70"
       />
-      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        {storyPanel ? (
-          <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
-            {storyPanel}
-          </aside>
-        ) : null}
+      {storyPanel ? (
+        <aside
+          className={`group fixed left-0 top-20 z-40 h-[calc(100dvh-6rem)] w-[min(18rem,calc(100vw-3rem))] transition-transform duration-300 ease-out hover:translate-x-0 focus-within:translate-x-0 ${
+            storiesOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          onMouseEnter={() => setStoriesOpen(true)}
+          onMouseLeave={() => setStoriesOpen(false)}
+        >
+          <div className="h-full p-2 pr-0">{storyPanel}</div>
+          <button
+            type="button"
+            onClick={() => setStoriesOpen((open) => !open)}
+            className="absolute left-full top-16 flex min-h-28 w-11 flex-col items-center justify-center gap-2 rounded-r-xl border border-l-0 border-white/10 bg-[#11172a]/95 text-blue-200 shadow-xl backdrop-blur-md transition hover:bg-blue-500/20"
+            aria-label={storiesOpen ? "Close roleplay campaigns" : "Open roleplay campaigns"}
+            aria-expanded={storiesOpen}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="[writing-mode:vertical-rl] text-[10px] font-semibold uppercase tracking-[0.18em]">
+              Campaigns
+            </span>
+            {storiesOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </button>
+        </aside>
+      ) : null}
 
+      <div className="relative z-10 mx-auto min-h-screen w-full max-w-7xl px-4 py-6">
         <div className="flex min-h-screen min-w-0 flex-col">
           <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
             <div className="grid gap-3 xl:grid-cols-3">
@@ -384,6 +417,7 @@ export default function RpChatWorkspace({
 
           <section
             ref={messagesRef}
+            onWheel={releaseWheelToPage}
             className="h-[36rem] space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-white/[0.03] p-4"
           >
           {messages.length === 0 && (

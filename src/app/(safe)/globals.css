@@ -20,7 +20,8 @@
     background-attachment: fixed;
     min-height: 100dvh;
     /* Prevent elastic bounce-scroll on iOS at the body level */
-    overscroll-behavior: none;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
     /* Respect the notch / home indicator on iPhones */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);

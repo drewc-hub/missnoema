@@ -13,6 +13,7 @@ type Props = {
   tone?: string;
   children?: ReactNode;
   className?: string;
+  onSuccess?: (campaignId: string) => void;
 };
 
 export default function CreateRpCampaignButton({
@@ -23,13 +24,16 @@ export default function CreateRpCampaignButton({
   tone,
   children = "Start Story Mode",
   className = "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-500 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60",
+  onSuccess,
 }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function createCampaign() {
     if (pending) return;
     setPending(true);
+    setError(null);
 
     try {
       const res = await fetch("/api/rp", {
@@ -58,27 +62,40 @@ export default function CreateRpCampaignButton({
         throw new Error(data.error || "Failed to create campaign");
       }
 
-      router.push(`/rp/${data.campaignId}`);
-      router.refresh();
+      onSuccess?.(data.campaignId);
+      if (campaignId) {
+        setPending(false);
+        router.refresh();
+      } else {
+        router.push(`/rp/${data.campaignId}`);
+      }
     } catch (error) {
       console.error(error);
+      setError(error instanceof Error ? error.message : "Failed to update campaign");
       setPending(false);
     }
   }
 
   return (
-    <button
-      type="button"
-      onClick={createCampaign}
-      disabled={pending}
-      className={className}
-    >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Swords className="h-4 w-4" />
-      )}
-      {pending ? "Creating..." : children}
-    </button>
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={createCampaign}
+        disabled={pending}
+        className={className}
+      >
+        {pending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Swords className="h-4 w-4" />
+        )}
+        {pending ? (campaignId ? "Adding..." : "Creating...") : children}
+      </button>
+      {error ? (
+        <p className="mt-2 text-xs leading-5 text-red-300" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

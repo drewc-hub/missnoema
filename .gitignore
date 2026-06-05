@@ -32,6 +32,7 @@ lerna-debug.log*
 # Database dumps / backups
 *.sql
 !sql/message-audio.sql
+!sql/rp-campaign-characters.sql
 *.dump
 backup.sql
 pre_prisma_history_fix.dump

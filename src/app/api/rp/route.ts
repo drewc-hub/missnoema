@@ -107,6 +107,16 @@ export async function POST(req: NextRequest) {
       "cinematic";
 
     if (campaignId) {
+      if (companion && !hasRosterTable) {
+        return NextResponse.json(
+          {
+            error:
+              "Multi-character campaigns are not initialized. Apply sql/rp-campaign-characters.sql to the database.",
+          },
+          { status: 503 },
+        );
+      }
+
       const existingCampaign = await prisma.rpCampaign.findFirst({
         where: {
           id: campaignId,
@@ -209,7 +219,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ campaignId: existingCampaign.id });
+      return NextResponse.json({
+        campaignId: existingCampaign.id,
+        addedCompanionId: companion?.id ?? null,
+      });
     }
 
     const campaign = await prisma.rpCampaign.create({
