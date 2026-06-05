@@ -1457,8 +1457,83 @@ export function CompanionChatWorkspace({
                 )}
             </div>
 
+            {activeCompanion ? (
+                <div className="mb-5">
+                    <Card>
+                        <CardHeader
+                            title={activeCompanion.name}
+                            subtitle="Current companion"
+                            right={
+                                <Badge
+                                    tone={
+                                        activeCompanion.contentRating === "ADULT"
+                                            ? "adult"
+                                            : "safe"
+                                    }
+                                >
+                                    {activeCompanion.contentRating}
+                                </Badge>
+                            }
+                        />
+                        <CardBody>
+                            <div className="flex gap-4">
+                                <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+                                    {activeCompanion.thumbnailUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={activeCompanion.thumbnailUrl}
+                                            alt={`${activeCompanion.name} thumbnail`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-[10px] text-zinc-500">
+                                            No image
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="min-w-0 flex-1 space-y-2 text-sm text-zinc-300">
+                                    <div className="flex items-center gap-2">
+                                        <div className="font-semibold text-zinc-100">
+                                            {activeCompanion.name}
+                                        </div>
+                                        {(() => {
+                                            const moods = [
+                                                { emoji: "😐", label: "Neutral", color: "text-zinc-400" },
+                                                { emoji: "😊", label: "Happy", color: "text-emerald-400" },
+                                                { emoji: "😏", label: "Teasing", color: "text-purple-400" },
+                                                { emoji: "🥰", label: "Blushing", color: "text-rose-400" },
+                                            ] as const;
+                                            const mood = moods[companionMood];
+                                            return (
+                                                <span className={`text-xs ${mood.color}`} title={`Mood: ${mood.label}`}>
+                                                    {mood.emoji} {mood.label}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="text-zinc-400">
+                                        {activeCompanion.description}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {activeCompanion.tags?.slice(0, 6).map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-800"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </div>
+            ) : null}
+
             <div className="grid gap-5 lg:grid-cols-12">
-                <aside className={`space-y-4 lg:col-span-3 lg:row-span-2 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
+                <aside className={`space-y-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
                     <Card>
                         <CardHeader
                             title="Companions"
@@ -1584,81 +1659,6 @@ export function CompanionChatWorkspace({
                         </Card>
                     ) : null}
                 </aside>
-
-                {activeCompanion ? (
-                    <div className="lg:col-span-9">
-                        <Card>
-                            <CardHeader
-                                title={activeCompanion.name}
-                                subtitle="Current companion"
-                                right={
-                                    <Badge
-                                        tone={
-                                            activeCompanion.contentRating === "ADULT"
-                                                ? "adult"
-                                                : "safe"
-                                        }
-                                    >
-                                        {activeCompanion.contentRating}
-                                    </Badge>
-                                }
-                            />
-                            <CardBody>
-                                <div className="flex gap-4">
-                                    <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-                                        {activeCompanion.thumbnailUrl ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={activeCompanion.thumbnailUrl}
-                                                alt={`${activeCompanion.name} thumbnail`}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-[10px] text-zinc-500">
-                                                No image
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1 space-y-2 text-sm text-zinc-300">
-                                        <div className="flex items-center gap-2">
-                                            <div className="font-semibold text-zinc-100">
-                                                {activeCompanion.name}
-                                            </div>
-                                            {(() => {
-                                                const moods = [
-                                                    { emoji: "😐", label: "Neutral", color: "text-zinc-400" },
-                                                    { emoji: "😊", label: "Happy", color: "text-emerald-400" },
-                                                    { emoji: "😏", label: "Teasing", color: "text-purple-400" },
-                                                    { emoji: "🥰", label: "Blushing", color: "text-rose-400" },
-                                                ] as const;
-                                                const mood = moods[companionMood];
-                                                return (
-                                                    <span className={`text-xs ${mood.color}`} title={`Mood: ${mood.label}`}>
-                                                        {mood.emoji} {mood.label}
-                                                    </span>
-                                                );
-                                            })()}
-                                        </div>
-                                        <div className="text-zinc-400">
-                                            {activeCompanion.description}
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {activeCompanion.tags?.slice(0, 6).map((tag) => (
-                                                <span
-                                                    key={tag}
-                                                    className="rounded-full bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 ring-1 ring-zinc-800"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </div>
-                ) : null}
 
                 <section className="space-y-4 lg:col-span-6">
 
