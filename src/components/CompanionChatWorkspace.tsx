@@ -1621,7 +1621,7 @@ export function CompanionChatWorkspace({
             ) : null}
 
             <div className="grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-12">
-                <aside className={`space-y-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
+                <aside className={`space-y-4 lg:sticky lg:top-20 lg:col-span-3 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
                     <Card>
                         <CardHeader
                             title="Companions"
@@ -2508,7 +2508,7 @@ export function CompanionChatWorkspace({
                     </Card>
                 </section>
 
-                <aside className="min-w-0 space-y-4 lg:col-span-3">
+                <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:col-span-3 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                     {activeCompanion ? (
                         <MediaGenPanel
                             allowAdult={allowAdult}

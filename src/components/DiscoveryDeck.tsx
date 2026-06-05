@@ -275,7 +275,7 @@ export function DiscoveryDeck({
                 </div>
             </section>
 
-            <aside className="space-y-4">
+            <aside className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                 <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                     <h2 className="text-lg font-semibold text-white">Up next</h2>
                     <div className="mt-4 space-y-3">

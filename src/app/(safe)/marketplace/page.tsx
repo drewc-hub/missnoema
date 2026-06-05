@@ -493,7 +493,7 @@ export default async function MarketplacePage({
       )}
 
       <section className="grid gap-5 lg:grid-cols-[248px_minmax(0,1fr)]">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-white">
               <Compass className="h-4 w-4 text-fuchsia-300" />

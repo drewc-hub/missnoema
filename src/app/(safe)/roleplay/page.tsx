@@ -274,7 +274,7 @@ export default async function RoleplayLobbyPage() {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>

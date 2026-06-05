@@ -105,7 +105,7 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="flex min-h-screen min-w-0 max-w-full overflow-x-hidden"
+      className="flex min-h-screen min-w-0 max-w-full overflow-x-clip"
       style={{
         background:
           "#0D0D1A radial-gradient(ellipse 80% 50% at 20% 0%, rgba(160,120,255,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(60,100,255,0.10) 0%, transparent 60%)",

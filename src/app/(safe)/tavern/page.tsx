@@ -310,7 +310,7 @@ export default async function TavernPage() {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
           <div className="rounded-[1rem] border border-zinc-800 bg-[radial gradient(circle_at_top,rgba(168,85,247,0.18),transparent_55%)] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>

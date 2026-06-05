@@ -367,7 +367,7 @@ export function DungeonEngineClient({
           )}
         </div>
 
-        <aside className="space-y-4 border-t border-zinc-800 bg-black/55 p-4 lg:border-l lg:border-t-0">
+        <aside className="space-y-4 border-t border-zinc-800 bg-black/55 p-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-t-0">
           <section className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
               <Users className="h-4 w-4 text-cyan-300" />
