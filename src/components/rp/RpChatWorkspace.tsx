@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronDown, UserPlus } from "lucide-react";
 
 type SpeakerType = "USER" | "COMPANION" | "NARRATOR" | "SYSTEM" | "IMAGE";
 
@@ -92,6 +92,7 @@ export default function RpChatWorkspace({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [storiesOpen, setStoriesOpen] = useState(false);
+  const [charactersOpen, setCharactersOpen] = useState(false);
 
   const messagesRef = useRef<HTMLElement | null>(null);
 
@@ -217,31 +218,6 @@ export default function RpChatWorkspace({
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[#050816]/70"
       />
-      {storyPanel ? (
-        <aside
-          className={`group fixed left-0 top-20 z-50 h-[calc(100dvh-6rem)] w-[min(18rem,calc(100vw-3rem))] transition-transform duration-300 ease-out hover:translate-x-0 focus-within:translate-x-0 sm:left-[72px] ${
-            storiesOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-          onMouseEnter={() => setStoriesOpen(true)}
-          onMouseLeave={() => setStoriesOpen(false)}
-        >
-          <div className="h-full p-2 pr-0">{storyPanel}</div>
-          <button
-            type="button"
-            onClick={() => setStoriesOpen((open) => !open)}
-            className="absolute left-full top-16 flex min-h-28 w-11 flex-col items-center justify-center gap-2 rounded-r-xl border border-l-0 border-white/10 bg-[#11172a]/95 text-blue-200 shadow-xl backdrop-blur-md transition hover:bg-blue-500/20"
-            aria-label={storiesOpen ? "Close roleplay campaigns" : "Open roleplay campaigns"}
-            aria-expanded={storiesOpen}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span className="[writing-mode:vertical-rl] text-[10px] font-semibold uppercase tracking-[0.18em]">
-              Campaigns
-            </span>
-            {storiesOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-          </button>
-        </aside>
-      ) : null}
-
       <div className="relative z-10 mx-auto min-h-screen w-full max-w-7xl px-4 py-6">
         <div className="flex min-h-screen min-w-0 flex-col">
           <header className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl">
@@ -378,12 +354,11 @@ export default function RpChatWorkspace({
                 </div>
               </section>
             </div>
-            {companionPicker}
           </header>
 
-          <section className="mb-4 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
+          <section className="mb-4 rounded-3xl border border-white/10 bg-black/30">
           {scene?.imageUrl ? (
-            <div className="flex max-h-[30rem] min-h-72 items-center justify-center bg-black">
+            <div className="flex max-h-[30rem] min-h-72 items-center justify-center overflow-hidden rounded-t-3xl bg-black">
               <img
                 src={scene.imageUrl}
                 alt={scene.title}
@@ -391,7 +366,7 @@ export default function RpChatWorkspace({
               />
             </div>
           ) : (
-            <div className="flex h-72 items-center justify-center bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950">
+            <div className="flex h-72 items-center justify-center overflow-hidden rounded-t-3xl bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950">
               <div className="max-w-xl px-6 text-center">
                 <p className="text-xs uppercase tracking-[0.35em] text-blue-300">
                   Current Scene
@@ -406,12 +381,64 @@ export default function RpChatWorkspace({
             </div>
           )}
 
-          <div className="border-t border-white/10 px-5 py-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-blue-300">
-              Current Scene
-            </p>
-            <h2 className="text-lg font-semibold">{sceneTitle}</h2>
-            <p className="mt-1 text-xs text-slate-500">{title}</p>
+          <div className="relative z-30 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.3em] text-blue-300">
+                Current Scene
+              </p>
+              <h2 className="truncate text-lg font-semibold">{sceneTitle}</h2>
+              <p className="mt-1 truncate text-xs text-slate-500">{title}</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {storyPanel ? (
+                <div
+                  className="relative"
+                  onMouseEnter={() => setStoriesOpen(true)}
+                  onMouseLeave={() => setStoriesOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setStoriesOpen(true)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-sm font-semibold text-slate-200 transition hover:border-blue-400/40 hover:bg-blue-500/10 hover:text-white"
+                    aria-expanded={storiesOpen}
+                  >
+                    <BookOpen className="h-4 w-4 text-blue-300" />
+                    Campaigns
+                    <ChevronDown className={`h-3.5 w-3.5 transition ${storiesOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {storiesOpen ? (
+                    <div className="absolute right-0 top-full z-50 mt-2 h-[min(34rem,calc(100dvh-9rem))] w-[min(22rem,calc(100vw-2rem))]">
+                      {storyPanel}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {companionPicker ? (
+                <div
+                  className="relative"
+                  onMouseEnter={() => setCharactersOpen(true)}
+                  onMouseLeave={() => setCharactersOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setCharactersOpen(true)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-500 px-3 text-sm font-semibold text-white transition hover:bg-blue-400"
+                    aria-expanded={charactersOpen}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Add characters
+                    <ChevronDown className={`h-3.5 w-3.5 transition ${charactersOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {charactersOpen ? (
+                    <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(38rem,calc(100dvh-9rem))] w-[min(44rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#080d1b]/95 p-1 shadow-2xl backdrop-blur-xl">
+                      {companionPicker}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
           </section>
 

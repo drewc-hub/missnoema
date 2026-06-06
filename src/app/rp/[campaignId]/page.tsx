@@ -267,24 +267,38 @@ export default async function RpCampaignPage({
         />
       }
       companionPicker={
-          <section className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+          <section className="rounded-2xl bg-black/30 p-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-white">
-                  Add characters to this campaign
+                  Add existing character
                 </h2>
                 <p className="mt-1 text-sm text-slate-400">
                   Build a multi-character cast while keeping this same campaign id.
                 </p>
               </div>
-              <a
-                href="/roleplay"
-                className="text-sm font-semibold text-blue-300 transition hover:text-blue-200"
-              >
-                Browse more
-              </a>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/companions/new?mode=rp"
+                  className="inline-flex h-9 items-center rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 text-xs font-semibold text-blue-100 transition hover:bg-blue-500/20"
+                >
+                  Create RP character
+                </a>
+                <a
+                  href="/adult/companions/new?mode=rp"
+                  className="inline-flex h-9 items-center rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/20"
+                >
+                  Create adult RP character
+                </a>
+                <a
+                  href="/companions"
+                  className="inline-flex h-9 items-center rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
+                >
+                  Browse all
+                </a>
+              </div>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {companionOptions.map((companion) => {
                 const asset = companion.assets[0];
                 const imageUrl = asset
@@ -347,6 +361,11 @@ export default async function RpCampaignPage({
                 );
               })}
             </div>
+            {companionOptions.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-white/10 p-4 text-sm text-slate-400">
+                No existing characters are available. Create an RP character to add one.
+              </div>
+            ) : null}
           </section>
       }
       initialMessages={campaign.messages.map((message) => ({

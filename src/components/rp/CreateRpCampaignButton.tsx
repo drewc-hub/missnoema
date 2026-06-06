@@ -28,11 +28,13 @@ export default function CreateRpCampaignButton({
 }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function createCampaign() {
     if (pending) return;
     setPending(true);
+    setSucceeded(false);
     setError(null);
 
     try {
@@ -64,6 +66,7 @@ export default function CreateRpCampaignButton({
 
       onSuccess?.(data.campaignId);
       if (campaignId) {
+        setSucceeded(true);
         setPending(false);
         router.refresh();
       } else {
@@ -81,7 +84,7 @@ export default function CreateRpCampaignButton({
       <button
         type="button"
         onClick={createCampaign}
-        disabled={pending}
+        disabled={pending || succeeded}
         className={className}
       >
         {pending ? (
@@ -89,7 +92,13 @@ export default function CreateRpCampaignButton({
         ) : (
           <Swords className="h-4 w-4" />
         )}
-        {pending ? (campaignId ? "Adding..." : "Creating...") : children}
+        {pending
+          ? campaignId
+            ? "Adding..."
+            : "Creating..."
+          : succeeded
+            ? "Added"
+            : children}
       </button>
       {error ? (
         <p className="mt-2 text-xs leading-5 text-red-300" role="alert">
