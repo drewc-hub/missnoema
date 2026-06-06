@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Compass,
   Wand2,
@@ -102,6 +103,7 @@ function SidebarItem({
 
 export function NoemaAppShell({ children }: { children: React.ReactNode }) {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div
@@ -113,20 +115,20 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
     >
       {/* Sidebar */}
       <aside
-        className={`hidden sm:flex flex-col sticky top-0 h-screen shrink-0 transition-all duration-300 z-40
+        className={`fixed left-4 top-1/2 z-40 hidden max-h-[calc(100dvh-2rem)] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/35 transition-all duration-300 sm:flex
           ${sidebarExpanded ? "w-48" : "w-[72px]"}
         `}
         style={{
-          background: "rgba(20, 20, 36, 0.85)",
-          backdropFilter: "blur(12px)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(14, 14, 28, 0.78)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-3 py-5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3 border-b border-white/[0.06] px-3 py-4">
           <a
             href="/"
-            className="shrink-0 flex items-center justify-center w-[46px] h-[46px] rounded-xl bg-white/5"
+            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-white/5 ring-1 ring-white/10"
           >
             <img src="/logo-icon.svg" alt="Noema" className="h-7 w-7" />
           </a>
@@ -140,12 +142,13 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1 p-2 flex-1 overflow-y-auto">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
           {NAV_ITEMS.map((item) => (
             <SidebarItem
               key={item.href}
               item={item}
               expanded={sidebarExpanded}
+              active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
             />
           ))}
         </nav>
@@ -163,18 +166,26 @@ export function NoemaAppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main */}
-      <div className="flex min-w-0 max-w-full flex-1 flex-col pb-16 sm:pb-0">{children}</div>
+      <div
+        className={`flex min-w-0 max-w-full flex-1 flex-col pb-20 transition-[padding] duration-300 sm:pb-0 ${
+          sidebarExpanded ? "sm:pl-56" : "sm:pl-24"
+        }`}
+      >
+        {children}
+      </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-[#111120]/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur-xl sm:hidden"
+        className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-2xl border border-white/10 bg-[#111120]/88 px-1 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 shadow-2xl shadow-black/40 backdrop-blur-xl sm:hidden"
         aria-label="Primary navigation"
       >
         {NAV_ITEMS.slice(0, 5).map((item) => (
           <a
             key={item.href}
             href={item.href}
-            className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-medium ${
-              item.accent ?? "text-white/60"
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition ${
+              pathname === item.href || pathname.startsWith(`${item.href}/`)
+                ? "bg-white/10 text-white"
+                : item.accent ?? "text-white/60"
             }`}
           >
             {item.icon}
