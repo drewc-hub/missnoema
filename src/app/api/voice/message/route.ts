@@ -45,6 +45,16 @@ const PRESET_VOICES: Record<string, OpenAIVoice> = {
   "dark-mysterious": "echo",
 };
 
+class VoiceRouteError extends Error {
+  constructor(
+    message: string,
+    public status = 500,
+  ) {
+    super(message);
+    this.name = "VoiceRouteError";
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
@@ -116,7 +126,7 @@ async function createSignedAudioUrl(bucket: string, path: string) {
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
 
   if (error || !data?.signedUrl) {
-    throw new Error(
+    throw new VoiceRouteError(
       `Could not create signed audio URL: ${error?.message ?? "unknown error"}`,
     );
   }
@@ -288,7 +298,7 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      throw new Error(`Audio upload failed: ${uploadError.message}`);
+      throw new VoiceRouteError(`Audio upload failed: ${uploadError.message}`);
     }
 
     const signed = await createSignedAudioUrl(bucket, storagePath);
@@ -319,8 +329,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ...signed, cached: false });
   } catch (error) {
     console.error("POST /api/voice/message failed", error);
+    if (error instanceof VoiceRouteError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
+    const message =
+      error instanceof Error ? error.message : "Voice generation failed.";
     return NextResponse.json(
-      { error: "Voice generation failed." },
+      { error: message || "Voice generation failed." },
       { status: 500 },
     );
   }
