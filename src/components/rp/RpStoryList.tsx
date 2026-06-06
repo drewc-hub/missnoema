@@ -12,6 +12,8 @@ type RpStoryListItem = {
   tone?: string | null;
   status: string;
   updatedAt: string;
+  latestScene?: string | null;
+  latestEvent?: string | null;
 };
 
 type Props = {
@@ -89,6 +91,7 @@ export default function RpStoryList({ activeCampaignId, stories }: Props) {
             const active = story.id === activeCampaignId;
             const confirming = confirmId === story.id;
             const deleting = deletingId === story.id;
+            const updatedAt = new Date(story.updatedAt);
 
             return (
               <div
@@ -104,6 +107,16 @@ export default function RpStoryList({ activeCampaignId, stories }: Props) {
                     <div className="line-clamp-2 text-sm font-semibold">
                       {story.title}
                     </div>
+                    {story.latestScene ? (
+                      <div className="mt-1 line-clamp-1 text-xs text-blue-200/80">
+                        {story.latestScene}
+                      </div>
+                    ) : null}
+                    {story.latestEvent ? (
+                      <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
+                        {story.latestEvent}
+                      </div>
+                    ) : null}
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {story.genre ? (
                         <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">
@@ -117,9 +130,15 @@ export default function RpStoryList({ activeCampaignId, stories }: Props) {
                       ) : null}
                     </div>
                     <div className="mt-2 text-[11px] text-slate-500">
-                      {new Date(story.updatedAt).toLocaleDateString("en-US", {
+                      Last used{" "}
+                      {updatedAt.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
+                      })}
+                      {" at "}
+                      {updatedAt.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
                       })}
                     </div>
                   </a>

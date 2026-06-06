@@ -99,8 +99,8 @@ export default async function RpCampaignPage({
             }
           : {}),
         messages: {
-          orderBy: { createdAt: "asc" },
-          take: 50,
+          orderBy: { createdAt: "desc" },
+          take: 80,
         },
         scenes: {
           orderBy: { createdAt: "desc" },
@@ -156,6 +156,28 @@ export default async function RpCampaignPage({
             tone: true,
             status: true,
             updatedAt: true,
+            scenes: {
+              orderBy: { updatedAt: "desc" },
+              take: 1,
+              select: {
+                title: true,
+                location: true,
+                mood: true,
+                summary: true,
+              },
+            },
+            messages: {
+              where: {
+                speakerType: { in: ["NARRATOR", "SYSTEM"] },
+                content: { not: "" },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                content: true,
+                createdAt: true,
+              },
+            },
           },
         })
       : Promise.resolve([]),
@@ -263,6 +285,12 @@ export default async function RpCampaignPage({
             tone: story.tone,
             status: story.status,
             updatedAt: story.updatedAt.toISOString(),
+            latestScene: story.scenes[0]
+              ? [story.scenes[0].title, story.scenes[0].location, story.scenes[0].mood]
+                  .filter(Boolean)
+                  .join(" · ")
+              : null,
+            latestEvent: story.messages[0]?.content ?? story.scenes[0]?.summary ?? null,
           }))}
         />
       }
@@ -368,13 +396,15 @@ export default async function RpCampaignPage({
             ) : null}
           </section>
       }
-      initialMessages={campaign.messages.map((message) => ({
-        id: message.id,
-        speakerType: message.speakerType,
-        content: message.content,
-        imageUrl: message.imageUrl,
-        createdAt: message.createdAt.toISOString(),
-      }))}
+      initialMessages={[...campaign.messages]
+        .reverse()
+        .map((message) => ({
+          id: message.id,
+          speakerType: message.speakerType,
+          content: message.content,
+          imageUrl: message.imageUrl,
+          createdAt: message.createdAt.toISOString(),
+        }))}
       initialScene={
         campaign.scenes[0]
           ? {
