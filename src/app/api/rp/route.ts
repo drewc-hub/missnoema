@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ContentRating, SpeakerType, Visibility } from "@prisma/client";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 
 export const runtime = "nodejs";
 
@@ -55,12 +56,15 @@ export async function POST(req: NextRequest) {
     const requestedGenre = String(body.genre ?? "").trim();
     const requestedTone = String(body.tone ?? "").trim();
     const hasRosterTable = await rpRosterTableExists();
+    const allowedRatings = isAdultAllowed(user)
+      ? [ContentRating.SAFE, ContentRating.ADULT]
+      : [ContentRating.SAFE];
 
     const companion = companionSlug
       ? await prisma.companion.findFirst({
           where: {
             slug: companionSlug,
-            contentRating: ContentRating.SAFE,
+            contentRating: { in: allowedRatings },
             OR: [
               { visibility: Visibility.PUBLIC },
               { ownerId: user.id },

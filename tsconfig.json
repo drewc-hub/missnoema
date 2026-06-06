@@ -5,9 +5,7 @@
     "allowJs": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@marinara-engine/shared": ["src/marinara-engine-shared.ts"],
-      "@marinara-engine/client": ["src/marinara-engine-shared.ts"]
+      "@/*": ["src/*"]
     },
     "skipLibCheck": true,
     "strict": true,
@@ -40,12 +38,6 @@
     "worker",
     "scripts",
     "supabase",
-    "eslint.config.ts",
-    "marinara-import-quarantine",
-    "src/app/hooks",
-    "src/app/stores",
-    "src/app/client",
-    "src/app/shared",
-    "src/marinara-engine"
+    "eslint.config.ts"
   ]
 }

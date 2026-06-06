@@ -3,6 +3,7 @@ import CreateRpCampaignButton from "@/components/rp/CreateRpCampaignButton";
 import RpStoryList from "@/components/rp/RpStoryList";
 import { getAuthedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdultAllowed } from "@/lib/ratings";
 import { ContentRating, Visibility } from "@prisma/client";
 import { notFound } from "next/navigation";
 
@@ -20,6 +21,7 @@ type RpPageCompanion = {
     id: string;
     publicUrl: string | null;
     metadata: unknown;
+    contentRating: ContentRating;
   }[];
 };
 
@@ -60,6 +62,9 @@ export default async function RpCampaignPage({
 
   const user = await getAuthedUser();
   const hasRosterTable = await rpRosterTableExists();
+  const allowedRatings = isAdultAllowed(user)
+    ? [ContentRating.SAFE, ContentRating.ADULT]
+    : [ContentRating.SAFE];
 
   const [campaign, companionOptions, storyList] = await Promise.all([
     prisma.rpCampaign.findUnique({
@@ -82,10 +87,10 @@ export default async function RpCampaignPage({
                       greeting: true,
                       tags: true,
                       assets: {
-                        where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+                        where: { type: "IMAGE", contentRating: { in: allowedRatings } },
                         orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
                         take: 1,
-                        select: { id: true, publicUrl: true, metadata: true },
+                        select: { id: true, publicUrl: true, metadata: true, contentRating: true },
                       },
                     },
                   },
@@ -114,8 +119,11 @@ export default async function RpCampaignPage({
     }),
     prisma.companion.findMany({
       where: {
-        visibility: Visibility.PUBLIC,
-        contentRating: ContentRating.SAFE,
+        contentRating: { in: allowedRatings },
+        OR: [
+          { visibility: Visibility.PUBLIC },
+          ...(user ? [{ ownerId: user.id }] : []),
+        ],
       },
       orderBy: [
         { featuredRank: "asc" },
@@ -129,10 +137,10 @@ export default async function RpCampaignPage({
         name: true,
         description: true,
         assets: {
-          where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+          where: { type: "IMAGE", contentRating: { in: allowedRatings } },
           orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
           take: 1,
-          select: { id: true, publicUrl: true, metadata: true },
+          select: { id: true, publicUrl: true, metadata: true, contentRating: true },
         },
       },
     }),
@@ -174,10 +182,10 @@ export default async function RpCampaignPage({
             greeting: true,
             tags: true,
             assets: {
-              where: { type: "IMAGE", contentRating: ContentRating.SAFE },
+              where: { type: "IMAGE", contentRating: { in: allowedRatings } },
               orderBy: [{ isCover: "desc" }, { createdAt: "desc" }],
               take: 1,
-              select: { id: true, publicUrl: true, metadata: true },
+              select: { id: true, publicUrl: true, metadata: true, contentRating: true },
             },
           },
         })
@@ -226,7 +234,11 @@ export default async function RpCampaignPage({
             scenario: member.companion.scenario,
             greeting: member.companion.greeting,
             tags: member.companion.tags,
-            imageUrl: asset ? (asset.publicUrl ?? `/media/${asset.id}`) : null,
+            imageUrl: asset
+              ? asset.contentRating === ContentRating.ADULT
+                ? `/media/${asset.id}`
+                : (asset.publicUrl ?? `/media/${asset.id}`)
+              : null,
             focalX: Number(assetMeta.focalX ?? 50),
             focalY: Number(assetMeta.focalY ?? 0),
           },
@@ -276,7 +288,9 @@ export default async function RpCampaignPage({
               {companionOptions.map((companion) => {
                 const asset = companion.assets[0];
                 const imageUrl = asset
-                  ? (asset.publicUrl ?? `/media/${asset.id}`)
+                  ? asset.contentRating === ContentRating.ADULT
+                    ? `/media/${asset.id}`
+                    : (asset.publicUrl ?? `/media/${asset.id}`)
                   : null;
                 const assetMeta = (asset?.metadata ?? {}) as Record<
                   string,

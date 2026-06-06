@@ -57,11 +57,9 @@ grep-replace
 coverage/
 *.lcov
 
-# Embedded repo (handle separately)
+# Embedded repos (handle separately)
 Heimdall/
 SillyTavern-Launcher/
-Marinara-Engine/
-marinara-import-quarantine/
 
 # Local SillyTavern/runtime data
 config/
