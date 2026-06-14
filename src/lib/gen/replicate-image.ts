@@ -1,5 +1,9 @@
 import Replicate from "replicate";
 
+const DEFAULT_ADULT_IMAGE_MODEL =
+    "xai/grok-imagine-image:3032db31147241f86351f0d7ab1ffd5150dcb482bcb873580f15d8cb8970a812";
+type ReplicateModelName = `${string}/${string}` | `${string}/${string}:${string}`;
+
 function getClient() {
     const token = (process.env.REPLICATE_API_TOKEN ?? "").replace(/\s+/g, "");
     if (!token) throw new Error("Missing REPLICATE_API_TOKEN");
@@ -33,6 +37,8 @@ export async function generateAdultImage(
     prompt: string,
     options: GenerateImageOptions = {},
 ) {
+    const model = (process.env.REPLICATE_ADULT_IMAGE_MODEL?.trim() ||
+        DEFAULT_ADULT_IMAGE_MODEL) as ReplicateModelName;
     const {
         intensity = 1,
         aspectRatio = "2:3",
@@ -42,22 +48,24 @@ export async function generateAdultImage(
         seed,
     } = options;
 
-    const input: Record<string, unknown> = {
-        prompt,
-        aspect_ratio: aspectRatio,
-        output_format: outputFormat,
-        output_quality: outputQuality,
-        safety_tolerance: intensityToSafetyTolerance(intensity),
-        resolution: "1 MP",
-    };
+    const input: Record<string, unknown> = model.startsWith("xai/grok-imagine-image")
+        ? { prompt }
+        : {
+            prompt,
+            aspect_ratio: aspectRatio,
+            output_format: outputFormat,
+            output_quality: outputQuality,
+            safety_tolerance: intensityToSafetyTolerance(intensity),
+            resolution: "1 MP",
+        };
 
-    if (negativePrompt) input.negative_prompt = negativePrompt;
+    if (negativePrompt && !model.startsWith("xai/grok-imagine-image")) input.negative_prompt = negativePrompt;
     if (seed !== undefined) input.seed = seed;
 
     const replicate = getClient();
-    const output = await replicate.run("black-forest-labs/flux-2-max", { input });
+    const output = await replicate.run(model, { input });
 
-    // flux-2-max returns a single URI string
+    // Most image models return a single URI string; some return an array.
     return typeof output === "string" ? output : (output as string[])[0];
 }
 

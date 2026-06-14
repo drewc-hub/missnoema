@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedUser } from "@/lib/auth";
 import { chatCompletion } from "@/lib/together";
 import { generateSafeImage } from "@/lib/gen/openai-image";
-import { SpeakerType } from "@prisma/client";
+import { generateAdultImage } from "@/lib/gen/replicate-image";
+import { ContentRating, SpeakerType } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -60,19 +61,21 @@ async function shouldIllustrateScene(campaignId: string) {
   return userTurnsSinceLastImage >= RP_IMAGE_TURN_INTERVAL;
 }
 
-async function generateSceneImage(prompt: string) {
+async function generateSceneImage(prompt: string, contentRating: ContentRating) {
   try {
-    return await generateSafeImage(
-      [
-        "Cinematic roleplay scene illustration.",
-        "Full-body, head-to-toe framing for visible characters.",
-        "Keep every face, head, feet, and important object fully inside the frame with generous safe margins.",
-        "Wide or full-frame composition, not a close-up portrait, not cropped, not zoomed in.",
-        "No text, no watermark, no UI elements.",
-        "Detailed environment, clear subject, dramatic lighting.",
-        prompt,
-      ].join(" "),
-    );
+    const finalPrompt = [
+      "Cinematic roleplay scene illustration.",
+      "Full-body, head-to-toe framing for visible characters.",
+      "Keep every face, head, feet, and important object fully inside the frame with generous safe margins.",
+      "Wide or full-frame composition, not a close-up portrait, not cropped, not zoomed in.",
+      "No text, no watermark, no UI elements.",
+      "Detailed environment, clear subject, dramatic lighting.",
+      prompt,
+    ].join(" ");
+
+    return contentRating === ContentRating.ADULT
+      ? await generateAdultImage(finalPrompt, { intensity: 3, aspectRatio: "1:1" })
+      : await generateSafeImage(finalPrompt);
   } catch (error) {
     console.error("RP scene image generation failed:", error);
     return null;
@@ -165,6 +168,7 @@ export async function POST(
                       id: true,
                       name: true,
                       description: true,
+                      contentRating: true,
                       archetype: true,
                       profile: true,
                       scenario: true,
@@ -225,6 +229,7 @@ export async function POST(
         id: string;
         name: string;
         description: string;
+        contentRating: ContentRating;
         archetype: string | null;
         profile: unknown;
         scenario: string | null;
@@ -244,6 +249,7 @@ export async function POST(
             id: true,
             name: true,
             description: true,
+            contentRating: true,
             archetype: true,
             profile: true,
             scenario: true,
@@ -256,6 +262,9 @@ export async function POST(
       ...campaignCharacters.map((character) => character.companion),
       ...(legacyCompanion ? [legacyCompanion] : []),
     ];
+    const sceneContentRating = cast.some((companion) => companion.contentRating === ContentRating.ADULT)
+      ? ContentRating.ADULT
+      : ContentRating.SAFE;
     const castPrompt = cast.length > 0
       ? cast
           .map((companion, index) => {
@@ -400,7 +409,7 @@ ${content}
 
     if ((parsed.sceneChanged || shouldGenerateImage) && illustrationPrompt) {
       const imageUrl = shouldGenerateImage
-        ? await generateSceneImage(illustrationPrompt)
+        ? await generateSceneImage(illustrationPrompt, sceneContentRating)
         : null;
 
       scene = await prisma.rpScene.create({

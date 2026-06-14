@@ -292,18 +292,22 @@ async function generateImageBytes(
     }
 
     const fallbackModel = isAdult
-        ? env("REPLICATE_ADULT_IMAGE_MODEL", "google/nano-banana-2:71516450bdbeafc41df33ad538bc8cc6a90f80038a563b1260531c02d694f4fd")
+        ? env("REPLICATE_ADULT_IMAGE_MODEL", "xai/grok-imagine-image:3032db31147241f86351f0d7ab1ffd5150dcb482bcb873580f15d8cb8970a812")
         : env("REPLICATE_IMAGE_MODEL", "black-forest-labs/flux-dev");
 
-    return runReplicate(fallbackModel, {
-        prompt,
-        negative_prompt: finalNegativePrompt,
-        num_inference_steps: 30,
-        guidance_scale: 7.5,
-        width: 768,
-        height: 1024,
-        disable_safety_checker: true,
-    });
+    const fallbackInput = fallbackModel.startsWith("xai/grok-imagine-image")
+        ? { prompt }
+        : {
+            prompt,
+            negative_prompt: finalNegativePrompt,
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+            width: 768,
+            height: 1024,
+            disable_safety_checker: true,
+        };
+
+    return runReplicate(fallbackModel, fallbackInput);
 }
 
 function extFromContentType(ct: string) {
